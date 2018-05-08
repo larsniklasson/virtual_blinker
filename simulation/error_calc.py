@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-
-
-
+import sys
+sys.path.append("..")
 from math import *
-import spline as s
 #from auto_master import *
 from geometry import *
 

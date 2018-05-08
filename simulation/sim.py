@@ -1,15 +1,16 @@
 #!/usr/bin/env python
+
+import sys
+sys.path.append("..")
 from math import *
 import rospy
 import virtual_blinker.msg as cm
-from spline import *
+from utils.spline import *
 from error_calc import *
 from pid import *
 import random
-import sys
 from geometry import *
 
-sys.path.append("..")
 
 from utils.course import *
 from risk_estimation.driver import *

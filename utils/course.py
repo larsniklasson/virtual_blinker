@@ -1,7 +1,5 @@
 from math import *
-from geometry import *
 from spline import *
-
 class Course:
     def __init__(self, travelling_direction, turn):
         self.travelling_direction = travelling_direction

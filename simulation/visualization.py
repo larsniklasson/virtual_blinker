@@ -1,5 +1,8 @@
 #!/usr/bin/env python
+import sys
+sys.path.append("..")
 
+from utils.spline import *
 import rospy
 import math
 import tf
@@ -7,7 +10,6 @@ import os
 from threading import Thread
 from os.path import dirname, abspath
 import numpy as np
-import sys
 from std_msgs.msg import Int8, String
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion, PointStamped, PoseWithCovarianceStamped
@@ -15,7 +17,6 @@ from nav_msgs.msg import Path, OccupancyGrid, MapMetaData
 import virtual_blinker.msg as cm 
 import cv2
 
-from spline import spline
 
 
 
