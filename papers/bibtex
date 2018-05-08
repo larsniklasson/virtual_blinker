@@ -1,0 +1,137 @@
+Bibtex file for all papers where we can write comments
+
+
+//Using RNN to predict driver intention
+@inproceedings{
+author={Zyner,Alex and Worrall,Stewart and Ward,James and Nebot,Eduardo},
+editor={ },
+year={2017},
+title={Long short term memory for driver intent prediction},
+publisher={IEEE},
+pages={1484-1489},
+abstract={Advanced Driver Assistance Systems have been shown to greatly improve road safety. However, existing systems are typically reactive with an inability to understand complex traffic scenarios. We present a method to predict driver intention as the vehicle enters an intersection using a Long Short Term Memory (LSTM) based Recurrent Neural Network (RNN). The model is learnt using the position, heading and velocity fused from GPS, IMU and odometry data collected by the ego-vehicle. In this paper we focus on determining the earliest possible moment in which we can classify the driver's intention at an intersection. We consider the outcome of this work an essential component for all levels of road vehicle automation.},
+keywords={Recurrent neural networks; Shape; Roads; Hidden Markov models; Predictive models; Data models; Vehicles},
+language={English},
+}
+
+//Random forest (RF)
+//Proposes a 4 step method for risk estimation: 1 - Estimate driver intention of all other vehicles in risk zone with RF, 2 - Convert driver intention to a linear function of the vehicle state, 3 - Compute future trajectories with sequential Monte Carlo method + Particle filter biased onmost popular driver intention, 4 - Compute threat level as TTC
+@article{OKAMOTO201713860,
+title = "Driver Intention-based Vehicle Threat Assessment using Random Forests and Particle Filtering",
+journal = "IFAC-PapersOnLine",
+volume = "50",
+number = "1",
+pages = "13860 - 13865",
+year = "2017",
+note = "20th IFAC World Congress",
+issn = "2405-8963",
+doi = "https://doi.org/10.1016/j.ifacol.2017.08.2231",
+url = "http://www.sciencedirect.com/science/article/pii/S2405896317329063",
+author = "Kazuhide Okamoto and Karl Berntorp and Stefano Di Cairano",
+keywords = "autonomous vehicle, intention recognition, machine learning, particle filter, path prediction, random forests, sequential Monte Carlo, supervised learning"
+}
+
+//Couldn't find bibtex for: A new methodology for collision risk assessment of autonomous vehicles
+//Uses a random forest classifier to estimate Network level risk (collision prone road segment or safe), then computes vehicle level risk based on TTC, the network level risk and previous step's vehicle level risk
+
+//Generate data to train on (Using a DANN = Domain Adversarial Neural Network) if not enough real data is available. Considers risk estimation at intermediate-horizon. Uses Importance sampling and policys (reflecting driver behaviour).
+@article{
+author={Wulfe,Blake and Chintakindi,Sunil and Choi,Sou-Cheng T. and Hartong-Redden,Rory and Kodali,Anuradha and Kochenderfer,Mykel J.},
+year={2018},
+title={Real-time Prediction of Intermediate-Horizon Automotive Collision Risk},
+abstract={Advanced collision avoidance and driver hand-off systems can benefit from the ability to accurately predict, in real time, the probability a vehicle will be involved in a collision within an intermediate horizon of 10 to 20 seconds. The rarity of collisions in real-world data poses a significant challenge to developing this capability because, as we demonstrate empirically, intermediate-horizon risk prediction depends heavily on high-dimensional driver behavioral features. As a result, a large amount of data is required to fit an effective predictive model. In this paper, we assess whether simulated data can help alleviate this issue. Focusing on highway driving, we present a three-step approach for generating data and fitting a predictive model capable of real-time prediction. First, high-risk automotive scenes are generated using importance sampling on a learned Bayesian network scene model. Second, collision risk is estimated through Monte Carlo simulation. Third, a neural network domain adaptation model is trained on real and simulated data to address discrepancies between the two domains. Experiments indicate that simulated data can mitigate issues resulting from collision rarity, thereby improving risk prediction in real-world data.},
+keywords={Learning; Computer Science; Computer Vision and Pattern Recognition},
+}
+
+//Survey of the field of risk estimation with a usefull classification scheme
+@article{
+author={Lefèvre,Stéphanie and Vasquez,Dizan and Laugier,Christian},
+year={2014},
+title={A survey on motion prediction and risk assessment for intelligent vehicles},
+journal={ROBOMECH Journal},
+volume={1},
+number={1},
+pages={1-14},
+abstract={  With the objective to improve road safety, the automotive industry is moving toward more "intelligent" vehicles. One of the major challenges is to detect dangerous situations and react accordingly in order to avoid or mitigate accidents. This requires predicting the likely evolution of the current traffic situation, and assessing how dangerous that future situation might be. This paper is a survey of existing methods for motion prediction and risk assessment for intelligent vehicles. The proposed classification is based on the semantics used to define motion and risk. We point out the tradeoff between model completeness and real-time constraints, and the fact that the choice of a risk assessment method is influenced by the selected motion model.;With the objective to improve road safety, the automotive industry is moving toward more “intelligent” vehicles. One of the major challenges is to detect dangerous situations and react accordingly in order to avoid or mitigate accidents. This requires predicting the likely evolution of the current traffic situation, and assessing how dangerous that future situation might be. This paper is a survey of existing methods for motion prediction and risk assessment for intelligent vehicles. The proposed classification is based on the semantics used to define motion and risk. We point out the tradeoff between model completeness and real-time constraints, and the fact that the choice of a risk assessment method is influenced by the selected motion model.;With the objective to improve road safety, the automotive industry is moving toward more “intelligent” vehicles. One of the major challenges is to detect dangerous situations and react accordingly in order to avoid or mitigate accidents. This requires predicting the likely evolution of the current traffic situation, and assessing how dangerous that future situation might be. This paper is a survey of existing methods for motion prediction and risk assessment for intelligent vehicles. The proposed classification is based on the semantics used to define motion and risk. We point out the tradeoff between model completeness and real-time constraints, and the fact that the choice of a risk assessment method is influenced by the selected motion model.;  With the objective to improve road safety, the automotive industry is moving toward more "intelligent" vehicles. One of the major challenges is to detect dangerous situations and react accordingly in order to avoid or mitigate accidents. This requires predicting the likely evolution of the current traffic situation, and assessing how dangerous that future situation might be. This paper is a survey of existing methods for motion prediction and risk assessment for intelligent vehicles. The proposed classification is based on the semantics used to define motion and risk. We point out the tradeoff between model completeness and real-time constraints, and the fact that the choice of a risk assessment method is influenced by the selected motion model.;},
+keywords={Engineering; Mechatronics; Control; Computational Intelligence; Intelligent vehicles; Motion models; Motion prediction; Risk assessment; Artificial Intelligence (incl. Robotics); Robotics and Automation; Computer Science},
+isbn={2197-4225},
+language={English},
+}
+
+
+//Context-based risk estimation
+@misc{
+author={Worrall,Stewart and Agamennoni,Gabriel and Nieto,Juan and Nebot,Eduardo},
+year={2012},
+title={A Context-Based Approach to Vehicle Behavior Prediction},
+journal={IEEE Intelligent Transportation Systems Magazine},
+volume={4},
+number={3},
+pages={32-44},
+abstract={Despite the best efforts of research and development carried out in the automotive industry, accidents continue to occur resulting in many deaths and injuries each year. It has been shown that the vast majority of accidents occur as a result (at least in part) of human error. This paper introduces the model for the Intelligent Systems for Risk Assessment (ISRA) project which has the goal of eliminating accidents by detecting risk, alerting the operators when appropriate, and ultimately removing some control of the vehicle from the operator when the risk is deemed unacceptable. The underlying premise is that vehicle dynamic information without contextual information is insufficient to understand the situation well enough to enable the analysis of risk. This paper defines the contextual information required to analyze the situation and shows how location context information can be derived using collected vehicle data. The process to infer high level vehicle state information using context information is also presented. The experimental results demonstrate the context based inference process using data collected from a fleet of mining vehicles during normal operation. The systems developed for the mining industry can later be extended to include more complex traffic scenarios that exist in the domain of ITS.;Despite the best efforts of research and development carried out in the automotive industry, accidents continue to occur resulting in many deaths and injuries each year. It has been shown that the vast majority of accidents occur as a result (at least in part) of human error. This paper introduces the model for the Intelligent Systems for Risk Assessment (ISRA) project which has the goal of eliminating accidents by detecting risk, alerting the operators when appropriate, and ultimately removing some control of the vehicle from the operator when the risk is deemed unacceptable. The underlying premise is that vehicle dynamic information without contextual information is insufficient to understand the situation well enough to enable the analysis of risk. This paper defines the contextual information required to analyze the situation and shows how location context information can be derived using collected vehicle data. The process to infer high level vehicle state information using context information is also presented. The experimental results demonstrate the context based inference process using data collected from a fleet of mining vehicles during normal operation. The systems developed for the mining industry can later be extended to include more complex traffic scenarios that exist in the domain of ITS.;},
+keywords={Road transportation; Intelligent vehicles; Road vehicles; Research and development; Injuries; Accidents; Automotive engineering; TRANSPORTATION SCIENCE & TECHNOLOGY; ENGINEERING, ELECTRICAL & ELECTRONIC},
+isbn={1939-1390},
+language={English},
+}
+
+//
+@Article{su9091582,
+AUTHOR = {Xie, Guotao and Zhang, Xinyu and Gao, Hongbo and Qian, Lijun and Wang, Jianqiang and Ozguner, Umit},
+TITLE = {Situational Assessments Based on Uncertainty-Risk Awareness in Complex Traffic Scenarios},
+JOURNAL = {Sustainability},
+VOLUME = {9},
+YEAR = {2017},
+NUMBER = {9},
+ARTICLE NUMBER = {1582},
+URL = {http://www.mdpi.com/2071-1050/9/9/1582},
+ISSN = {2071-1050},
+ABSTRACT = {Situational assessment (SA) is one of the key parts for the application of intelligent alternative-energy vehicles (IAVs) in the sustainable transportation. It helps IAVs understand and comprehend traffic environments better. In SA, it is crucial to be aware of uncertainty-risks, such as sensor failure or communication loss. The objective of this study is to assess traffic situations considering uncertainty-risks, including environment predicting uncertainty. According to the stochastic environment model, collision probabilities between multiple vehicles are estimated based on integrated trajectory prediction under uncertainty, which combines the physics- and maneuver-based trajectory prediction models for accurate prediction results in the long term. The SA method considers the probabilities of collision at different predicting points, the masses, and relative speeds between the possible colliding objects. In addition, risks beyond the prediction horizon are considered with the proposition of infinite risk assessments (IRAs). This method is applied and proved to assess risks regarding unexpected obstacles in traffic, sensor failure or communication loss, and imperfect detections with different sensing accuracies of the environment. The results indicate that the SA method could evaluate traffic risks under uncertainty in the dynamic traffic environment. This could help IAVs’ plan motion trajectories and make high-level decisions in uncertain environments.},
+DOI = {10.3390/su9091582}
+}
+
+//Eliminate risk by looking at vehicles road occupancy
+@inproceedings{
+author={Koschi,Markus and Althoff,Matthias},
+editor={ },
+year={2017},
+title={Interaction-aware occupancy prediction of road vehicles},
+publisher={IEEE},
+pages={1-8},
+abstract={A crucial capability of autonomous road vehicles is the ability to cope with the unknown future behavior of surrounding traffic participants. This requires using non-deterministic models for prediction. While stochastic models are useful for long-term planning, we use set-valued non-determinism capturing all possible behaviors in order to verify the safety of planned maneuvers. To reduce the set of solutions, our earlier work considers traffic rules; however, it neglects mutual influences between traffic participants. This work presents the first solution for establishing interaction within set-based prediction of traffic participants. Instead of explicitly modeling dependencies between vehicles, we trim reachable occupancy regions to consider interaction, which is computationally much more efficient. The usefulness of our approach is demonstrated by experiments from the CommonRoad benchmark repository.},
+keywords={Roads; Conferences; Merging; Stochastic processes; Trajectory; Acceleration},
+language={English},
+}
+
+
+
+
+
+//Others, can be used for comparing or as references for the Master Thesis
+
+//Safety comparison of Markov Chain Abstraction and Monte Carlo Simulation
+@article{
+author={Althoff,M. and Mergel,A.},
+year={2011},
+title={Comparison of Markov Chain Abstraction and Monte Carlo Simulation for the Safety Assessment of Autonomous Cars},
+journal={IEEE Transactions on Intelligent Transportation Systems},
+volume={12},
+number={4},
+pages={1237-1247},
+abstract={The probabilistic prediction of road traffic scenarios is addressed. One result is a probabilistic occupancy of traffic participants, and the other result is the collision risk for autonomous vehicles when executing a planned maneuver. The probabilistic occupancy of surrounding traffic participants helps to plan the maneuver of an autonomous vehicle, whereas the computed collision risk helps to decide if a planned maneuver should be executed. Two methods for the probabilistic prediction are presented and compared: 1) Markov chain abstraction and 2) Monte Carlo simulation. The performance of both methods is evaluated with respect to the prediction of the probabilistic occupancy and the collision risk. For each comparison test, we use the same models that generate the probabilistic behavior of traffic participants, where the generation of these data is not compared with real-world data. However, the results independently show the behavior generation that Markov chains are preferred for the probabilistic occupancy, whereas Monte Carlo simulation is clearly preferred for determining the collision risk.;The probabilistic prediction of road traffic scenarios is addressed. One result is a probabilistic occupancy of traffic participants, and the other result is the collision risk for autonomous vehicles when executing a planned maneuver. The probabilistic occupancy of surrounding traffic participants helps to plan the maneuver of an autonomous vehicle, whereas the computed collision risk helps to decide if a planned maneuver should be executed. Two methods for the probabilistic prediction are presented and compared: 1) Markov chain abstraction and 2) Monte Carlo simulation. The performance of both methods is evaluated with respect to the prediction of the probabilistic occupancy and the collision risk. For each comparison test, we use the same models that generate the probabilistic behavior of traffic participants, where the generation of these data is not compared with real-world data. However, the results independently show the behavior generation that Markov chains are preferred for the probabilistic occupancy, whereas Monte Carlo simulation is clearly preferred for determining the collision risk.;The probabilistic prediction of road traffic scenarios is addressed. One result is a probabilistic occupancy of traffic participants, and the other result is the collision risk for autonomous vehicles when executing a planned maneuver. The probabilistic occupancy of surrounding traffic participants helps to plan the maneuver of an autonomous vehicle, whereas the computed collision risk helps to decide if a planned maneuver should be executed. Two methods for the probabilistic prediction are presented and compared: 1) Markov chain abstraction and 2) Monte Carlo simulation. The performance of both methods is evaluated with respect to the prediction of the probabilistic occupancy and the collision risk. For each comparison test, we use the same models that generate the probabilistic behavior of traffic participants, where the generation of these data is not compared with real-world data. However, the results independently show the behavior generation that Markov chains are preferred for the probabilistic occupancy, whereas Monte Carlo simulation is clearly preferred for determining the collision risk.;},
+keywords={road traffic; collision avoidance; autonomous vehicles; threat level; Computational modeling; automobiles; probability; collision risk; planned maneuver; Probabilistic logic; Markov chains; mobile robots; safety assessment; crash probability; Monte Carlo methods; Vehicle safety; Markov processes; automated highways; Markov chain abstraction; Monte Carlo simulation; autonomous cars; probabilistic prediction; probabilistic occupancy; behavior prediction; Studies; Traffic accidents & safety},
+isbn={1524-9050},
+language={English},
+}
+
+//Looking at safety mechanisms for platooning with network failures
+//Platooning: One leader vehicle and other vehicles in same lane follow -> increased traffic flow
+@inproceedings{
+author={van Nunen,Ellen and Tzempetzis,Dimitrios and Koudijs,Gerald and Nijmeijer,Henk and van den Brand,Mark},
+editor={ },
+year={2016},
+title={Towards a safety mechanism for platooning},
+publisher={IEEE},
+pages={502-507},
+abstract={Platooning has shown to be technically feasible, but safety aspects are still challenging. Wireless communication between vehicles allows to maintain reduced inter-vehicle distances, thereby improving traffic throughput and decreasing fuel consumption. As the driver can no longer be a backup at short inter-vehicle distances, the system needs to be fail-safe for both hazardous traffic situations as well as failures. In this paper, a scenario is defined which combines a hazardous traffic situation with a communication failure. First, the methodology for developing safety related functionality in automated driving is presented. This methodology combines aspects of the ISO26262 standard with the Harmony profile. Second, the safety mechanism to avoid a collision by braking is described. This ensures that a safe state can be reached for a set of use cases which are derived from the defined scenario. Finally, the proposed solution is tested in a simulation environment and is also implemented on test vehicles. The result of the simulations and experiments demonstrate the practical validity and show increased safety related functionality.},
+language={English},
+}
