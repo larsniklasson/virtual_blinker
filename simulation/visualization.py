@@ -18,7 +18,14 @@ import virtual_blinker.msg as cm
 import cv2
 
 
+colors = [
+    (230, 25, 75),
+    (60, 180, 75),
+    (0, 130, 200),
+    (245, 130, 48),
+    (145, 30, 180)
 
+]
 
 HEADER_FRAME = "virtualblinker"
 
@@ -26,34 +33,33 @@ HEADER_FRAME = "virtualblinker"
 class Visualizer:
     def __init__(self):
         
-        
-        rospy.init_node('visualizer')
-        rospy.sleep(1)
-        
-        self.carmarker1 = CarMarker()
-        self.carmarker2 = CarMarker()
-        
-        self.matrix = readImgToMatrix("map.png")
-        self.scale = 1
-        
-        
-        self.map, self.width, self.height = getOccupancyGrid(self.matrix, self.scale)
-        
-        self.path_pub = rospy.Publisher("rviz_car_path", Path, queue_size=10)
-        self.path_pub2 = rospy.Publisher("rviz_car_path2", Path, queue_size=10)
-        
-        rospy.Subscriber('car_path', cm.Path, self.pathCallback)
-        rospy.Subscriber('car_path2', cm.Path, self.pathCallback2)
-        
-        self.marker_pub1 = rospy.Publisher('rviz_car_marker', Marker, queue_size=10)
-        self.marker_pub2 = rospy.Publisher('rviz_car_marker2', Marker, queue_size=10)
-        self.map_pub = rospy.Publisher("rviz_map", OccupancyGrid, queue_size=10)
-        
-        rospy.Subscriber('car_state', cm.CarState, self.stateCallback)
-        rospy.Subscriber('car_state2', cm.CarState, self.stateCallback2)
 
-        rospy.sleep(0.5)
-        self.map_pub.publish(self.map)
+        rospy.init_node('visualizer')
+
+        
+        nr_cars = rospy.get_param('nr_cars')
+
+        self.markers = [CarMarker(colors[i]) for i in range(nr_cars)]
+
+        
+        matrix = readImgToMatrix("map.png")
+        _map = getOccupancyGrid(matrix)
+        
+        
+        self.marker_pubs = []
+        self.path_pubs = []
+        for i in range(1,nr_cars+1):
+
+            rospy.Subscriber('car_path' + str(i), cm.Path, self.pathCallback)
+            rospy.Subscriber('car_state' + str(i), cm.CarState, self.stateCallback)
+            self.marker_pubs.append(rospy.Publisher('rviz_car_marker' + str(i), Marker, queue_size=10))
+            self.path_pubs.append(rospy.Publisher("rviz_car_path" + str(i), Path, queue_size=10))
+
+
+        map_pub = rospy.Publisher("rviz_map", OccupancyGrid, queue_size=10)
+        rospy.sleep(1.5)
+        
+        map_pub.publish(_map)
 
     
     def stateCallback(self, msg):
@@ -71,59 +77,31 @@ class Visualizer:
         
         
         theta = msg.theta
-        
-        xf = x- (self.carmarker1.length/2) *(math.cos(theta))
-        yf = y - (self.carmarker1.length/2) * (math.sin(theta))
 
-        self.carmarker1.setMarkerPosition(xf,yf)
+        m = self.markers[msg.id-1]
         
-        self.carmarker1.setMarkerDirection(theta)
+        xf = x- (m.length/2) *(math.cos(theta))
+        yf = y - (m.length/2) * (math.sin(theta))
 
+        m.setMarkerPosition(xf,yf)
         
-        self.marker_pub1.publish(self.carmarker1.marker)
-        
-    def stateCallback2(self, msg):
-        x = msg.x #mm
-        y = msg.y #mm
-        
-        x += 200/2
-        y += 250/2
-        
-        x = x * 1000 #mm
-        y = y * 1000 #mm
-        
-        x = x/250
-        y = y/250
-        
-        
-        theta = msg.theta
-        
-        xf = x- (self.carmarker2.length/2) *(math.cos(theta))
-        yf = y - (self.carmarker2.length/2) * (math.sin(theta))
-
-        self.carmarker2.setMarkerPosition(xf,yf)
-        
-        self.carmarker2.setMarkerDirection(theta)
+        m.setMarkerDirection(theta)
 
         
-        self.marker_pub2.publish(self.carmarker2.marker)
+        self.marker_pubs[msg.id-1].publish(m.marker)
+        
+    
         
     def pathCallback(self, data):
         p = getPath(data.path, 30)
-        self.path_pub.publish(p)
+        self.path_pubs[data.id-1].publish(p)
         
         
-        
-    def pathCallback2(self, data):
-        p = getPath(data.path, 30)
-        self.path_pub2.publish(p)
-        
-    
     
 
 
 class CarMarker:
-    def __init__(self):
+    def __init__(self, (r,g,b)):
         
         self.length = 4000/250
         self.width  = 1800/250
@@ -149,9 +127,9 @@ class CarMarker:
         self.marker.scale.z = 220
 
         # sick blue color
-        self.marker.color.r = 0.1294117647
-        self.marker.color.g = 0.58823529411
-        self.marker.color.b = 0.95294117647
+        self.marker.color.r = r/255.0
+        self.marker.color.g = g/255.0
+        self.marker.color.b = b/255.0
         self.marker.color.a = 0.85
         
         #self.marker.pose.position.x = 0.0
@@ -186,7 +164,7 @@ def readImgToMatrix(path):
 
     return matrix
         
-def getOccupancyGrid(matrix, scale):
+def getOccupancyGrid(matrix):
     stamp = rospy.Time.now()
 
     oc = OccupancyGrid()
@@ -205,7 +183,7 @@ def getOccupancyGrid(matrix, scale):
     width = len(matrix[0])
     height = len(matrix)
     
-    oc.info = MapMetaData(load_time, scale, width, height, origin)
+    oc.info = MapMetaData(load_time, 1, width, height, origin)
     
     for row in range(height):
         for col in range(width):
@@ -217,7 +195,7 @@ def getOccupancyGrid(matrix, scale):
                 oc.data.append(0)
                 
             
-    return oc, width * scale, height * scale
+    return oc
 
 
 def getPath(dp, z, splined=False, scaled=False):

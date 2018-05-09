@@ -4,14 +4,11 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Global Options1
-        - /Status1
-        - /Grid1
-        - /Marker1
         - /Path1
-        - /Map1
-        - /Marker2
         - /Path2
+        - /Path3
+        - /Path4
+        - /Path5
       Splitter Ratio: 0.5
     Tree Height: 754
   - Class: rviz/Selection
@@ -57,18 +54,60 @@ Visualization Manager:
       Plane Cell Count: 10
       Reference Frame: <Fixed Frame>
       Value: false
+    - Alpha: 0.800000012
+      Class: rviz/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic: /rviz_map
+      Unreliable: false
+      Use Timestamp: false
+      Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: rviz_car_marker
+      Marker Topic: rviz_car_marker1
       Name: Marker
       Namespaces:
         virtualblinker: true
       Queue Size: 100
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: rviz_car_marker2
+      Name: Marker
+      Namespaces:
+        virtualblinker: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: rviz_car_marker3
+      Name: Marker
+      Namespaces:
+        virtualblinker: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: rviz_car_marker4
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: rviz_car_marker5
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
     - Alpha: 1
-      Buffer Length: 2
+      Buffer Length: 3
       Class: rviz/Path
-      Color: 0; 170; 0
+      Color: 230; 25; 75
       Enabled: true
       Head Diameter: 0.300000012
       Head Length: 0.200000003
@@ -85,31 +124,13 @@ Visualization Manager:
       Radius: 0.0299999993
       Shaft Diameter: 0.100000001
       Shaft Length: 0.100000001
-      Topic: rviz_car_path
+      Topic: rviz_car_path1
       Unreliable: false
-      Value: true
-    - Alpha: 0.800000012
-      Class: rviz/Map
-      Color Scheme: map
-      Draw Behind: false
-      Enabled: true
-      Name: Map
-      Topic: /rviz_map
-      Unreliable: false
-      Use Timestamp: false
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: rviz_car_marker2
-      Name: Marker
-      Namespaces:
-        virtualblinker: true
-      Queue Size: 100
       Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 0; 170; 0
+      Color: 60; 180; 75
       Enabled: true
       Head Diameter: 0.300000012
       Head Length: 0.200000003
@@ -127,6 +148,75 @@ Visualization Manager:
       Shaft Diameter: 0.100000001
       Shaft Length: 0.100000001
       Topic: rviz_car_path2
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 0; 130; 200
+      Enabled: true
+      Head Diameter: 0.300000012
+      Head Length: 0.200000003
+      Length: 0.300000012
+      Line Style: Lines
+      Line Width: 0.0299999993
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.0299999993
+      Shaft Diameter: 0.100000001
+      Shaft Length: 0.100000001
+      Topic: rviz_car_path3
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 245; 130; 49
+      Enabled: true
+      Head Diameter: 0.300000012
+      Head Length: 0.200000003
+      Length: 0.300000012
+      Line Style: Lines
+      Line Width: 0.0299999993
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.0299999993
+      Shaft Diameter: 0.100000001
+      Shaft Length: 0.100000001
+      Topic: rviz_car_path4
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 145; 30; 180
+      Enabled: true
+      Head Diameter: 0.300000012
+      Head Length: 0.200000003
+      Length: 0.300000012
+      Line Style: Lines
+      Line Width: 0.0299999993
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.0299999993
+      Shaft Diameter: 0.100000001
+      Shaft Length: 0.100000001
+      Topic: rviz_car_path5
       Unreliable: false
       Value: true
   Enabled: true

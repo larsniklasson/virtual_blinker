@@ -69,7 +69,6 @@ class Course:
             self.path = [self.startPoint, self.endPoint]
 
         self.path = map(lambda (x,y) : self.rotate(x,y,0,dir=-1)[0:2], self.path)
-            
 
 
     def getPath(self):
@@ -79,7 +78,7 @@ class Course:
         td = self.travelling_direction
         if td == "west":
             x0 = dir * y
-            y0 = dir * x0
+            y0 = dir * -x
             theta0 = theta - dir * pi/2
         elif td == "north":
             x0 = x
