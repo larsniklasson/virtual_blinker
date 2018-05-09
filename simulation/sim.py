@@ -33,7 +33,7 @@ class Car:
 
     def __init__(self):
         
-        self.state_dict = {}
+        
         
         rospy.init_node('car', anonymous=False)
 
@@ -43,6 +43,8 @@ class Car:
         nr_cars = rospy.get_param('nr_cars')
         x = rospy.get_param(rospy.get_name())
         td,turn,startdist =  x.split(" ")
+
+        self.state_dicts = [{} for _ in range(nr_cars)]
 
         
         self.course = Course(td, turn)
@@ -67,26 +69,19 @@ class Car:
         
         rospy.sleep(3)
         self.path_pub.publish(cm.Path([cm.Position(x,y) for x,y in path], self.id))
+    
 
         
 
     def stateCallback(self, msg):
-        #TODO wait for all other cars, this code is written for 2
+
+        self.state_dicts[msg.id-1][msg.t] = (msg.x, msg.y, msg.theta, msg.speed)
         
-        while msg.t not in self.state_dict:
+        
+        while not all([(msg.t in d) for d in self.state_dicts]):
             rospy.sleep(0.001)
-        
-        (x, y, theta, speed) = self.state_dict[msg.t]
 
-
-        measurements = OrderedDict()
-
-        if self.id == 1:
-            measurements[0] = (x,y,theta,speed)
-            measurements[1] = (msg.x, msg.y, msg.theta, msg.speed)
-        else:
-            measurements[0] = (msg.x, msg.y, msg.theta, msg.speed)
-            measurements[1] = (x,y,theta,speed)
+        ms = [d[msg.t] for d in self.state_dicts]
 
         #self.risk_estimator.update_state(msg.t/(50.0*SLOWDOWN) , measurements)
         
@@ -128,7 +123,11 @@ class Car:
             self.speed = min(self.speed, targetspeed)
         
         
-        self.state_dict[self.t] = (self.x, self.y, self.speed, self.theta)
+        d = self.state_dicts[self.id-1]
+
+        d[self.t] = (self.x, self.y, self.speed, self.theta)
+        
+        if self.t - 50 in d: del d[self.t - 50]
         
         
 
