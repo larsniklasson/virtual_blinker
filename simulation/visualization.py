@@ -93,13 +93,11 @@ class Visualizer:
     
         
     def pathCallback(self, data):
-        p = getPath(data.path, 30)
+        p = getPath(data.path)
         self.path_pubs[data.id-1].publish(p)
         
         
     
-
-
 class CarMarker:
     def __init__(self, (r,g,b)):
         
@@ -198,12 +196,10 @@ def getOccupancyGrid(matrix):
     return oc
 
 
-def getPath(dp, z, splined=False, scaled=False):
+def getPath(dp):
     
     path = [((p.x + 100 )/0.250, (p.y + 125) / 0.250) for p in dp]
     
-    if splined:
-        path = spline(path)
     
     path_msg = Path()
     path_msg.header.frame_id = HEADER_FRAME
@@ -215,7 +211,7 @@ def getPath(dp, z, splined=False, scaled=False):
 
         ps.pose.position.x = x
         ps.pose.position.y = y
-        ps.pose.position.z = z
+        ps.pose.position.z = 30
 
         ps.pose.orientation.w = 0.0
         ps.pose.orientation.x = 0.0
