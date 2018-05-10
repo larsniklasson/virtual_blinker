@@ -35,7 +35,7 @@ class ErrorCalc:
         value = getDistanceFromLine(p, self.line)
         
         
-        if isLeftOfLine(p, self.line):
+        if is_left_of_line(p, self.line):
             
             #+1 to account for points in self.line
             return (value, len(self.path) + 1)

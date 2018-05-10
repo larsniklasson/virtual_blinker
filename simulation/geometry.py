@@ -13,7 +13,7 @@ class Point:
 def getDirection((x1,y1), (x2,y2)):
     return atan2(y2-y1, x2-x1)
 
-def getLookAheadPoint((x,y), direction, lookahead):
+def getLookaheadPoint((x,y), direction, lookahead):
     return (x + lookahead * cos(direction), y + lookahead * sin(direction))
 
 
@@ -21,7 +21,7 @@ def getDistanceFromLine(p, (l1, l2)):
     return abs((l2.x - l1.x) * (l1.y-p.y) - (l1.x-p.x) * (l2.y-l1.y)) / (sqrt((l2.x-l1.x) * (l2.x-l1.x) + (l2.y-l1.y) * (l2.y-l1.y)))
 
 
-def isLeftOfLine(p, (l1, l2)):
+def is_left_of_line(p, (l1, l2)):
     return ((l2.x - l1.x) * (p.y - l1.y) - (l2.y - l1.y) * (p.x - l1.x)) <= 0
 
 

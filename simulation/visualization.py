@@ -43,7 +43,7 @@ class Visualizer:
 
         
         matrix = readImgToMatrix("map.png")
-        _map = getOccupancyGrid(matrix)
+        _map = getOccupanceGrid(matrix)
         
         
         self.marker_pubs = []
@@ -57,34 +57,35 @@ class Visualizer:
 
 
         map_pub = rospy.Publisher("rviz_map", OccupancyGrid, queue_size=10)
+
+        #sleep to let rviz start before publishing. Also note: you have to wait a little while after registering a publisher after you can use it,
         rospy.sleep(1.5)
         
         map_pub.publish(_map)
 
     
     def stateCallback(self, msg):
-        x = msg.x #mm
-        y = msg.y #mm
+        x = msg.x 
+        y = msg.y 
         
-        x += 200/2
-        y += 250/2
-        
-        x = x * 1000 #mm
-        y = y * 1000 #mm
-        
-        x = x/250
-        y = y/250
-        
+
+        # sim coordinate system has origo in (100,125), and rviz has origo in corner
+        x += 100
+        y += 125
+
+        #4 pixels per meter. size of map is 800 x 1000 and sim coordinate system is 200*250
+        x *= 4
+        y *= 4
         
         theta = msg.theta
 
         m = self.markers[msg.id-1]
         
-        xf = x- (m.length/2) *(math.cos(theta))
-        yf = y - (m.length/2) * (math.sin(theta))
+        #x,y is front of car. find centre of car
+        xc = x- (m.length/2) *(math.cos(theta))
+        yc = y - (m.length/2) * (math.sin(theta))
 
-        m.setMarkerPosition(xf,yf)
-        
+        m.setMarkerPosition(xc,yc)
         m.setMarkerDirection(theta)
 
         
@@ -93,7 +94,7 @@ class Visualizer:
     
         
     def pathCallback(self, data):
-        p = getPath(data.path)
+        p = getPathMessage(data.path)
         self.path_pubs[data.id-1].publish(p)
         
         
@@ -101,9 +102,9 @@ class Visualizer:
 class CarMarker:
     def __init__(self, (r,g,b)):
         
-        self.length = 4000/250
-        self.width  = 1800/250
-        
+        #car is 4x1.8 meters, meters / pixel = 4
+        self.length = 4*4
+        self.width  = 1.8*4
         
         self.marker = Marker()
         self.marker.header.frame_id = HEADER_FRAME
@@ -150,19 +151,15 @@ class CarMarker:
         self.marker.pose.orientation.w = quat[3]
 
     
-# Takes a path (relative to current directory) to a an image file containing a Map representation
-# (path='/map.png' for file 'map.png, located in current directory)
-# The file should be in '.png'-format
-#
-# Returns an array of rows, where each row is an array of elements
+#read map image and return matrix with color values
 def readImgToMatrix(path):
     dirpath = dirname(abspath(__file__))
     matrix = np.asarray(cv2.imread(os.path.join(dirpath, path), 0), dtype=np.uint8).tolist()
-    
 
     return matrix
         
-def getOccupancyGrid(matrix):
+#transform matrix to an OccupancyGrid-message
+def getOccupanceGrid(matrix):
     stamp = rospy.Time.now()
 
     oc = OccupancyGrid()
@@ -196,10 +193,9 @@ def getOccupancyGrid(matrix):
     return oc
 
 
-def getPath(dp):
+def getPathMessage(path):
     
-    path = [((p.x + 100 )/0.250, (p.y + 125) / 0.250) for p in dp]
-    
+    path = [((p.x + 100 )*4, (p.y + 125)*4) for p in path]
     
     path_msg = Path()
     path_msg.header.frame_id = HEADER_FRAME
