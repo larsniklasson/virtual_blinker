@@ -2,7 +2,6 @@ import math
 import utils
 import Intersection
 import numpy as np
-import config
 
 
 def PS_estimate(p, travelling_direction, intersection, interval, pose_covariance, speed_deviation):

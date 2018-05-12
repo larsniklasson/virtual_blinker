@@ -6,7 +6,6 @@ import matplotlib.patches as patches
 import time
 import Intersection
 import math
-import config
 
 def draw_arrow(fig,ax,vehicle_pose,length):
     x = vehicle_pose[0]

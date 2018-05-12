@@ -1,7 +1,6 @@
 from collections import OrderedDict
 from particle_filter import ParticleFilter
 import plotter
-import config
 import csv
 import time
 

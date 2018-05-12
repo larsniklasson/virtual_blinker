@@ -4,6 +4,7 @@ from E_estimate import Es_estimate
 from I_estimate import Is_estimate, Ic_estimate
 from PS_estimate import *
 import math
+import random
 
 from scipy.stats import multivariate_normal
 from scipy.stats import norm
@@ -165,7 +166,7 @@ def generate_inital_particles(intersection, initial_pose, initial_speed, nr_part
         P = np.random.multivariate_normal(initial_pose, pose_covariance)
         S = np.random.normal(initial_speed, speed_deviation)
 
-        particles.append(particle_filter.StateVector(Es,Is,Ic,P,S))
+        particles.append(StateVector(Es,Is,Ic,P,S))
     
     return particles
 
