@@ -5,7 +5,7 @@ import particle_filter
 import matplotlib.pyplot as plt
 import matplotlib.patches as patchesk
 import time
-
+import random
 """
 vehicle pose contains x,y,theta of a vehicle. 
 we use this function to project the said vehicle into a course path. 
@@ -206,34 +206,19 @@ def get_opposite_direction(dir):
 
 
 
-def generate_inital_particles(inital_statevector,amount,pose_covariance, speed_deviation):
-    #generate amount number of state vectors from initial distribution
-    #since initial distribution is essentialy a delta function, (spike at x0, 0 elsewhere),
-    #sample drawn from it matches that x0 exactly all the time. 
-    #for this initial, i would like to generate half of particles have exact same vector as the intial parameters for x0
-    #and the rest with varying information for state vectors
-    #^ above may be wrong
-
-    #generating new particles from the following method:
+def generate_inital_particles(intersection, initial_pose, initial_speed, nr_particles, pose_covariance, speed_deviation):
     particles = []
 
+    for i in range(nr_particles):
 
-    for i in range(amount):
-        #discrete var
-        #for now this is uniform random
 
-        Es_ = np.random.randint(0,2)
-        Is_ = np.random.randint(0,2)
-        Ic_ = np.random.randint(1,4)
-        
-        #in this setup we know the courses:
+        Es = random.choice(("go", "stop"))
+        Is = random.choice(("go", "stop"))
+        Ic = random.choice(intersection.turns)
+    
+        P = np.random.multivariate_normal(initial_pose, pose_covariance)
+        S = np.random.normal(initial_speed, speed_deviation)
 
-        #Ic_ = inital_statevector.Ic
-
-        #continuous:
-        P_ = np.random.multivariate_normal(inital_statevector.P,pose_covariance)
-        S_ = np.random.normal(inital_statevector.S,speed_deviation)
-        particles.append(particle_filter.state_vector(Es_,Is_,Ic_,P_,S_))
-        #particles.append(deepcopy(inital_statevector))
+        particles.append(particle_filter.StateVector(Es,Is,Ic,P,S))
     
     return particles

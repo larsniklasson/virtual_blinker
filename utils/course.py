@@ -168,6 +168,14 @@ class Course:
     def hasPassedRequestLine(self, x, y):
         _,y,_ = self.rotate(x,y,0)
         return y > self.request_line
+
+    def hasLeftIntersection(self, x, y, theta):
+        x,y,theta = self.rotate(x,y,theta)
+        d = self.getDistance(x, y, theta)
+        if self.turn == "straight":
+            return d >= self.distance_to_crossing + 7.5*2
+        else:
+            return d >= self.distance_to_crossing + self.radius*pi/2
     
     def getTimeToCrossing(self, x, y, theta, speed, intention_stop):
         x,y,theta = self.rotate(x,y,theta)

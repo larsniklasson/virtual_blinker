@@ -2,6 +2,26 @@ import math
 import scipy
 #all gap model calculations go here.
 
+
+def gap_model(gap):
+    #https://en.wikipedia.org/wiki/Logistic_function
+    
+    L = 1.0
+    #positive time
+    x0 = 6.1
+    k = 1
+
+    #negative time
+    x0_2 = 1.5
+    k2 = 3
+
+    if gap >= 0:
+        return L / (1 + math.exp(-k * (gap - x0)))
+    else:
+        return L / (1 + math.exp(-k2 * (-gap - x0_2)))
+
+
+
 def accept_left_turn_across_path(g_min):
     #left turn across path cases adapted from: https://cloudfront.escholarship.org/dist/prd/content/qt8455h5gq/qt8455h5gq.pdf
 

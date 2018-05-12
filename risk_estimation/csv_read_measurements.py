@@ -60,7 +60,7 @@ def readcsv():
             measurement_vector[0] = v1_measurements 
             measurement_vector[1] = v2_measurements 
             if t < 0.001:
-                my_risk_estimator = driver.risk_estimator(n_particles,0.1,myintersection,measurement_vector,pose_cov,speed_deviation,[1,2])
+                my_risk_estimator = driver.RiskEstimator(n_particles,0.1,myintersection,measurement_vector,pose_cov,speed_deviation,[1,2])
                 c = c + 1
                 continue
             

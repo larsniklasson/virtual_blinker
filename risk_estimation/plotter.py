@@ -8,6 +8,10 @@ import Intersection
 import math
 import config
 
+import glob
+
+import os
+
 def draw_arrow(fig,ax,vehicle_pose,length):
     x = vehicle_pose[0]
     y = vehicle_pose[1]
@@ -18,7 +22,7 @@ def draw_arrow(fig,ax,vehicle_pose,length):
 
 
 
-def plot_particles(particle_filter_list, measurement_vector,t,riskdict):
+def plot_particles(particle_filter_list, measurement_vector, t, riskdict):
     caption_text = ""
     fig , ax = plt.subplots(figsize=(10,10))
     ax.set_title("t = "+str(t)  + "\n" +str(riskdict) + "\n")
@@ -38,15 +42,15 @@ def plot_particles(particle_filter_list, measurement_vector,t,riskdict):
     )
     
     for i,pfilter in enumerate(particle_filter_list):
-        poses = [x.P for x in pfilter.posterior_particles]
+        poses = [x.P for x in pfilter.particles]
         vehicle_state = pfilter.get_most_likely_state()
         x = [q[0] for q in poses]
         y = [q[1] for q in poses]
         #theta = [q[2] for q in poses]
         vehicle_text  = "Vehicle {0}:\n Expectation = {1}\n Intention = {2}\n Intended course = {3}\nDirection = {4} deg \n\n"
-        caption_text  = caption_text + vehicle_text.format(i,"stop" if vehicle_state.Es == 0 else "go",\
-                        "stop" if vehicle_state.Is == 0 else "go",\
-                        Intersection.IntersectionCourses(vehicle_state.Ic).name,\
+        caption_text  = caption_text + vehicle_text.format(i,vehicle_state.Es,\
+                        vehicle_state.Is,\
+                        vehicle_state.Ic,\
                         round(math.degrees(vehicle_state.P[2]),1))
         
         ax.scatter(x,y,c=str(i),s=1)
@@ -62,9 +66,12 @@ def plot_particles(particle_filter_list, measurement_vector,t,riskdict):
     #ax.text(measurement_vector[1][0] + 20,measurement_vector[1][1],"vehicle 1",fontsize=12)
 
     ax.text(-axbound,-axbound,caption_text,fontsize=15)
+
+    pf = config.GENERAL_OPTIONS['plot-folder']
+
     
 
-    fig.savefig(config.GENERAL_OPTIONS['plot-folder'] + "/plot_" +str(int((round(time.time()*1000)))),dpi=100)
+    fig.savefig(pf + "/plot_" +str(int((round(time.time()*1000)))),dpi=100)
     plt.close(fig)
     
     

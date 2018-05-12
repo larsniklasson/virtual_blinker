@@ -14,7 +14,7 @@ from utils.course import *
 from risk_estimation.driver import *
 
 from collections import OrderedDict
-
+from risk_estimation.Intersection import *
 
 SLOWDOWN = 1
 
@@ -22,7 +22,7 @@ KP = 0.4
 KI = 0.00
 KD = 0.05
 
-RATE = 50
+RATE = 50.0/SLOWDOWN
 
 windup_guard = 100
 
@@ -73,24 +73,34 @@ class Car:
         #sleep to let rviz start up
         rospy.sleep(1.5)
         self.path_pub.publish(cm.Path([cm.Position(x,y) for x,y in path], self.id))
+
+        self.fm = True
     
 
         
 
     def stateCallback(self, msg):
+
+        if self.id == 1:
+            return
+
         if self.t - msg.t > 5: # old af message, flush queue. 
             return 
 
         #save measurement
-        self.state_dicts[msg.id-1][msg.t] = (msg.x, msg.y, msg.theta, msg.speed)
+        self.state_dicts[msg.id][msg.t] = (msg.x, msg.y, msg.theta, msg.speed)
 
         #if we have all measurements for a certain time-stamp perform risk estimation
         if all([(msg.t in d) for d in self.state_dicts]):
             ms = [d[msg.t] for d in self.state_dicts]
 
-            rospy.sleep(0.2) # simulates doing risk-estimation
-
-            #self.risk_estimator.update_state(msg.t/(50.0*SLOWDOWN) , measurements)
+            real_time = msg.t/(RATE*SLOWDOWN)
+            if self.fm:
+                self.risk_estimator = RiskEstimator(400, Intersection(), ms, np.eye(3)*0.1, 1.5, real_time)
+                self.fm = False
+            else:
+                self.risk_estimator.update_state(real_time, ms)
+                
         
 
     def update(self):
@@ -117,7 +127,8 @@ class Car:
         self.theta += v * tan(steering_angle) / carlength
         
         # follow speed profile
-        targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.intention_stop)
+        #targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.intention_stop)
+        targetspeed = self.course.fastspeed
         if targetspeed < self.speed:
             targetacc = self.course.catchup_deacc
             self.speed += dt*targetacc/SLOWDOWN
@@ -129,8 +140,8 @@ class Car:
         
         
         #save current state. Also delete old one
-        d = self.state_dicts[self.id-1]
-        d[self.t] = (self.x, self.y, self.speed, self.theta)
+        d = self.state_dicts[self.id]
+        d[self.t] = (self.x, self.y, self.theta, self.speed)
         if self.t - 50 in d: del d[self.t - 50]
         
         

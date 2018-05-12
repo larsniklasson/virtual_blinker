@@ -9,7 +9,7 @@ GENERAL_OPTIONS = {
     'plot-particles' : True,
 
     #folder to put all the successive images of each time interval
-    'plot-folder' : './scenarios/leftturn/plots2',
+    'plot-folder' : '/home/lars/catkin_ws/src/virtual_blinker/risk_estimation/scenarios/newmap',
 
     #output risk calculation as a csv
     'output-csv' : False,
