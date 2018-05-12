@@ -51,7 +51,7 @@ class Car:
         self.x, self.y, self.theta = self.course.getStartingPose(int(startdist))
 
         #the other vehicle's state topics
-        state_sub_topics = ["car_state" + str(i) for i in range(1,nr_cars+1) if i != self.id]
+        state_sub_topics = ["car_state" + str(i) for i in range(nr_cars) if i != self.id]
 
         for s in state_sub_topics:
             rospy.Subscriber(s, cm.CarState, self.stateCallback, queue_size=10)
@@ -81,9 +81,6 @@ class Car:
 
     def stateCallback(self, msg):
 
-        if self.id == 1:
-            return
-
         if self.t - msg.t > 5: # old af message, flush queue. 
             return 
 
@@ -93,13 +90,20 @@ class Car:
         #if we have all measurements for a certain time-stamp perform risk estimation
         if all([(msg.t in d) for d in self.state_dicts]):
             ms = [d[msg.t] for d in self.state_dicts]
+            if self.id == 1: #only send one for now
+                
+                real_time = msg.t/(RATE*SLOWDOWN)
+                with open('debug.txt', 'a') as f:
+                    f.write(str((real_time, ms)) + "\n")
 
-            real_time = msg.t/(RATE*SLOWDOWN)
-            if self.fm:
-                self.risk_estimator = RiskEstimator(400, Intersection(), ms, np.eye(3)*0.1, 1.5, real_time)
-                self.fm = False
-            else:
-                self.risk_estimator.update_state(real_time, ms)
+                rospy.sleep(0.2)
+
+
+                #if self.fm:
+                #    self.risk_estimator = RiskEstimator(400, Intersection(), ms, np.eye(3)*0.1, 1.5, real_time)
+                #    self.fm = False
+                #else:
+                #    self.risk_estimator.update_state(real_time, ms)
                 
         
 
@@ -120,15 +124,13 @@ class Car:
         steering_angle = min(steering_angle, radians(25))
         steering_angle = max(steering_angle, radians(-25))
         
-        
         v = dt * self.speed/SLOWDOWN
         self.x += v * cos(self.theta)
         self.y += v * sin(self.theta)
         self.theta += v * tan(steering_angle) / carlength
         
         # follow speed profile
-        #targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.intention_stop)
-        targetspeed = self.course.fastspeed
+        targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.intention_stop)
         if targetspeed < self.speed:
             targetacc = self.course.catchup_deacc
             self.speed += dt*targetacc/SLOWDOWN

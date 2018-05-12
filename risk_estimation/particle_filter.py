@@ -1,6 +1,5 @@
 from copy import deepcopy
 import numpy as np
-import utils_re
 from E_estimate import Es_estimate
 from I_estimate import Is_estimate, Ic_estimate
 from PS_estimate import *
@@ -33,7 +32,7 @@ class ParticleFilter:
         P = initial_measurement[:3]
         S = initial_measurement[-1]
 
-        self.particles = utils_re.generate_inital_particles(intersection, P, S, n_particles, self.pose_covariance, self.speed_deviation)
+        self.particles = generate_inital_particles(intersection, P, S, n_particles, self.pose_covariance, self.speed_deviation)
         self.weights = [1.0 / self.n_particles] * self.n_particles
 
 
@@ -152,6 +151,23 @@ class ParticleFilter:
 
         return pose_likelihood * speed_likelihood
         
+
+def generate_inital_particles(intersection, initial_pose, initial_speed, nr_particles, pose_covariance, speed_deviation):
+    particles = []
+
+    for i in range(nr_particles):
+
+
+        Es = random.choice(("go", "stop"))
+        Is = random.choice(("go", "stop"))
+        Ic = random.choice(intersection.turns)
+    
+        P = np.random.multivariate_normal(initial_pose, pose_covariance)
+        S = np.random.normal(initial_speed, speed_deviation)
+
+        particles.append(particle_filter.StateVector(Es,Is,Ic,P,S))
+    
+    return particles
 
 
 class StateVector:

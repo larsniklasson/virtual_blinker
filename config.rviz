@@ -4,6 +4,11 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Marker1
+        - /Marker2
+        - /Marker3
+        - /Marker4
+        - /Marker5
         - /Path1
         - /Path2
         - /Path3
@@ -66,6 +71,14 @@ Visualization Manager:
       Value: true
     - Class: rviz/Marker
       Enabled: true
+      Marker Topic: rviz_car_marker0
+      Name: Marker
+      Namespaces:
+        virtualblinker: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
       Marker Topic: rviz_car_marker1
       Name: Marker
       Namespaces:
@@ -77,7 +90,7 @@ Visualization Manager:
       Marker Topic: rviz_car_marker2
       Name: Marker
       Namespaces:
-        virtualblinker: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -85,20 +98,12 @@ Visualization Manager:
       Marker Topic: rviz_car_marker3
       Name: Marker
       Namespaces:
-        virtualblinker: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: rviz_car_marker4
-      Name: Marker
-      Namespaces:
         {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: rviz_car_marker5
+      Marker Topic: rviz_car_marker4
       Name: Marker
       Namespaces:
         {}
@@ -124,7 +129,7 @@ Visualization Manager:
       Radius: 0.0299999993
       Shaft Diameter: 0.100000001
       Shaft Length: 0.100000001
-      Topic: rviz_car_path1
+      Topic: rviz_car_path0
       Unreliable: false
       Value: true
     - Alpha: 1
@@ -147,7 +152,7 @@ Visualization Manager:
       Radius: 0.0299999993
       Shaft Diameter: 0.100000001
       Shaft Length: 0.100000001
-      Topic: rviz_car_path2
+      Topic: rviz_car_path1
       Unreliable: false
       Value: true
     - Alpha: 1
@@ -170,7 +175,7 @@ Visualization Manager:
       Radius: 0.0299999993
       Shaft Diameter: 0.100000001
       Shaft Length: 0.100000001
-      Topic: rviz_car_path3
+      Topic: rviz_car_path2
       Unreliable: false
       Value: true
     - Alpha: 1
@@ -193,7 +198,7 @@ Visualization Manager:
       Radius: 0.0299999993
       Shaft Diameter: 0.100000001
       Shaft Length: 0.100000001
-      Topic: rviz_car_path4
+      Topic: rviz_car_path3
       Unreliable: false
       Value: true
     - Alpha: 1
@@ -216,7 +221,7 @@ Visualization Manager:
       Radius: 0.0299999993
       Shaft Diameter: 0.100000001
       Shaft Length: 0.100000001
-      Topic: rviz_car_path5
+      Topic: rviz_car_path4
       Unreliable: false
       Value: true
   Enabled: true

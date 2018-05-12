@@ -48,7 +48,7 @@ class Visualizer:
         
         self.marker_pubs = []
         self.path_pubs = []
-        for i in range(1,nr_cars+1):
+        for i in range(nr_cars):
 
             rospy.Subscriber('car_path' + str(i), cm.Path, self.pathCallback)
             rospy.Subscriber('car_state' + str(i), cm.CarState, self.stateCallback)

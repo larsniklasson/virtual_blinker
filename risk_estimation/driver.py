@@ -7,12 +7,12 @@ import time
 
 class RiskEstimator:
 
-    def __init__(self, n_particles, intersection, initial_measurements, pose_covariance, speed_deviation, init_time):
+    def __init__(self, n_particles, intersection, initial_measurements, pose_covariance, speed_deviation, init_time, plot=False, plot_folder=None):
 
+        self.plot_folder = plot_folder
+        self.plot = plot
         self.last_t = init_time
-
         travelling_directions = [intersection.getTravellingDirection(x, y, theta) for (x, y, theta, _) in initial_measurements]
-        print travelling_directions
         
         self.particle_filters = \
             [ParticleFilter(travelling_directions, intersection, n_particles, m, pose_covariance, speed_deviation) \
@@ -50,8 +50,8 @@ class RiskEstimator:
         
         risks, expectations = self.get_risk_and_expectations()
 
-        if (config.GENERAL_OPTIONS['plot-particles']):
-            plotter.plot_particles(self.particle_filters, measurements, t, risks) #TODO fix
+        if (self.plot):
+            plotter.plot_particles(self.particle_filters, measurements, t, risks, self.plot_folder)
 
 
     def get_risk_and_expectations(self):

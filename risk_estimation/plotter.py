@@ -8,10 +8,6 @@ import Intersection
 import math
 import config
 
-import glob
-
-import os
-
 def draw_arrow(fig,ax,vehicle_pose,length):
     x = vehicle_pose[0]
     y = vehicle_pose[1]
@@ -22,7 +18,7 @@ def draw_arrow(fig,ax,vehicle_pose,length):
 
 
 
-def plot_particles(particle_filter_list, measurement_vector, t, riskdict):
+def plot_particles(particle_filter_list, measurement_vector, t, riskdict, plot_folder):
     caption_text = ""
     fig , ax = plt.subplots(figsize=(10,10))
     ax.set_title("t = "+str(t)  + "\n" +str(riskdict) + "\n")
@@ -67,11 +63,9 @@ def plot_particles(particle_filter_list, measurement_vector, t, riskdict):
 
     ax.text(-axbound,-axbound,caption_text,fontsize=15)
 
-    pf = config.GENERAL_OPTIONS['plot-folder']
-
     
 
-    fig.savefig(pf + "/plot_" +str(int((round(time.time()*1000)))),dpi=100)
+    fig.savefig(plot_folder + "/plot_" +str(int((round(time.time()*1000)))),dpi=100)
     plt.close(fig)
     
     

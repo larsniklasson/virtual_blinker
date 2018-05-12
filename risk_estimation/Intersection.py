@@ -78,7 +78,6 @@ class Intersection:
 
 
     def getTravellingDirection(self, x, y, theta):
-        print 1, x, y, theta
         if theta > pi:
             theta -= 2*pi
         if theta < -pi:
@@ -96,6 +95,5 @@ class Intersection:
         if y < -7.5 and theta >= math.pi/4 and theta <= 3*math.pi/4:
             return "north"
         else:
-            print x, y, theta
             return None
 
