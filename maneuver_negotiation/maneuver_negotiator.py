@@ -190,7 +190,7 @@ class ManeuverNegotiator():
     print("reached retry")
 
     if(status == self.GET):
-      status = self.TRYGET
+      self.status = self.TRYGET
       message = "RELEASE," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
       if(self.many):
         for agents in self.agents_to_ask:
@@ -238,7 +238,7 @@ class ManeuverNegotiator():
     identity = 'me'
     #socket.identity = identity.encode('ascii')
     if (self.status == self.NORMAL or self.status == self.GRANT):
-      tag = [self.clock(), self.aID]
+      self.tag = [self.clock(), self.aID]
     if (self.status == self.NORMAL or self.status == self.TRYGET):
       self.status = self.TRYGET
 
@@ -261,7 +261,7 @@ class ManeuverNegotiator():
         else:
           self.D.add(str(self.agents_to_ask))
           self.R.add(str(self.agents_to_ask))  
-        message = "GET," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(tag[0]) + "," + str(tag[1])
+        message = "GET," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
         print(message)
         if(self.last()):
           self.status = self.EXECUTE
@@ -311,8 +311,6 @@ class ManeuverNegotiator():
 
         self.tRetry = Timer(self.T_RETRY, self.t_retry)
         self.tRetry.start()
-
-
     elif (self.status == self.GRANT):
       self.status = self.DELAY_GET
 
@@ -390,9 +388,22 @@ class ManeuverNegotiator():
     # global t_grant
     # global grantID
     # global T_RETRY
+    print ("received " + str(message))
+
+    #when messages are recived, udp sends data as is without any formatting,
+    #so normal string splitting in here works.
+    #but if messeges were sent via ros, the message received has a data field, and to get
+    #the actual data, invoke message.data to get them. so depending on communication method,
+    #things will change to accomodate this:
+
     print(self.clock()-t <= self.time_delay)
     if (self.clock() - t <= self.time_delay):
-      message_split = message.split(',')
+      if (self.communication_details == 1): #if using ros:
+        #received string is 'data: "GET,1,1,1,1,1,1,1"' without single quotes,
+        # first split extracts the "GET,1,1,1,1,1,1,1" and the second split separates them like usual
+        message_split = message.split('"')[1::2][0].split(',')
+      else:
+        message_split = message.split(',')
       m_dict = {"Type":message_split[0], "Sender":message_split[1], "Time":message_split[2],
                 "Position":message_split[3], "Velocity":message_split[4], "Acc":message_split[5],
                 "TagTime":message_split[6], "TagID":message_split[7]}
@@ -448,6 +459,7 @@ class ManeuverNegotiator():
             (self.status == self.NORMAL or self.status == self.TRYGET or
             (self.status == self.GET and self.precedes(m_dict["TagTime"])) or
             ((self.status == self.GRANT or self.status == self.DELAY_GET) and self.grantedID(m_dict["TagID"])))):
+          print("not conlicted")
           if (self.status == self.NORMAL):
             self.status = self.GRANT
             self.grantID = m_dict["TagID"]
@@ -455,6 +467,8 @@ class ManeuverNegotiator():
             self.tRetry.cancel()
             self.status = self.DELAY_GET
             self.grantID = m_dict["TagID"]
+
+
           if (self.status == self.GET):
             for agents in self.D:
               #tmp = "tcp://localhost:" + agents
@@ -532,7 +546,9 @@ class ManeuverNegotiator():
     #self.other_cars is a dictionary where key is the agent id of the other cars and value is the rospy.pulisher handle
     #so that we can use that to send messages when we want it.
     self.other_cars = {}
-
+    if (self.communication_details == 1):
+      self.sub = rospy.Subscriber(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['maneuver-negotiation-topics'][self.aID][0], \
+                                 std_msgs.msg.String, self.ros_message_processor)
 
   #repurpose this: 
   def choose_leader_processor(self, data):
@@ -576,8 +592,9 @@ class ManeuverNegotiator():
       #in the ros implementation, i call the clock() inside ros_message_processor, and then 
       #pass the gotten string from the message into message_processing along with the clock() value.
       #hope thats not a problem
-      self.sub = rospy.Subscriber(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['maneuver-negotiation-topics'][self.aID][0], \
-                                 std_msgs.msg.String, self.ros_message_processor)
+      # self.sub = rospy.Subscriber(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['maneuver-negotiation-topics'][self.aID][0], \
+                                #  std_msgs.msg.String, self.ros_message_processor)
+      # above code commented because it is now done by setup_ros()
       pass
 
   def ros_message_processor(self,data):
