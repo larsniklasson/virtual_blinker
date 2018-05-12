@@ -183,7 +183,7 @@ class ManeuverNegotiator():
     # return int(self.ros_measurements.cs2.acceleration)
 
 
-  def t_retry(self):
+  def t_retry(self,intended_course=None):
     status = self.status
     agents_to_ask = self.agents_to_ask
     #host_ip = self.host_ip
@@ -192,6 +192,9 @@ class ManeuverNegotiator():
     if(status == self.GET):
       self.status = self.TRYGET
       message = "RELEASE," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
+      if (intended_course is not None):
+        message = "RELEASE," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1] + "," + str(intended_course))
+
       if(self.many):
         for agents in self.agents_to_ask:
           print(message)
@@ -217,7 +220,7 @@ class ManeuverNegotiator():
     return [stat["mtime"], 1, str(ask_these)]
 
 
-  def tryManeuver(self):
+  def tryManeuver(self,intended_course=None):
     #global status
     #global agent_state
     #global agent
@@ -262,6 +265,8 @@ class ManeuverNegotiator():
           self.D.add(str(self.agents_to_ask))
           self.R.add(str(self.agents_to_ask))  
         message = "GET," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
+        if (intended_course is not None):
+          message = "GET," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1] + "," + str(intended_course))
         print(message)
         if(self.last()):
           self.status = self.EXECUTE
@@ -323,6 +328,8 @@ class ManeuverNegotiator():
     sender_position = mAR[2]
     sender_velocity = mAR[3]
     sender_acceleration = mAR[4]
+    if(len(mAR)>5):
+      sender_course = mAR[5]
 
     print("mAR : {0}".format(mAR))
     #print("GRANT ID RIGHT NOW IS: %i", grantID)
@@ -407,6 +414,8 @@ class ManeuverNegotiator():
       m_dict = {"Type":message_split[0], "Sender":message_split[1], "Time":message_split[2],
                 "Position":message_split[3], "Velocity":message_split[4], "Acc":message_split[5],
                 "TagTime":message_split[6], "TagID":message_split[7]}
+      if (len(message_split) > 8):
+        m_dict["IntendedCourse"] = message_split[8]
       print("status: " + str(self.status))
       if((m_dict["Type"] == "GRANT" or m_dict["Type"] == "DENY") and self.status == self.GET):
         print("Received a grant or deny and status == get")
@@ -453,6 +462,8 @@ class ManeuverNegotiator():
       elif (m_dict["Type"] == "GET"):
         mAR = [m_dict["Sender"], m_dict["Time"], m_dict["Position"], m_dict["Velocity"],
               m_dict["Acc"]]
+        if (len(message_split) > 8):
+          mAR.append(m_dict["IntendedCourse"])
         #in romi code, time is converted into int
         #if (no_conflict(mAR, int(m_dict["Time"]) + 2*time_delay + TMan) and
         if (self.no_conflict(mAR, float(m_dict["Time"]) + 2*self.time_delay + self.TMan) and
