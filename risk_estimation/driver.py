@@ -12,16 +12,21 @@ class RiskEstimator:
     def __init__(self, n_particles, intersection, initial_measurements, pose_covariance, speed_deviation, init_time, plot=False):
 
         self.intersection = intersection
-        self.plot = plot
+        self.plot = plot #boolean
         self.last_t = init_time
+
+        #get initial directions that the vehicle are travelling towards
         travelling_directions = [intersection.getTravellingDirection(x, y, theta) for (x, y, theta, _) in initial_measurements]
 
+        #initialize the particle filters
         self.particle_filters = \
             [ParticleFilter(travelling_directions, self.intersection, n_particles, m, pose_covariance, speed_deviation) \
                 for m in initial_measurements]
 
 
-
+    #todo this is quite ugly, fix this
+    #todo save ego-id in RiskEstimator class
+    # sets override intention
     def setKnownIc(self, id, Ic):
         self.particle_filters[id].setKnownIc(Ic)
     def removeKnownIc(self, id):
@@ -48,9 +53,9 @@ class RiskEstimator:
             plotter.plot_particles(self.particle_filters, measurements, t, plot_folder)
 
 
+    # probability(Es = "go")
     def getExpectation(self, id):
         return self.particle_filters[id].Es_density["go"]
-
 
     def get_risk(self):
         risks = []

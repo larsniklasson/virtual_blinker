@@ -3,7 +3,6 @@ import utils
 import Intersection
 import numpy as np
 
-
 def PS_estimate(p, travelling_direction, intersection, interval, pose_covariance, speed_deviation):
     c = intersection.courses[travelling_direction, p.Ic]
     xnew, ynew, thetanew, newspeed = c.predictNextState(p.P[0], p.P[1], p.P[2], p.S, interval, p.Is)

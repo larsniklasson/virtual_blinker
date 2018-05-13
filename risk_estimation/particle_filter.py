@@ -15,36 +15,48 @@ class ParticleFilter:
         self.weights = []
         
         self.n_particles = n_particles
+
+        #travelling directions for all the vehicles
         self.travelling_directions  = travelling_directions
+
         self.intersection = intersection
 
-        self.position_covariance =  pose_covariance[np.ix_([0,2],[0,2])]
 
+        self.position_covariance =  pose_covariance[np.ix_([0,2],[0,2])]
         self.theta_deviation = pose_covariance[2][2]
+
         self.pose_covariance  = pose_covariance
         self.speed_deviation = speed_deviation
 
-
+        #resampling threshold
         self.neff_threshold = self.n_particles / 2
 
         P = initial_measurement[:3]
         S = initial_measurement[-1]
 
+        #place first gen particles around first measurement
         self.particles = generate_inital_particles(intersection, P, S, n_particles, self.pose_covariance, self.speed_deviation)
         self.weights = [1.0 / self.n_particles] * self.n_particles
 
+        #doesn't matter what to put here
         self.most_likely_state = StateVector("go", "go", "straight", P, S)
         
+        #is changed if intention overridden
         self.known_Is = None
         self.known_Ic = None
 
+        #densities for Es, Is, Ic. Are updated after one time step. Most likely state is
+        # derived from this. I saved this mainly to be able to use this in the plot
         self.Es_density = {"go": 0.5, "stop":0.5}
         self.Is_density = {"go": 0.5, "stop":0.5}
         turns = intersection.turns
         self.Ic_density = {t: 1.0/len(turns) for t in turns}
-        self.best_P = P #TODO maybe take weighted avg of top 10 particles here 
+
+        #best P and S, also used when calculating most likely state
+        self.best_P = P 
         self.best_S = S
 
+    #override functions. Updates existing particles as well.#TODO unclear if this is better or not
     def setKnownIc(self, Ic):
         self.known_Ic = Ic
         for p in self.particles:
@@ -61,16 +73,17 @@ class ParticleFilter:
     def removeKnownIc(self, Ic):
         self.known_Ic = None
 
-
+    #method used in resampling step 
     def neff(self, weights):
         return 1. / np.sum(np.square(weights))
 
-    def getDensities(self):
+    # find density of Es, Is and Ic.
+    def updateDensities(self):
         
+        #zero out these
         for k in self.Es_density:
             self.Es_density[k] = 0
             self.Is_density[k] = 0
-            
         for t in self.Ic_density:
             self.Ic_density[t] = 0
         
@@ -79,26 +92,29 @@ class ParticleFilter:
             self.Is_density[p.Is] += w
             self.Ic_density[p.Ic] += w
 
+        #TODO maybe take weighted avg of top 10 particles here 
         i = np.argmax(self.weights)
         self.best_P = self.particles[i].P
         self.best_S = self.particles[i].S
 
     
     def get_most_likely_state(self):
-
+        #get key with highest value from dictionaries
         Es = max(self.Es_density, key=self.Es_density.get)
         Ic = max(self.Ic_density, key=self.Ic_density.get)
         Is = max(self.Is_density, key=self.Is_density.get)
 
         return StateVector(Es, Is, Ic, self.best_P, self.best_S)
         
-
+    
     def step_time(self, id, measurement_vector, most_likely_states, interval):
         new_particles = []
         for p in self.particles:
+            #project new state
 
             new_Es = Es_estimate(id, p, self.travelling_directions, self.intersection, most_likely_states)
 
+            #TODO this is a bit ugly
             if self.known_Is:
                 new_Is = self.known_Is
             else:
@@ -110,13 +126,14 @@ class ParticleFilter:
                 new_Ic = Ic_estimate(p.Ic, self.intersection.turns)
 
             new_P, new_S = PS_estimate(p, self.travelling_directions[id], self.intersection, interval, self.pose_covariance, self.speed_deviation)
+            
             new_particles.append(StateVector(new_Es ,new_Is, new_Ic, new_P, new_S))
             
 
         new_weights = [self.likelihood(p, measurement_vector) for p in new_particles]
 
 
-        #normalize
+        #normalize weights
         w_sum = float(sum(new_weights))
         new_weights = [w/w_sum for w in new_weights]
 
@@ -126,19 +143,25 @@ class ParticleFilter:
         # This is a sampling importance resampling. 
         # http://people.math.aau.dk/~kkb/Undervisning/Bayes14/sorenh/docs/sampling-notes.pdf
         if self.neff(new_weights) < self.neff_threshold:
+            #indices of particles to resample
             indices_resample = np.random.choice(range(self.n_particles), self.n_particles, p = new_weights)
+
+            #make new list of particles
             new_particles = [new_particles[i] for i in indices_resample]
+
+            #we need the weights of the resampled particles
             new_weights = [new_weights[i] for i in indices_resample]
 
-        #normalize
+        #normalize the weights again
         w_sum = float(sum(new_weights))
         new_weights = [w/w_sum for w in new_weights]
 
-        
+        #update global lists
         self.particles = new_particles
         self.weights = new_weights
 
-        self.getDensities()
+        #update the densities for the state variables
+        self.updateDensities()
             
 
         

@@ -1,8 +1,7 @@
 import math
 import scipy
-#all gap model calculations go here.
 
-
+#Placeholder general gap model 
 def gap_model(gap):
     #https://en.wikipedia.org/wiki/Logistic_function
     
