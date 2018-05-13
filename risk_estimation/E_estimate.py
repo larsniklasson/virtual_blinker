@@ -22,17 +22,17 @@ def Es_estimate(carid, particle, travelling_directions, intersection, most_likel
     blob = blob[:carid] + blob[carid+1:]
 
 
-    ego_ttc = ego_course.getTimeToCrossing(ego_P[0], ego_P[1], ego_P[2], ego_S, False)
+    ego_ttc = ego_course.getTimeToCrossing(ego_P[0], ego_P[1], ego_P[2], ego_S, "go")
 
     min_go = 1
     for td, st in blob:
         if not td:continue
-        if not intersection.hasRightOfWay(ego_travelling_direction, ego_Ic, td): continue
+        if intersection.hasRightOfWay(ego_travelling_direction, ego_Ic, td): continue
 
         c = intersection.courses[td, st.Ic]
         if c.hasLeftIntersection(*st.P): continue
         
-        ttc = c.getTimeToCrossing(*st.P, speed = st.S, intention_stop = st.Ic)
+        ttc = c.getTimeToCrossing(*st.P, speed = st.S, Is = st.Is)
         gap = ttc - ego_ttc
         
         go = gap_models.gap_model(gap)

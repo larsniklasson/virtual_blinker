@@ -17,15 +17,21 @@ def draw_arrow(fig,ax,vehicle_pose,length):
 
 
 
-def plot_particles(particle_filter_list, measurement_vector, t, riskdict, plot_folder):
+def plot_particles(p_filters, measurement_vector, t, riskdict, plot_folder):
     caption_text = ""
-    fig , ax = plt.subplots(figsize=(10,10))
-    ax.set_title("t = "+str(t)  + "\n" +str(riskdict) + "\n")
+    
+    fig , ax = plt.subplots(figsize=(15,15))
+    
+    ax.set_title("t = " + str(t))
+    
     ax.spines['left'].set_position('center')
     ax.spines['bottom'].set_position('center')
-    axbound = 90
-    plt.xlim(-axbound, axbound)
-    plt.ylim(-axbound, axbound)
+
+    xlim = (-125, 125)
+    ylim = (-125, 125)
+
+    plt.xlim(*xlim)
+    plt.ylim(*ylim)
     plt.autoscale(False)
     ax.add_patch(
         patches.Rectangle(
@@ -36,31 +42,37 @@ def plot_particles(particle_filter_list, measurement_vector, t, riskdict, plot_f
         )
     )
     
-    for i,pfilter in enumerate(particle_filter_list):
-        poses = [x.P for x in pfilter.particles]
-        vehicle_state = pfilter.get_most_likely_state()
-        x = [q[0] for q in poses]
-        y = [q[1] for q in poses]
-        #theta = [q[2] for q in poses]
-        vehicle_text  = "Vehicle {0}:\n Expectation = {1}\n Intention = {2}\n Intended course = {3}\nDirection = {4} deg \n\n"
-        caption_text  = caption_text + vehicle_text.format(i,vehicle_state.Es,\
-                        vehicle_state.Is,\
-                        vehicle_state.Ic,\
-                        round(math.degrees(vehicle_state.P[2]),1))
-        
-        ax.scatter(x,y,c=str(i),s=1)
-        ax.scatter(vehicle_state.P[0],vehicle_state.P[1],c='y')
-        ax.scatter(measurement_vector[0][0],measurement_vector[0][1],c='r')
-        ax.scatter(measurement_vector[1][0],measurement_vector[1][1],c='r')
-        draw_arrow(fig,ax, vehicle_state.P,2)
-    
-    
-    #ax.scatter(measurement_vector[0][0],measurement_vector[0][1],c='r')
-    #ax.text(measurement_vector[0][0],measurement_vector[0][1] - 20,"vehicle 0",fontsize=12)
-    #ax.scatter(measurement_vector[1][0],measurement_vector[1][1],c='r')
-    #ax.text(measurement_vector[1][0] + 20,measurement_vector[1][1],"vehicle 1",fontsize=12)
+    for i, pfilter in enumerate(p_filters):
+        x = [p.P[0] for p in pfilter.particles]
+        y = [p.P[1] for p in pfilter.particles]
+        best_P = pfilter.best_P
+        best_S = pfilter.best_S
 
-    ax.text(-axbound,-axbound,caption_text,fontsize=15)
+        caption_Es = {k:round(v,2) for k, v in pfilter.Es_density.iteritems()}
+        caption_Is = {k:round(v,2) for k, v in pfilter.Is_density.iteritems()}
+        caption_Ic = {k:round(v,2) for k, v in pfilter.Ic_density.iteritems()}
+        caption_P = [round(field,2) for field in best_P]
+        caption_S = round(best_S,2)
+
+        vehicle_text  = "Id {0}:\n Es = {1}\n Is = {2}\n Is = {3}\n Best Pose = {4} \n Best speed = {5} \n\n"
+        caption_text  = caption_text + vehicle_text.format( \
+                                            i, \
+                                            caption_Es,\
+                                            caption_Is,\
+                                            caption_Ic,\
+                                            caption_P,\
+                                            caption_S)
+        
+        ax.scatter(x, y, c=str(i), s=1)
+        ax.scatter(best_P[0], best_P[1], c='y')
+        for m in measurement_vector:
+
+            ax.scatter(m[0],m[1], c='r')
+        
+        draw_arrow(fig, ax, best_P, 2)
+    
+
+    ax.text(xlim[0],ylim[0] ,caption_text,fontsize=15)
 
     
 

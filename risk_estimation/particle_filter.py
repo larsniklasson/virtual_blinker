@@ -25,9 +25,6 @@ class ParticleFilter:
         self.speed_deviation = speed_deviation
 
 
-        self.posterior_particles = [] 
-        self.posterior_weights = []
-
         self.neff_threshold = self.n_particles / 2
 
         P = initial_measurement[:3]
@@ -36,35 +33,49 @@ class ParticleFilter:
         self.particles = generate_inital_particles(intersection, P, S, n_particles, self.pose_covariance, self.speed_deviation)
         self.weights = [1.0 / self.n_particles] * self.n_particles
 
+        self.most_likely_state = StateVector("go", "go", "straight", P, S)
+        
+
+        self.Es_density = {"go": 0.5, "stop":0.5}
+        self.Is_density = {"go": 0.5, "stop":0.5}
+        turns = intersection.turns
+        self.Ic_density = {t: 1.0/len(turns) for t in turns}
+        self.best_P = P #TODO maybe take weighted avg of top 10 particles here 
+        self.best_S = S
+
 
     def neff(self, weights):
         return 1. / np.sum(np.square(weights))
 
-    
-    def get_most_likely_state(self):
+    def getDensities(self):
         
-        blob = zip(self.particles, self.weights)
-
-        Es_stop_weights_sum = sum([w for (p, w) in blob if p.Es == "stop"])
-        new_Es = "stop" if Es_stop_weights_sum > 0.5 else "go"
-
-        Is_stop_weights_sum = sum([w for (p, w) in blob if p.Is == "stop"])
-        new_Is = "stop" if Is_stop_weights_sum > 0.5 else "go"
-
-
-        turn_weights = {t : 0 for t in self.intersection.turns}
-        for p,w in blob:
-            turn_weights[p.Ic] += w
-        new_Ic = max(turn_weights, key=turn_weights.get)
-
+        for k in self.Es_density:
+            self.Es_density[k] = 0
+            self.Is_density[k] = 0
+            
+        for t in self.Ic_density:
+            self.Ic_density[t] = 0
+        
+        for p, w in zip(self.particles, self.weights):
+            self.Es_density[p.Es] += w
+            self.Is_density[p.Is] += w
+            self.Ic_density[p.Ic] += w
 
         i = np.argmax(self.weights)
-        new_P = self.particles[i].P
-        new_S = self.particles[i].S
+        self.best_P = self.particles[i].P
+        self.best_S = self.particles[i].S
 
-        return StateVector(new_Es,new_Is,new_Ic,new_P,new_S)
+    
+    def get_most_likely_state(self):
 
-    def step_time(self, id, measurement_vector, most_likely_states, interval, Is_override, Ic_override):
+        Es = max(self.Es_density, key=self.Es_density.get)
+        Ic = max(self.Ic_density, key=self.Ic_density.get)
+        Is = max(self.Is_density, key=self.Is_density.get)
+
+        return StateVector(Es, Is, Ic, self.best_P, self.best_S)
+        
+
+    def step_time(self, id, measurement_vector, most_likely_states, interval, Ic_override, Is_override):
         new_particles = []
         for p in self.particles:
 
@@ -83,8 +94,8 @@ class ParticleFilter:
             new_P, new_S = PS_estimate(p, self.travelling_directions[id], self.intersection, interval, self.pose_covariance, self.speed_deviation)
             new_particles.append(StateVector(new_Es ,new_Is, new_Ic, new_P, new_S))
             
-        
-        new_weights = [self.likelihood(p, measurement_vector) for p in self.particles]
+
+        new_weights = [self.likelihood(p, measurement_vector) for p in new_particles]
 
 
         
@@ -102,8 +113,15 @@ class ParticleFilter:
             new_particles = [new_particles[i] for i in indices_resample]
             new_weights = [new_weights[i] for i in indices_resample]
 
+        #normalize
+        w_sum = float(sum(new_weights))
+        new_weights = [w/w_sum for w in new_weights]
+
+        
         self.particles = new_particles
         self.weights = new_weights
+
+        self.getDensities()
             
 
         
@@ -137,7 +155,7 @@ class ParticleFilter:
         upper_bound = mean_theta + math.pi
         lower_bound = mean_theta - math.pi
 
-        while (theta < lower_bound or theta > upper_bound):
+        while (theta < lower_bound or theta > upper_bound): #TODO make this look better, surely should not be necessary to have a while here?
             if theta < lower_bound:
                 theta += math.pi*2
             if theta > upper_bound:
@@ -167,7 +185,6 @@ def generate_inital_particles(intersection, initial_pose, initial_speed, nr_part
         S = np.random.normal(initial_speed, speed_deviation)
 
         particles.append(StateVector(Es,Is,Ic,P,S))
-    
     return particles
 
 

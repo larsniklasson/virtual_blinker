@@ -16,13 +16,13 @@ from risk_estimation.driver import *
 from collections import OrderedDict
 from risk_estimation.Intersection import *
 
-SLOWDOWN = 1
+SLOWDOWN = 5
 
 KP = 0.4
 KI = 0.00
 KD = 0.05
 
-RATE = 50.0/SLOWDOWN
+RATE = 20.0/SLOWDOWN
 
 windup_guard = 100
 
@@ -59,9 +59,9 @@ class Car:
         self.state_pub = rospy.Publisher('car_state' + str(self.id), cm.CarState, queue_size=10)
         self.path_pub = rospy.Publisher('car_path' + str(self.id), cm.Path, queue_size=10)
 
-
-        self.intention_stop = False
-        self.speed = self.course.getSpeed(self.x, self.y, self.theta, self.intention_stop)
+        
+        self.Is = "go"
+        self.speed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
 
 
         path = self.course.getPath()
@@ -93,17 +93,31 @@ class Car:
             if self.id == 1: #only send one for now
                 
                 real_time = msg.t/(RATE*SLOWDOWN)
-                with open('debug.txt', 'a') as f:
-                    f.write(str((real_time, ms)) + "\n")
+                
+                plt = True
+                use = True
+                save = True
+            
+                if save:
+                    with open('../risk_estimation/debug.txt', 'a') as f:
+                        f.write(str((real_time, ms)) + "\n")
+                
+                if self.fm:
+                    if save: open('../risk_estimation/debug.txt', 'w').close()
 
-                rospy.sleep(0.2)
+                    self.risk_estimator = RiskEstimator(400, Intersection(), ms, np.eye(3)*0.05, 0.05, real_time, plt, "/home/lars/catkin_ws/src/virtual_blinker/risk_estimation/plotfolder")
+                    self.fm = False
+                else:
+                    if use:
+                        self.risk_estimator.setKnownIc(self.id, self.course.turn)
+                        self.risk_estimator.setKnownIs(self.id, self.Is)
+                    self.risk_estimator.update_state(real_time, ms)
+                    if use: 
+                        es_go = self.risk_estimator.getExpectation(self.id)
+                        print es_go
+                        self.Is = "go" if es_go > 0.5 else "stop"
+                    print "updated"
 
-
-                #if self.fm:
-                #    self.risk_estimator = RiskEstimator(400, Intersection(), ms, np.eye(3)*0.1, 1.5, real_time)
-                #    self.fm = False
-                #else:
-                #    self.risk_estimator.update_state(real_time, ms)
                 
         
 
@@ -130,7 +144,7 @@ class Car:
         self.theta += v * tan(steering_angle) / carlength
         
         # follow speed profile
-        targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.intention_stop)
+        targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
         if targetspeed < self.speed:
             targetacc = self.course.catchup_deacc
             self.speed += dt*targetacc/SLOWDOWN

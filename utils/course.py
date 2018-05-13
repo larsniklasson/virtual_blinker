@@ -137,13 +137,13 @@ class Course:
         return x0, y0, theta0
         
     
-    def getSpeed(self, x, y, theta, intention_stop):
+    def getSpeed(self, x, y, theta, Is):
         
         x,y,theta = self.rotate(x,y, theta)
 
         #get distance travelled and lookup speed
         d = self.getDistance(x,y, theta)
-        if intention_stop:
+        if Is == "stop":
             return self.sp_stop.getSpeed(d)
         else:
             return self.sp_go.getSpeed(d)
@@ -173,11 +173,11 @@ class Course:
         x,y,theta = self.rotate(x,y,theta)
         d = self.getDistance(x, y, theta)
         if self.turn == "straight":
-            return d >= self.distance_to_crossing + 7.5*2
+            return d >= self.distance_to_crossing + 7.5*2-2.5
         else:
-            return d >= self.distance_to_crossing + self.radius*pi/2
+            return d >= self.distance_to_crossing + self.radius*pi/2-2.5
     
-    def getTimeToCrossing(self, x, y, theta, speed, intention_stop):
+    def getTimeToCrossing(self, x, y, theta, speed, Is):
         x,y,theta = self.rotate(x,y,theta)
 
         #get distance and lookup time to crossing
@@ -185,19 +185,19 @@ class Course:
         if d >= self.distance_to_crossing:
             return 0
         else:
-            if intention_stop:
+            if Is == "stop":
                 return self.sp_stop.getTimeToCrossing(d, speed)
             else:
                 return self.sp_go.getTimeToCrossing(d, speed)
 
     
-    def predictNextState(self, x, y, theta, speed, t, intention_stop):
+    def predictNextState(self, x, y, theta, speed, t, Is):
 
         x,y,theta = self.rotate(x,y,theta)
 
         #lookup current distance and then predict the distance (and speed) after t sec
         d = self.getDistance(x,y,theta)
-        if intention_stop:
+        if Is == "stop":
             newd, newspeed = self.sp_stop.predict(d, speed, t)
         else:
             newd, newspeed = self.sp_go.predict(d, speed, t)
@@ -254,7 +254,7 @@ class Course:
         #if old position was off (in x direction), new one should be off as well
         p_old = self.getPose(old_d)
         p_new = self.getPose(newd)
-        if self.turn == "straight" or p_old[0] > self.curve_end[0]:
+        if self.turn == "straight" or (self.turn == "left" and p_old[0] > self.curve_end[0]) or (self.turn == "right" and p_old[0] < self.curve_end[0]):
             return (p_new[0] - (p_old[0] - x), p_new[1], p_new[2])
         else:
             return p_new

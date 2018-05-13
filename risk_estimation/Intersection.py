@@ -60,9 +60,9 @@ class Intersection:
 
         if abs(diff) == 2:
             return "opposing"
-        elif diff == -1:
-            return "leftof"
         elif diff == 1:
+            return "leftof"
+        elif diff == -1:
             return "rightof"
 
     def hasRightOfWay(self, travelling_direction, turn, other_vehicle_td):

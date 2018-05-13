@@ -56,7 +56,7 @@ class SpeedProfile:
                 else:
                     #t too small to catch up. This means we only follow r. 
                     new_distance =  r.getUpperLimit(t, distance)
-                    newspeed = speed * t * acc
+                    newspeed = speed + t * acc
                     break
         
         return new_distance, newspeed
@@ -92,13 +92,13 @@ class SpeedProfile:
         ideal_speed = function_list[0][1].getValue(distance)
 
         if speed > ideal_speed:
-            #speed up
+            #slow down 
             acc = self.catchup_deacc
         elif speed == ideal_speed:
             #alread matching profile
             return self.getTimeToCrossingFollowProfile(distance)
         else:
-            #slow down
+            #speed up
             acc = self.catchup_acc
 
         r = getRootFunction(distance,speed,acc)
@@ -150,7 +150,7 @@ class HorizontalLineFunction:
     #get intersection point (x value) of the point where f intersects sqrt(a*x+b)
     def solveRoot(self, f):
         a = f.a
-        b = f.a
+        b = f.b
         return (self.k**2-b)/a
 
 #Constant acceleration in a distance-speed diagram => f(x) = sqrt(a*x + b)
@@ -164,7 +164,7 @@ class RootFunction:
     
     #integrate 1/x
     def solveInverseIntegral(self, a, b):
-        f = lambda x: 2*sqrt(self.a*x + self.b)/self.a
+        f = lambda x: 2*sqrt(max(self.a*x + self.b, 0))/self.a
         return f(b) - f(a)
 
     def getUpperLimit(self, t, a):

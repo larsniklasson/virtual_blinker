@@ -7,7 +7,7 @@
 <arg name="nr_cars" default="2"/>
 
 <param name="car0" type="string" value="south straight 0"/>
-<param name="car1" type="string" value="east left 10"/>
+<param name="car1" type="string" value="east straight 80"/>
 <param name="car2" type="string" value="east left 50"/>
 <param name="car3" type="string" value="west left 50"/>
 
