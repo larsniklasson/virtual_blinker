@@ -5,13 +5,14 @@ import config
 import csv
 import time
 #this is the master python file that combines everything.
+from threading import Thread, Lock
 
 class risk_estimator:
     # assumptions:
     # never initialize the class with vechiles already inside the intersection
     # ie. vehicles are either approaching or leaving intersection
 
-    def __init__(self, n_particles, interval,intersection_info,initial_measurements,pose_covariance,speed_deviation,initial_courses):
+    def __init__(self, n_particles, interval,intersection_info,initial_measurements,pose_covariance,speed_deviation,initial_courses,global_mutex=None):
         #initial_measurement will be a list of (x,y,theta,speed)
 
         self.n_vehicles = len(initial_measurements)
@@ -27,6 +28,11 @@ class risk_estimator:
         #last timestamp received. This is useful when interval varies from 
         #instant to instant. -1 means we have not received a measurement yet
         self.last_t = -1
+
+        #the get risk method may be called by other threads.
+        #this mutex is used to prevent two threads accessing the same thread
+        #at same time
+        self.mutex = global_mutex
 
         # this class should inform each vehicles particle filter if the entering direction
         # is changed (eg when it has left intersection, turned around and entered from this
@@ -90,11 +96,14 @@ class risk_estimator:
             risks = [x[1] for x in risk.items()]
             risks.insert(0,t)
             self.csvwriter.writerow(risks)
+        
 
     
 
-    def get_expectation_Es(self):
+    def get_expectation_Es(self,intended_course=None):
         #compute expectation of Es:
+        # if intended_course given, compute p(ic != es | ic = x)
+        # useful to measure expectation on a certain maneuver
         expectations = OrderedDict()
 
         for k, pfilter in self.p_filterset.items():
@@ -102,7 +111,11 @@ class risk_estimator:
             expectation = 0.
             for i,s in enumerate(pfilter.posterior_particles):
                 weight = pfilter.posterior_weights[i]
-                expectation = expectation + (s.Es*weight)
+                if (intended_course is not None):
+                    if (intended_course == s.Ic):
+                        expectation = expectation + (s.Es*weight)
+                else:
+                    expectation = expectation + (s.Es*weight)
 
 
 

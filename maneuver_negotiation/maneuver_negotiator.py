@@ -83,7 +83,7 @@ class ManeuverNegotiator():
     #global host_ip = '127.0.0.1'
     self.host_ip = '127.0.0.1'
     #intersection at which the cars are setup
-    intersection = None
+    self.intersection = intersection 
     #port_prefix = '900'
 
     #all measurements are updated to this variable
