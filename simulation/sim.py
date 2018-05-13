@@ -16,7 +16,7 @@ from risk_estimation.driver import *
 from collections import OrderedDict
 from risk_estimation.Intersection import *
 
-SLOWDOWN = 5
+SLOWDOWN = 2
 
 KP = 0.4
 KI = 0.00
@@ -90,12 +90,14 @@ class Car:
         #if we have all measurements for a certain time-stamp perform risk estimation
         if all([(msg.t in d) for d in self.state_dicts]):
             ms = [d[msg.t] for d in self.state_dicts]
+            
+            
             if self.id == 1: #only send one for now
                 
                 real_time = msg.t/(RATE*SLOWDOWN)
                 
-                plt = True
-                use = True
+                plot = False
+                closed_loop = True
                 save = True
             
                 if save:
@@ -103,20 +105,23 @@ class Car:
                         f.write(str((real_time, ms)) + "\n")
                 
                 if self.fm:
-                    if save: open('../risk_estimation/debug.txt', 'w').close()
+                    if save: open('../risk_estimation/debug.txt', 'w').close() #empty the file
 
-                    self.risk_estimator = RiskEstimator(400, Intersection(), ms, np.eye(3)*0.05, 0.05, real_time, plt, "/home/lars/catkin_ws/src/virtual_blinker/risk_estimation/plotfolder")
+                    self.risk_estimator = RiskEstimator(400, Intersection(), ms, np.eye(3)*0.05, 0.05, real_time, plot)
                     self.fm = False
+                    self.risk_estimator.setKnownIc(self.id, self.course.turn)
+                    self.risk_estimator.setKnownIs(self.id, self.Is)
+                
                 else:
-                    if use:
-                        self.risk_estimator.setKnownIc(self.id, self.course.turn)
-                        self.risk_estimator.setKnownIs(self.id, self.Is)
+                        
                     self.risk_estimator.update_state(real_time, ms)
-                    if use: 
-                        es_go = self.risk_estimator.getExpectation(self.id)
-                        print es_go
-                        self.Is = "go" if es_go > 0.5 else "stop"
-                    print "updated"
+                    if closed_loop: 
+                        es_go = self.risk_estimator.getExpectation(self.id)  
+                        print "Expectation to go: ", es_go
+                        old_is = self.Is
+                        self.Is = "go" if es_go > 0.5 else "stop" 
+                        if old_is != self.Is:
+                            self.risk_estimator.setKnownIs(self.id, self.Is)
 
                 
         

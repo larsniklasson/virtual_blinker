@@ -34,7 +34,6 @@ def Es_estimate(carid, particle, travelling_directions, intersection, most_likel
         
         ttc = c.getTimeToCrossing(*st.P, speed = st.S, Is = st.Is)
         gap = ttc - ego_ttc
-        
         go = gap_models.gap_model(gap)
         if go < min_go:
             min_go = go

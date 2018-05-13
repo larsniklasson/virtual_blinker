@@ -6,6 +6,7 @@ import matplotlib.patches as patches
 import time
 import Intersection
 import math
+import os
 
 def draw_arrow(fig,ax,vehicle_pose,length):
     x = vehicle_pose[0]
@@ -17,7 +18,7 @@ def draw_arrow(fig,ax,vehicle_pose,length):
 
 
 
-def plot_particles(p_filters, measurement_vector, t, riskdict, plot_folder):
+def plot_particles(p_filters, measurement_vector, t, plot_folder):
     caption_text = ""
     
     fig , ax = plt.subplots(figsize=(15,15))
@@ -35,7 +36,7 @@ def plot_particles(p_filters, measurement_vector, t, riskdict, plot_folder):
     plt.autoscale(False)
     ax.add_patch(
         patches.Rectangle(
-            (-7.5,-7.5),  #origin
+            (-7.5,-7.5),  
             7.5*2,   #width
             7.5*2,   #height
             fill= False
@@ -74,9 +75,9 @@ def plot_particles(p_filters, measurement_vector, t, riskdict, plot_folder):
 
     ax.text(xlim[0],ylim[0] ,caption_text,fontsize=15)
 
-    
-
-    fig.savefig(plot_folder + "/plot_" +str(int((round(time.time()*1000)))),dpi=100)
+    filename = str(round( time.time() * 1000)) + ".png"
+    fp = plot_folder + "/" + filename
+    fig.savefig(fp,dpi=100)
     plt.close(fig)
     
     

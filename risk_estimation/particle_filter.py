@@ -35,6 +35,8 @@ class ParticleFilter:
 
         self.most_likely_state = StateVector("go", "go", "straight", P, S)
         
+        self.known_Is = None
+        self.known_Ic = None
 
         self.Es_density = {"go": 0.5, "stop":0.5}
         self.Is_density = {"go": 0.5, "stop":0.5}
@@ -42,6 +44,22 @@ class ParticleFilter:
         self.Ic_density = {t: 1.0/len(turns) for t in turns}
         self.best_P = P #TODO maybe take weighted avg of top 10 particles here 
         self.best_S = S
+
+    def setKnownIc(self, Ic):
+        self.known_Ic = Ic
+        for p in self.particles:
+            p.Ic = Ic
+
+    def setKnownIs(self, Is):
+        self.known_Is = Is
+        for p in self.particles:
+            p.Is = Is
+    
+    def removeKnownIs(self, Is):
+        self.known_Is = None
+
+    def removeKnownIc(self, Ic):
+        self.known_Ic = None
 
 
     def neff(self, weights):
@@ -75,19 +93,19 @@ class ParticleFilter:
         return StateVector(Es, Is, Ic, self.best_P, self.best_S)
         
 
-    def step_time(self, id, measurement_vector, most_likely_states, interval, Ic_override, Is_override):
+    def step_time(self, id, measurement_vector, most_likely_states, interval):
         new_particles = []
         for p in self.particles:
 
             new_Es = Es_estimate(id, p, self.travelling_directions, self.intersection, most_likely_states)
 
-            if Is_override:
-                new_Is = Is_override
+            if self.known_Is:
+                new_Is = self.known_Is
             else:
                 new_Is = Is_estimate(p.Is, new_Es)
 
-            if Ic_override:
-                new_Ic = Ic_override
+            if self.known_Ic:
+                new_Ic = self.known_Ic
             else:
                 new_Ic = Ic_estimate(p.Ic, self.intersection.turns)
 
@@ -98,7 +116,6 @@ class ParticleFilter:
         new_weights = [self.likelihood(p, measurement_vector) for p in new_particles]
 
 
-        
         #normalize
         w_sum = float(sum(new_weights))
         new_weights = [w/w_sum for w in new_weights]
