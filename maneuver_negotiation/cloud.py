@@ -5,14 +5,15 @@ import rospy
 import custom_msgs.msg as cm
 import zookeeper
 import numpy as np
+import communication_config
 
 
-priorityMatrix = np.array([[1,0,0],[0,0,0],[0,0,0]])
-nonPriorityMatrix = np.array([[1,1,1],[0,1,1],[0,0,1]])
+#priorityMatrix = np.array([[1,0,0],[0,0,0],[0,0,0]])
+#nonPriorityMatrix = np.array([[1,1,1],[0,1,1],[0,0,1]])
 
-TM = 1 #SM update period, TODO Take simulation speed into account (SLOWDOWN)
-TD = 1 #TODO get the common values
-TMan = 1
+TM = maneuver_negotiator_config.GENERAL_OPTIONS['TM'] #SM's update period
+TD = maneuver_negotiator_config.GENERAL_OPTIONS['TD'] 
+TMan = maneuver_negotiator_config.GENERAL_OPTIONS['TMan']
 
 r_com = 200 #200 m
 
@@ -24,7 +25,7 @@ class MembershipCloud:
 
     agent_registry = {}
 
-    def __init__(self): #TODO Add intersection object?
+    def __init__(self, intersection):
 
         rospy.init_node('cloud',anonymous=True)
 
@@ -34,6 +35,8 @@ class MembershipCloud:
         #Initiate all agents in the local version of the AR set
         self.getARset()
 
+        self.intersection = intersection
+
 
     
     ## Store AR locally TODO Take segments into account
@@ -42,7 +45,7 @@ class MembershipCloud:
 
         children = zookeeper.get_children(self.handle, "/root/segment", True)
         #for i in range(1, self.nbr_agents + 1):
-        for child in children:
+        for child in chilagent_registrydren:
             (data, stat) = zookeeper.get(self.handle, "/root/segment/" + str(child), True)
             self.agent_registry[child] = data
 
@@ -72,8 +75,12 @@ class MembershipCloud:
     def getUnsafeAgents(self, aID, t_end):
         # TODO Use Intersection to get direction and facing inwards, It should use the prio matrix
         # Threading issue? Compute here instead?
+        other_agent_poses = []
+        for agent in agent_registry.keys():
+            other_agent_poses.append([agent, agent_registry[agent][1]])
+        return self.intersection.unsafeAgents(agent_registry[aID][1], other_agent_poses) #TODO implement unsafeAgents in Intersection.py
  
-        return []
+        #return []
 
     ## Update the Safety Membershtimeip (SM) of Agent with id aID
     ## The agent will have Maneuvre Oppertunity (MO) if all unsafe agents are reachable
