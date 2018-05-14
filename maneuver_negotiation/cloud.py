@@ -14,6 +14,8 @@ TM = 1 #SM update period, TODO Take simulation speed into account (SLOWDOWN)
 TD = 1 #TODO get the common values
 TMan = 1
 
+r_com = 200 #200 m
+
 ## Doesn't have to be reliable? 
 ## It's now reliable due to zookeepers use of TCP, but could be made unreliable if the cloud started to listen to ros topics instead
 class MembershipCloud:
@@ -22,7 +24,7 @@ class MembershipCloud:
 
     agent_registry = {}
 
-    def __init__(self):
+    def __init__(self): #TODO Add intersection object?
 
         rospy.init_node('cloud',anonymous=True)
 
@@ -37,9 +39,12 @@ class MembershipCloud:
     ## Store AR locally TODO Take segments into account
     ## We could also ask for the children instead of looping through 1 to nmr_agents
     def getARset(self):
-        for i in range(1, self.nbr_agents + 1):
-            (data, stat) = zookeeper.get(self.handle, "/root/segment/" + str(i), True)
-            self.agent_registry[i] = data
+
+        children = zookeeper.get_children(self.handle, "/root/segment", True)
+        #for i in range(1, self.nbr_agents + 1):
+        for child in children:
+            (data, stat) = zookeeper.get(self.handle, "/root/segment/" + str(child), True)
+            self.agent_registry[child] = data
 
 
     ## Return Agents that are within communication distance from the Agent with id aID until time t_end
@@ -52,16 +57,25 @@ class MembershipCloud:
 
     ## Return True if agent a is within communication distance of b TODO To be implemented
     def isReachable(self, aID, bID):
-        #ARa = self.agent_registry[aID]
-        #ARb = self.agent_registry[bID]
-        return True
+        a_p = eval(self.agent_registry[aID][1])
+        b_p = eval(self.agent_registry[bID][1])
+
+        # If within communication distance
+        if (a_p[0] - b_p[0])**2 + (a_p[1] - b_p[1])**2 < r_com**2
+            return True
+        return False
+
+        
     
     ## Return Agents that may cross the path of the Agent with id aID any time from now until t_end
     ## Based on a right-of-way matrix
     def getUnsafeAgents(self, aID, t_end):
+        # TODO Use Intersection to get direction and facing inwards, It should use the prio matrix
+        # Threading issue? Compute here instead?
+ 
         return []
 
-    ## Update the Safety Membership (SM) of Agent with id aID
+    ## Update the Safety Membershtimeip (SM) of Agent with id aID
     ## The agent will have Maneuvre Oppertunity (MO) if all unsafe agents are reachable
     def updateAgentSM(self, aID):
         t_stamp = rospy.get_rostime()
