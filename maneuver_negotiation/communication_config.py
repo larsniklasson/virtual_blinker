@@ -15,4 +15,7 @@ GENERAL_OPTIONS = {
     #this path will be appended as a library dependency lookup folder.
     #so that importing Intersection.py works
     'risk-estimator-path' : '/home/gazebo-laptop/testbed/src/risk_estimation/src/scripts/'
+    'TM' : 10 #Come up with better values
+    'TD' : 2
+    'TMan' : 20
 }
