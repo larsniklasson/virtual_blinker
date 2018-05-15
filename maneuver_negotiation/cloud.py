@@ -6,14 +6,15 @@ import custom_msgs.msg as cm
 import zookeeper
 import numpy as np
 import communication_config
+import risk_estimation.Intersection
 
 
 #priorityMatrix = np.array([[1,0,0],[0,0,0],[0,0,0]])
 #nonPriorityMatrix = np.array([[1,1,1],[0,1,1],[0,0,1]])
 
-TM = maneuver_negotiator_config.GENERAL_OPTIONS['TM'] #SM's update period
-TD = maneuver_negotiator_config.GENERAL_OPTIONS['TD'] 
-TMan = maneuver_negotiator_config.GENERAL_OPTIONS['TMan']
+TM = communication_config.GENERAL_OPTIONS['TM'] #SM's update period
+TD = communication_config.GENERAL_OPTIONS['TD'] 
+TMan = communication_config.GENERAL_OPTIONS['TMan']
 
 r_com = 200 #200 m
 
@@ -30,7 +31,7 @@ class MembershipCloud:
         rospy.init_node('cloud',anonymous=True)
 
         #Use zookeeper storage instead
-        self.handle = zookeeper.init('127.0.0.1:2181')#(maneuver_negotiator_config.GENERAL_OPTIONS['zookeeper-server'])
+        self.handle = zookeeper.init(communication_config.NETWORK_OPTIONS['zookeeper-server'])
         
         #Initiate all agents in the local version of the AR set
         self.getARset()
@@ -58,13 +59,13 @@ class MembershipCloud:
                 R.append(agent)
         return R
 
-    ## Return True if agent a is within communication distance of b TODO To be implemented
+    ## Return True if agent a is within communication distance of b
     def isReachable(self, aID, bID):
         a_p = eval(self.agent_registry[aID][1])
         b_p = eval(self.agent_registry[bID][1])
 
         # If within communication distance
-        if (a_p[0] - b_p[0])**2 + (a_p[1] - b_p[1])**2 < r_com**2
+        if (a_p[0] - b_p[0])**2 + (a_p[1] - b_p[1])**2 < r_com**2:
             return True
         return False
 
@@ -78,7 +79,7 @@ class MembershipCloud:
         other_agent_poses = []
         for agent in agent_registry.keys():
             other_agent_poses.append([agent, agent_registry[agent][1]])
-        return self.intersection.unsafeAgents(agent_registry[aID][1], other_agent_poses) #TODO implement unsafeAgents in Intersection.py
+        return []#self.intersection.unsafeAgents(agent_registry[aID][1], other_agent_poses) #TODO implement unsafeAgents in Intersection.py
  
         #return []
 
@@ -116,7 +117,7 @@ class MembershipCloud:
     
 
 if __name__ == '__main__':
-    mc = MembershipCloud()
+    mc = MembershipCloud(Intersection.Intersection((0.,0.), 7.5, Intersection.IntersectionType.GIVE_WAY_4, 'east-west')) #Center, lane width, type, alignment
     mc.calcSM()
 
 
