@@ -10,6 +10,7 @@ class Intersection:
         
         self.turns = ("left", "straight", "right")
         self.travelling_directions = ("north", "east", "south", "west")
+        self.laneWidth = 7.5
 
         #dict of course-instances to lookup
         self.courses = {}
@@ -85,22 +86,39 @@ class Intersection:
 
     
     def getTravellingDirection(self, x, y, theta):
-        if theta > pi:
-            theta -= 2*pi
-        if theta < -pi:
-            theta += 2*pi
+        if theta > math.pi:
+            theta -= 2*math.pi
+        if theta < -math.pi:
+            theta += 2*math.pi
 
-        if x > 7.5 and (theta >= 3*math.pi/4 or theta <= -3*math.pi/4):
+        if x > self.laneWidth and (theta >= 3*math.pi/4 or theta <= -3*math.pi/4):
             return "west"
         
-        if x < -7.5 and theta <= math.pi/4 and theta >= -math.pi/4:
+        if x < -self.laneWidth and theta <= math.pi/4 and theta >= -math.pi/4:
             return "east"
 
-        if y > 7.5 and theta <= -math.pi/4 and theta >= -3*math.pi/4:
+        if y > self.laneWidth and theta <= -math.pi/4 and theta >= -3*math.pi/4:
             return "south"
         
-        if y < -7.5 and theta >= math.pi/4 and theta <= 3*math.pi/4:
+        if y < -self.laneWidth and theta >= math.pi/4 and theta <= 3*math.pi/4:
             return "north"
         else:
             return None
+
+    ## Return agents that the selected agent hasn't got right-of-way to 
+    def getUnsafeAgents(self, agent_pose, agent_poses):
+
+        unsafe_agents = {}
+        agent_direction = self.getTravellingDirection(agent_pose[0], agent_pose[1], agent_pose[2])
+
+        # Check if any of the other agents have priority over the selected agents for the 3 possible turns
+        for turn in self.turns:
+            ids = []
+            for id, pose in agent_poses:
+                if not self.hasRightOfWay(agent_direction, turn, self.getTravellingDirection(pose[0], pose[1], pose[2])):
+                    ids.append(id)
+            unsafe_agents[turn] = ids
+
+        return unsafe_agents
+
 
