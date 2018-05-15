@@ -22,13 +22,13 @@ r_com = 200 #200 m
 ## It's now reliable due to zookeepers use of TCP, but could be made unreliable if the cloud started to listen to ros topics instead
 class MembershipCloud:
 
-    nbr_agents = 4 #TODO Get from launch file: rospy.get_param('nr_cars')
-
-    agent_registry = {}
-
     def __init__(self, intersection):
 
         rospy.init_node('cloud',anonymous=True)
+
+        self.nbr_agents = 4 #TODO Get from launch file: rospy.get_param('nr_cars')
+
+        self.agent_registry = {}
 
         #Use zookeeper storage instead
         self.handle = zookeeper.init(communication_config.NETWORK_OPTIONS['zookeeper-server'])
@@ -41,12 +41,12 @@ class MembershipCloud:
 
     
     ## Store AR locally TODO Take segments into account
-    ## We could also ask for the children instead of looping through 1 to nmr_agents
+    ## If multiple threads used this has to be changed
     def getARset(self):
 
         children = zookeeper.get_children(self.handle, "/root/segment", True)
         #for i in range(1, self.nbr_agents + 1):
-        for child in chilagent_registrydren:
+        for child in children:
             (data, stat) = zookeeper.get(self.handle, "/root/segment/" + str(child), True)
             self.agent_registry[child] = data
 
@@ -77,11 +77,9 @@ class MembershipCloud:
         # TODO Use Intersection to get direction and facing inwards, It should use the prio matrix
         # Threading issue? Compute here instead?
         other_agent_poses = []
-        for agent in agent_registry.keys():
-            other_agent_poses.append([agent, agent_registry[agent][1]])
-        return []#self.intersection.unsafeAgents(agent_registry[aID][1], other_agent_poses) #TODO implement unsafeAgents in Intersection.py
- 
-        #return []
+        for agent in self.agent_registry.keys():
+            other_agent_poses.append([agent, self.agent_registry[agent][1]])
+        return self.intersection.unsafeAgents(self.agent_registry[aID][1], other_agent_poses) #Implemented in springClean
 
     ## Update the Safety Membershtimeip (SM) of Agent with id aID
     ## The agent will have Maneuvre Oppertunity (MO) if all unsafe agents are reachable
@@ -89,14 +87,21 @@ class MembershipCloud:
         t_stamp = rospy.get_rostime()
         U = self.getUnsafeAgents(aID, t_stamp + TM + 2*TD + TMan)
         R = self.getReachableAgents(aID, t_stamp + TM + 2*TD + TMan)
-        MO = True
-        SM = U
+        
+        MR = {}
 
-        for agent in U:
-            if not (agent in R):
-                MO = False
-                SM = []
-        MR = [t_stamp, MO, SM]
+        # Determine the MO and SM for every turn
+        for turn in U.keys():
+            MO = True
+            SM = U[turn]
+            for agent in U[turn]:
+                if not (agent in R):
+                    MO = False
+                    SM = []
+                    break
+            MR[turn] = [t_stamp, MO, SM]
+
+        #Update MR for agent in zookeeper    
         zookeeper.set(self.handle, "/root/mr/" + str(aID), str(MR))
         
 
