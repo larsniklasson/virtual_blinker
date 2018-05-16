@@ -15,6 +15,8 @@ from risk_estimation.driver import *
 
 from collections import OrderedDict
 from risk_estimation.Intersection import *
+from maneuver_negotiation.maneuver_negotiator import *
+from threading import Thread, Lock
 
 SLOWDOWN = 2
 
@@ -75,8 +77,13 @@ class Car:
         self.path_pub.publish(cm.Path([cm.Position(x,y) for x,y in path], self.id))
 
         self.fm = True
-    
 
+        self.debug = True
+    
+        # to avoid modifying particle and weights while another thread such as maneuver negotiator's no_conflict is
+        # reading
+        self.risk_estimator_mutex = Lock() 
+                    
         
 
     def stateCallback(self, msg):
@@ -106,11 +113,14 @@ class Car:
                 
                 if self.fm:
                     if save: open('../risk_estimation/debug.txt', 'w').close() #empty the file
+                    self.intersection = Intersection()
 
-                    self.risk_estimator = RiskEstimator(400, Intersection(), ms, np.eye(3)*0.05, 0.05, real_time, plot)
+                    self.risk_estimator = RiskEstimator(400,self.intersection, ms, np.eye(3)*0.05, 0.05, real_time,self.risk_estimator_mutex, plot)
                     self.fm = False
                     self.risk_estimator.setKnownIc(self.id, self.course.turn)
                     self.risk_estimator.setKnownIs(self.id, self.Is)
+
+                    self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,1)
                 
                 else:
                         
