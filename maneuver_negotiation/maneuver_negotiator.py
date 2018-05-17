@@ -351,10 +351,12 @@ class ManeuverNegotiator():
       #as expectation aligns more with 1 (go), it means the car has plenty of time 
       #gap to do the maneuver
       if (expectation > 0.5):
-        return 1
+        return True
       else:
-        return 0
+        return False
     else:
+      print("non priority case")
+
       pass
     print("mAR : {0}".format(mAR))
     #print("GRANT ID RIGHT NOW IS: %i", grantID)
@@ -574,6 +576,7 @@ class ManeuverNegotiator():
     self.car_state_subscriber_handle = rospy.Subscriber(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['car-state-topic'][self.aID],cm.CarState,self.update_agent_state_from_ros)
 
 
+    print("setting up maneuver negotiator ros")
     choose_leader_topic = maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['maneuver-negotiation-topics']['choose-leader-topic']
     self.choose_leader_subscriber_handle = rospy.Subscriber(choose_leader_topic, std_msgs.msg.Int8,self.choose_leader_processor)
 
@@ -585,6 +588,7 @@ class ManeuverNegotiator():
     if (self.communication_details == 1):
       self.sub = rospy.Subscriber(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['maneuver-negotiation-topics'][self.aID][0], \
                                  std_msgs.msg.String, self.ros_message_processor)
+      print("subscribing to " + str(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['maneuver-negotiation-topics'][self.aID][0]))
 
   #repurpose this: 
   def choose_leader_processor(self, data):
@@ -673,6 +677,7 @@ class ManeuverNegotiator():
         self.other_cars[agent_id] = rospy.Publisher(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['maneuver-negotiation-topics'][agent_id][0],\
                                                     std_msgs.msg.String)
 
+      print("sending {0} to car {1}".format(message,agent_id))
       publisher = self.other_cars[agent_id]
       publisher.publish(std_msgs.msg.String(message))
 
@@ -703,7 +708,11 @@ class ManeuverNegotiator():
     #start thread that listens on network for udp packets from other cars
     net_thread = threading.Thread(target= self.udp_msg_processor)
     net_thread.start()
-    rospy.spin()
+
+    #rospy spinning to be done by the main method which creates this class.
+    #spinning here will make the initialize() in a loop where
+    #it cannot return tot he main method. 
+    #rospy.spin()
 
 
 

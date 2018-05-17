@@ -22,6 +22,7 @@ ROS_COMMUNICATION_OPTIONS = {
     # value = [ros topic to subscribe to get maneuver messages from other cars,
     #          ros topic to subscribe to listen and initiate a maneuver ]
 
+    0: ['/car0_mn','car0_control'],
     1: ['/car1_mn','car1_control'],
     2: ['/car2_mn','car2_control'],
     3: ['/car3_mn','car3_control'],
