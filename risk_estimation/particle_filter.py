@@ -163,7 +163,12 @@ class ParticleFilter:
         #update the densities for the state variables
         self.updateDensities()
             
+    def deepcopy_particles(self):
+        particle_copy = []
+        for p in self.particles:
+            particle_copy.append(StateVector(p.Es,p.Is,p.Ic,p.P,p.S))
 
+        return particle_copy
         
         
 

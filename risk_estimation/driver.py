@@ -87,3 +87,29 @@ class RiskEstimator:
         
         self.mutex.release()
         return risks
+
+    def get_expectation_Es(self,vehicle_id,intended_course=None):
+        #compute expectation of Es:
+        # if intended_course given, compute p(ic != es | ic = x)
+        # useful to measure expectation on a certain maneuver
+
+        expectation = 0.
+        for pfilter in self.particle_filters:
+            for i,s in enumerate(pfilter.particles):
+                weight = pfilter.weights[i]
+                if (intended_course is not None):
+                    if (intended_course == s.Ic):
+                        expectation = expectation + (s.Es*weight)
+                else:
+                    expectation = expectation + (s.Es*weight)
+
+        return expectation
+    
+    def get_copy(self,vehicle_id):
+        self.mutex.acquire()
+
+        particles = self.particle_filters[vehicle_id].deep_copy_particles()
+        weights = self.particle_filters[vehicle_id].weights
+
+        self.mutex.release()
+        return [particles,weights]

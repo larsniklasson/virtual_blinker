@@ -1,12 +1,18 @@
+#!/usr/bin/env python 
 ## The Cloud
 ## Gets data from all vehicles and broadcast their membership sets? Or upon request?
 
 import rospy
-import custom_msgs.msg as cm
+#import custom_msgs.msg as cm
 import zookeeper
 import numpy as np
 import communication_config
+import sys
+sys.path.append("..")
+import maneuver_negotiation.maneuver_negotiator_config as config
 import risk_estimation.Intersection
+import virtual_blinker.msg as cm
+
 
 
 #priorityMatrix = np.array([[1,0,0],[0,0,0],[0,0,0]])
@@ -38,7 +44,20 @@ class MembershipCloud:
 
         self.intersection = intersection
 
+        self.ros_measurements = None
+        #subscribe to simulation nodes to get the time:
+        self.car_state_subscriber_handle = rospy.Subscriber(config.ROS_COMMUNICATION_OPTIONS['car-state-topic'][1],cm.CarState,self.update_time)
+        #self.car_state_subscriber_handle = rospy.Subscriber(maneuver_negotiation.maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS  
 
+    def get_time(self):
+        if (self.ros_measurements is None):
+            return 0
+        else:
+            return self.ros_measurements.t
+
+    def update_time(self,data):
+        #print("updating")
+        self.ros_measurements = data
     
     ## Store AR locally TODO Take segments into account
     ## If multiple threads used this has to be changed
@@ -84,7 +103,11 @@ class MembershipCloud:
     ## Update the Safety Membershtimeip (SM) of Agent with id aID
     ## The agent will have Maneuvre Oppertunity (MO) if all unsafe agents are reachable
     def updateAgentSM(self, aID):
-        t_stamp = rospy.get_rostime()
+        #t_stamp = rospy.get_rostime()
+        t_stamp = self.get_time()
+        #print("tstamp sec = {0}, nsec = {1}, ".format(t_stamp.secs,t_stamp.nsecs))
+        #print("tstamp = {0}".format(t_stamp))
+        #return
         U = self.getUnsafeAgents(aID, t_stamp + TM + 2*TD + TMan)
         R = self.getReachableAgents(aID, t_stamp + TM + 2*TD + TMan)
         
@@ -107,8 +130,10 @@ class MembershipCloud:
 
     ## Periodically calculate the Safety Membership (SM) for every agent in the Agent Registry
     def calcSM(self):
+        global TM
+        #print("tm is " + str(TM))
 
-        rate = rospy.Rate(1/TM)
+        rate = rospy.Rate(TM)
     
         while not rospy.is_shutdown():
             rate.sleep()
@@ -122,7 +147,8 @@ class MembershipCloud:
     
 
 if __name__ == '__main__':
-    mc = MembershipCloud(Intersection.Intersection((0.,0.), 7.5, Intersection.IntersectionType.GIVE_WAY_4, 'east-west')) #Center, lane width, type, alignment
+    #mc = MembershipCloud(Intersection.Intersection((0.,0.), 7.5, Intersection.IntersectionType.GIVE_WAY_4, 'east-west')) #Center, lane width, type, alignment
+    mc = MembershipCloud(risk_estimation.Intersection.Intersection())
     mc.calcSM()
 
 

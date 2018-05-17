@@ -4,6 +4,8 @@ import sys
 sys.path.append("..")
 from utils.course import *
 
+from threading import Thread, Lock
+
 class Intersection:
 
     def __init__(self):
@@ -11,6 +13,9 @@ class Intersection:
         self.turns = ("left", "straight", "right")
         self.travelling_directions = ("north", "east", "south", "west")
         self.laneWidth = 7.5
+
+        #mutex used when changing priorities of the intersection
+        self.mutex = Lock()
 
         #dict of course-instances to lookup
         self.courses = {}
@@ -44,11 +49,16 @@ class Intersection:
                                 {"opposing": True, 
                                 "rightof":True, 
                                 "leftof": False}}
+        
+        #vehicles coming in these two directions are priority by default in this intersection.
+        #unless changed by a maneuver negotiation protocol
+        self.priority_directions = ["south","north"]
 
 
     #south-north is prio lane TODO store this some other place
+    # TODO this will change when priority changes. so it should not be fixed
     def isOnPrioLane(self, travelling_direction):
-        return travelling_direction == "south" or travelling_direction == "north"
+        return travelling_direction in self.priority_directions
 
     # uses directions list above to determine whether or not other vehicle (second argument) is 
     # to the left of, to the right of or opposite the ego-vehicle (the first argument)

@@ -1,5 +1,8 @@
 GENERAL_OPTIONS = {
     'zookeeper-server' : '127.0.0.1:2181',
+    'TM' : 10 ,#Come up with better values
+    'TD' : 2,
+    'TMan' : 20,
 }
 
 UDP_COMMUNICATION_OPTIONS = {

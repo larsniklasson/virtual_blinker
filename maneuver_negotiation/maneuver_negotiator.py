@@ -49,7 +49,7 @@ class ManeuverNegotiator():
       return float(self.ros_measurements.t)
 
 
-  def __init__(self,agent_id,intersection, communication_details):
+  def __init__(self,agent_id,intersection, communication_details,risk_estimator):
     #Make all the necessary variables global
     #all global variables in romi code is now instance variabes:
     self.status = self.NORMAL
@@ -116,6 +116,9 @@ class ManeuverNegotiator():
 
     self.communication_details = communication_details
 
+    #used in no_conflict to check risk
+    self.risk_estimator = risk_estimator
+
     #Initiate variables if needed
     #agents_to_ask = []
     #many = 0
@@ -149,7 +152,8 @@ class ManeuverNegotiator():
     #global x
 
     #for now we give the x cordinate.
-    return int(self.ros_measurements.x)
+    return (float(self.ros_measurements.x), float(self.ros_measurements.y),float(self.ros_measurements.theta))
+    #return int(self.ros_measurements.x)
 
     # if self.aID == 1:
     #   return int(self.ros_measurements.cs1.x)
@@ -330,7 +334,28 @@ class ManeuverNegotiator():
     sender_acceleration = mAR[4]
     if(len(mAR)>5):
       sender_course = mAR[5]
+    
+    #receiving a message implies i have priority
+    #if this vehicle is on priority lane:
+    cur_pos = self.position()
+    if self.intersection.isOnPrioLane(self.intersection.getTravellingDirection(cur_pos[0],cur_pos[1],cur_pos[2])):
+      priority=True
+    else:
+      priority=False
 
+    if (priority):
+
+      #sender_particles,sender_particle_weights = self.risk_estimator.get_copy(sender)
+      expectation = self.risk_estimator.getExpectation(sender)
+      #0.5 used for now, increasing this will make our grant more conservative 
+      #as expectation aligns more with 1 (go), it means the car has plenty of time 
+      #gap to do the maneuver
+      if (expectation > 0.5):
+        return 1
+      else:
+        return 0
+    else:
+      pass
     print("mAR : {0}".format(mAR))
     #print("GRANT ID RIGHT NOW IS: %i", grantID)
     if(self.grantID != 0):
@@ -617,7 +642,7 @@ class ManeuverNegotiator():
 
 
   def update_agent_state_from_ros(self,data):
-    print("updating")
+    #print("updating")
     self.ros_measurements = data
 
 

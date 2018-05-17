@@ -16,6 +16,7 @@ from risk_estimation.driver import *
 from collections import OrderedDict
 from risk_estimation.Intersection import *
 from maneuver_negotiation.maneuver_negotiator import *
+from maneuver_negotiation.cloud import *
 from threading import Thread, Lock
 
 SLOWDOWN = 2
@@ -115,12 +116,15 @@ class Car:
                     if save: open('../risk_estimation/debug.txt', 'w').close() #empty the file
                     self.intersection = Intersection()
 
+                    #run risk estimator
                     self.risk_estimator = RiskEstimator(400,self.intersection, ms, np.eye(3)*0.05, 0.05, real_time,self.risk_estimator_mutex, plot)
                     self.fm = False
                     self.risk_estimator.setKnownIc(self.id, self.course.turn)
                     self.risk_estimator.setKnownIs(self.id, self.Is)
 
-                    self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,1)
+
+                    #run maneuver negotiator
+                    #self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,1,self.risk_estimator)
                 
                 else:
                         
