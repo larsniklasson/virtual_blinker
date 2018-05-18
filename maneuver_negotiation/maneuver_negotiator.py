@@ -83,7 +83,7 @@ class ManeuverNegotiator():
     #global host_ip = '127.0.0.1'
     self.host_ip = '127.0.0.1'
     #intersection at which the cars are setup
-    intersection = None
+    #intersection = None
     #port_prefix = '900'
 
     #all measurements are updated to this variable
@@ -346,7 +346,7 @@ class ManeuverNegotiator():
     if (priority):
 
       #sender_particles,sender_particle_weights = self.risk_estimator.get_copy(sender)
-      expectation = self.risk_estimator.getExpectation(sender)
+      expectation = self.risk_estimator.getExpectation(int(sender))
       #0.5 used for now, increasing this will make our grant more conservative 
       #as expectation aligns more with 1 (go), it means the car has plenty of time 
       #gap to do the maneuver

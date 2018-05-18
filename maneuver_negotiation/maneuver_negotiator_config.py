@@ -31,6 +31,7 @@ ROS_COMMUNICATION_OPTIONS = {
     },
 
     'car-state-topic' : {
+        0: '/car_state0',
         1: '/car_state1',
         2: '/car_state2',
         3: '/car_state3',
