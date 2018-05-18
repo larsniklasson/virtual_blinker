@@ -125,7 +125,7 @@ class ParticleFilter:
             else:
                 new_Ic = Ic_estimate(p.Ic, self.intersection.turns)
 
-            new_P, new_S = PS_estimate(p, self.travelling_directions[id], self.intersection, interval, self.pose_covariance, self.speed_deviation)
+            new_P, new_S = PS_estimate(p.P[0], p.P[1], p.P[2],p.S, new_Is, new_Ic, self.travelling_directions[id], self.intersection, interval, self.pose_covariance, self.speed_deviation)
             
             new_particles.append(StateVector(new_Es ,new_Is, new_Ic, new_P, new_S))
             

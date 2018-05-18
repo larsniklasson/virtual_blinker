@@ -15,11 +15,11 @@ from risk_estimation.driver import *
 
 from collections import OrderedDict
 from risk_estimation.Intersection import *
-from maneuver_negotiation.maneuver_negotiator import *
-from maneuver_negotiation.cloud import *
+#from maneuver_negotiation.maneuver_negotiator import *
+#rom maneuver_negotiation.cloud import *
 from threading import Thread, Lock
 
-SLOWDOWN = 2
+SLOWDOWN = 4
 
 KP = 0.4
 KI = 0.00
@@ -63,7 +63,8 @@ class Car:
         self.path_pub = rospy.Publisher('car_path' + str(self.id), cm.Path, queue_size=10)
 
         
-        self.Is = "go"
+        self.Is = "stop"
+        #if self.id == 0: self.Is = "go"
         self.speed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
 
 
@@ -78,6 +79,7 @@ class Car:
         self.path_pub.publish(cm.Path([cm.Position(x,y) for x,y in path], self.id))
 
         self.fm = True
+        self.last_es = [-1, -1, -1]
 
         self.debug = True
     
@@ -100,24 +102,25 @@ class Car:
             ms = [d[msg.t] for d in self.state_dicts]
             
             
-            if self.id == 1: #only send one for now
+            if True or self.id == 1: #only send one for now
                 
                 real_time = msg.t/(RATE*SLOWDOWN)
                 
                 plot = False
                 closed_loop = True
-                save = True
+                save = False
             
-                if save:
+                if save and not self.fm:
                     with open('../risk_estimation/debug.txt', 'a') as f:
-                        f.write(str((real_time, ms)) + "\n")
+                        f.write(str((real_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
                 
                 if self.fm:
-                    if save: open('../risk_estimation/debug.txt', 'w').close() #empty the file
+                    with open('../risk_estimation/debug.txt', 'w') as f:
+                        f.write(str((real_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
                     self.intersection = Intersection()
 
                     #run risk estimator
-                    self.risk_estimator = RiskEstimator(400,self.intersection, ms, np.eye(3)*0.05, 0.05, real_time,self.risk_estimator_mutex, plot)
+                    self.risk_estimator = RiskEstimator(200,self.intersection, ms, np.eye(3)*0.15, 0.15, real_time,self.risk_estimator_mutex, plot)
                     self.fm = False
                     self.risk_estimator.setKnownIc(self.id, self.course.turn)
                     self.risk_estimator.setKnownIs(self.id, self.Is)
@@ -133,9 +136,15 @@ class Car:
                     self.risk_estimator.update_state(real_time, ms)
                     if closed_loop: 
                         es_go = self.risk_estimator.getExpectation(self.id)  
-                        print "Expectation to go: ", es_go
+                        print "Expectation to go: ", es_go, self.id
                         old_is = self.Is
-                        self.Is = "go" if es_go > 0.5 else "stop" 
+                        self.last_es.pop(0)
+                        self.last_es.append(es_go)
+                        if self.course.getDistance(self.x, self.y, self.theta) > self.course.distance_to_crossing+0.5 or all([e > 0.5 for e in self.last_es]):
+                            self.Is = "go"
+                        elif all([e <= 0.5 and e >= 0 for e in self.last_es]):
+                            self.Is = "stop"
+                        
                         if old_is != self.Is:
                             self.risk_estimator.setKnownIs(self.id, self.Is)
 

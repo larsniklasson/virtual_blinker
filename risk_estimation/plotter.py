@@ -75,7 +75,7 @@ def plot_particles(p_filters, measurement_vector, t, plot_folder):
 
     ax.text(xlim[0],ylim[0] ,caption_text,fontsize=15)
 
-    filename = str(round( time.time() * 1000)) + ".png"
+    filename = "%.2f" % t + ".png"
     fp = plot_folder + "/" + filename
     fig.savefig(fp,dpi=100)
     plt.close(fig)

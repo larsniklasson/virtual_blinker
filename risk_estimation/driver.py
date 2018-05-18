@@ -3,13 +3,19 @@ from particle_filter import ParticleFilter
 import plotter
 import time
 import os
-
+import glob
 dir_path = os.path.dirname(os.path.realpath(__file__))
 plot_folder = os.path.join(dir_path, "plotfolder")
 
 class RiskEstimator:
 
-    def __init__(self, n_particles, intersection, initial_measurements, pose_covariance, speed_deviation, init_time,mutex,plot=False):
+    def __init__(self, n_particles, intersection, initial_measurements, pose_covariance, speed_deviation, init_time,mutex,plot=False, wipe_dir=False):
+
+        if plot and wipe_dir:
+            files = glob.glob(plot_folder + "/*")
+            for f in files:
+                os.remove(f)
+
 
         self.intersection = intersection
         self.plot = plot #boolean
