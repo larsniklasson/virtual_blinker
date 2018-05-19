@@ -19,7 +19,7 @@ from risk_estimation.Intersection import *
 #rom maneuver_negotiation.cloud import *
 from threading import Thread, Lock
 
-SLOWDOWN = 4
+SLOWDOWN = 1
 
 KP = 0.4
 KI = 0.00
@@ -64,7 +64,7 @@ class Car:
 
         
         self.Is = "stop"
-        #if self.id == 0: self.Is = "go"
+        if self.id == 0: self.Is = "go"
         self.speed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
 
 
@@ -102,13 +102,13 @@ class Car:
             ms = [d[msg.t] for d in self.state_dicts]
             
             
-            if True or self.id == 1: #only send one for now
+            if self.id == 1 or self.id == 2: #only send one for now
                 
                 real_time = msg.t/(RATE*SLOWDOWN)
                 
                 plot = False
                 closed_loop = True
-                save = False
+                save = True
             
                 if save and not self.fm:
                     with open('../risk_estimation/debug.txt', 'a') as f:
@@ -120,7 +120,7 @@ class Car:
                     self.intersection = Intersection()
 
                     #run risk estimator
-                    self.risk_estimator = RiskEstimator(200,self.intersection, ms, np.eye(3)*0.15, 0.15, real_time,self.risk_estimator_mutex, plot)
+                    self.risk_estimator = RiskEstimator(200, self.intersection, ms, np.eye(3)*0.15, 0.15, real_time,self.risk_estimator_mutex, plot)
                     self.fm = False
                     self.risk_estimator.setKnownIc(self.id, self.course.turn)
                     self.risk_estimator.setKnownIs(self.id, self.Is)
@@ -136,11 +136,11 @@ class Car:
                     self.risk_estimator.update_state(real_time, ms)
                     if closed_loop: 
                         es_go = self.risk_estimator.getExpectation(self.id)  
-                        print "Expectation to go: ", es_go, self.id
+                        print "Expectation to go: ", es_go
                         old_is = self.Is
                         self.last_es.pop(0)
                         self.last_es.append(es_go)
-                        if self.course.getDistance(self.x, self.y, self.theta) > self.course.distance_to_crossing+0.5 or all([e > 0.5 for e in self.last_es]):
+                        if self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta) or all([e > 0.5 for e in self.last_es]) or self.last_es[-1] == 1.0:
                             self.Is = "go"
                         elif all([e <= 0.5 and e >= 0 for e in self.last_es]):
                             self.Is = "stop"
