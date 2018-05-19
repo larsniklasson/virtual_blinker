@@ -120,7 +120,7 @@ class Car:
                     self.intersection = Intersection()
 
                     #run risk estimator
-                    self.risk_estimator = RiskEstimator(200, self.intersection, ms, np.eye(3)*0.15, 0.15, real_time,self.risk_estimator_mutex, plot)
+                    self.risk_estimator = RiskEstimator(100, self.intersection, ms, np.eye(3)*0.15, 0.15, real_time,self.risk_estimator_mutex, plot)
                     self.fm = False
                     self.risk_estimator.setKnownIc(self.id, self.course.turn)
                     self.risk_estimator.setKnownIs(self.id, self.Is)
@@ -138,9 +138,12 @@ class Car:
                         es_go = self.risk_estimator.getExpectation(self.id)  
                         print "Expectation to go: ", es_go
                         old_is = self.Is
+
+                        #maintain 3 last es_go.
+                        # if all 3 are greater than 0.5 then we go
                         self.last_es.pop(0)
                         self.last_es.append(es_go)
-                        if self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta) or all([e > 0.5 for e in self.last_es]) or self.last_es[-1] == 1.0:
+                        if self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta) or all([e > 0.5 for e in self.last_es]) or self.last_es[-1] > 0.99:
                             self.Is = "go"
                         elif all([e <= 0.5 and e >= 0 for e in self.last_es]):
                             self.Is = "stop"
