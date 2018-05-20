@@ -398,6 +398,8 @@ class ManeuverNegotiator():
   def update(self):
     # global aID
     setvalue = str(self.aID) + "," + str(self.agent_state[1]) + "," + str(self.agent_state[2]) + "," + str(self.agent_state[3])
+    #following is not in romi's code, but i think it is needed:
+    self.agent_state = [self.clock(), self.position(),self.velocity(),self.acceleration()]
     zookeeper.set(self.handle, "/root/segment/" + str(self.aID), str(self.agent_state))
     t_update = Timer(self.T_UPDATE, self.update)
     t_update.start()

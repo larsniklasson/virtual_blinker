@@ -32,7 +32,7 @@ class MembershipCloud:
 
         rospy.init_node('cloud',anonymous=True)
 
-        self.nbr_agents = 4 #TODO Get from launch file: rospy.get_param('nr_cars')
+        self.nbr_agents = 2 #TODO Get from launch file: rospy.get_param('nr_cars')
 
         self.agent_registry = {}
 
@@ -67,7 +67,10 @@ class MembershipCloud:
         #for i in range(1, self.nbr_agents + 1):
         for child in children:
             (data, stat) = zookeeper.get(self.handle, "/root/segment/" + str(child), True)
-            self.agent_registry[child] = data
+
+            #zookeeper keeps things as string, convert to a list
+            self.agent_registry[child] = eval(data)
+        print("agent_registry = " + str(self.agent_registry))
 
 
     ## Return Agents that are within communication distance from the Agent with id aID until time t_end
@@ -98,7 +101,7 @@ class MembershipCloud:
         other_agent_poses = []
         for agent in self.agent_registry.keys():
             other_agent_poses.append([agent, self.agent_registry[agent][1]])
-        return self.intersection.unsafeAgents(self.agent_registry[aID][1], other_agent_poses) #Implemented in springClean
+        return self.intersection.getUnsafeAgents(self.agent_registry[aID][1], other_agent_poses) #Implemented in springClean
 
     ## Update the Safety Membershtimeip (SM) of Agent with id aID
     ## The agent will have Maneuvre Oppertunity (MO) if all unsafe agents are reachable
