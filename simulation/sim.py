@@ -100,17 +100,21 @@ class Car:
             ms = [d[msg.t] for d in self.state_dicts]
             
             
-            if self.id == 1: #only send one for now
+            if self.id == 1 or self.id == 0: #only send one for now
                 
                 real_time = msg.t/(RATE*SLOWDOWN)
                 
                 plot = False
                 closed_loop = True
-                save = True
-            
+                if self.id == 0:
+                    save = False
+                else:
+                    save = True
+                
                 if save:
                     with open('../risk_estimation/debug.txt', 'a') as f:
-                        f.write(str((real_time, ms)) + "\n")
+                        #f.write(str((real_time, ms)) + "\n")
+                        pass
                 
                 if self.fm:
                     if save: open('../risk_estimation/debug.txt', 'w').close() #empty the file
@@ -125,14 +129,18 @@ class Car:
 
                     #run maneuver negotiator
                     #print("agent id =" + str(self.id))
-                    #self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,1,self.risk_estimator)
-                    #self.maneuver_negotiator.initialize()
+                    self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,1,self.risk_estimator)
+                    self.maneuver_negotiator.initialize()
                 
                 else:
                         
                     self.risk_estimator.update_state(real_time, ms)
                     if closed_loop: 
                         es_go = self.risk_estimator.getExpectation(self.id)  
+                        if save:
+                            with open('../risk_estimation/debug.txt', 'a') as f:
+                                f.write("exectation to go = " + str(es_go) + "\n")
+
                         print "Expectation to go: ", es_go
                         old_is = self.Is
                         self.Is = "go" if es_go > 0.5 else "stop" 
