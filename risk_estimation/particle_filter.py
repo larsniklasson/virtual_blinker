@@ -55,6 +55,47 @@ class ParticleFilter:
         #best P and S, also used when calculating most likely state
         self.best_P = P 
         self.best_S = S
+    
+    def clone(self):
+        """
+        Make a deep copy of itself with particles and weights exactly same when
+        clone() was called.
+        Useful to do future projections.
+        """
+
+        #def __init__(self,travelling_directions, intersection, n_particles, initial_measurement, pose_covariance, speed_deviation):
+        cloned_object = ParticleFilter(
+            self.travelling_directions[:],\
+            Intersection.Intersection(),\
+            self.n_particles,\
+            [],\
+            self.pose_covariance,\
+            self.speed_deviation,\
+        )
+        cloned_object.weights = self.weights[:]
+
+        #these are readonly variables and can be copied
+        cloned_object.position_covariance =  self.pose_covariance
+        cloned_object.theta_deviation = self.theta_deviation
+        cloned_object.pose_covariance  = self.pose_covariance
+        cloned_object.speed_deviation = self.speed_deviation
+
+        cloned_object.particles = [x.clone() for x in self.particles]
+        cloned_object.most_likely_state = self.most_likely_state.clone()
+
+        cloned_object.known_Is = self.known_Is 
+        cloned_object.known_Ic = self.known_Ic 
+
+        cloned_object.Es_density = self.Es_density.copy()
+        cloned_object.Is_density = self.Is_density.copy()
+        cloned_object.Ic_density = self.Ic_density.copy()
+
+        cloned_object.best_P = self.best_P[:]
+        cloned_object.best_S = float(self.best_S)
+
+        return cloned_object
+
+
 
     #override functions. Updates existing particles as well.#TODO unclear if this is better or not
     def setKnownIc(self, Ic):
@@ -240,5 +281,9 @@ class StateVector:
         self.Ic = Ic # {"left", "straight", "right"}
         self.P = P   # (x, y, theta)
         self.S = S   # scalar
+    
+    def clone(self):
+        sv = StateVector(self.Es,self.Is,self.Ic,self.P[:],self.S)
+        return sv
 
 
