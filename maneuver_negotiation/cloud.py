@@ -18,9 +18,9 @@ import virtual_blinker.msg as cm
 #priorityMatrix = np.array([[1,0,0],[0,0,0],[0,0,0]])
 #nonPriorityMatrix = np.array([[1,1,1],[0,1,1],[0,0,1]])
 
-TM = communication_config.GENERAL_OPTIONS['TM'] #SM's update period
-TD = communication_config.GENERAL_OPTIONS['TD'] 
-TMan = communication_config.GENERAL_OPTIONS['TMan']
+TM = config.GENERAL_OPTIONS['TM'] #SM's update period
+TD = config.GENERAL_OPTIONS['TD'] 
+TMan = config.GENERAL_OPTIONS['TMan']
 
 r_com = 200 #200 m
 
@@ -37,7 +37,7 @@ class MembershipCloud:
         self.agent_registry = {}
 
         #Use zookeeper storage instead
-        self.handle = zookeeper.init(communication_config.NETWORK_OPTIONS['zookeeper-server'])
+        self.handle = zookeeper.init(config.GENERAL_OPTIONS['zookeeper-server'])
         
         #Initiate all agents in the local version of the AR set
         self.getARset()
@@ -70,7 +70,7 @@ class MembershipCloud:
 
             #zookeeper keeps things as string, convert to a list
             self.agent_registry[child] = eval(data)
-        print("agent_registry = " + str(self.agent_registry))
+        #print("agent_registry = " + str(self.agent_registry))
 
 
     ## Return Agents that are within communication distance from the Agent with id aID until time t_end

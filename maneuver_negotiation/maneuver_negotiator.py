@@ -40,21 +40,12 @@ class ManeuverNegotiator():
   EXECUTE = 5
   TRYGET = 6
 
-  def clock(self):
-    #gets time from ros simulation enviornment
-    return 1
-    if self.ros_measurements is None:
-      return 1
-    else:
-      return float(self.ros_measurements.t)
 
 
   def __init__(self,agent_id,intersection, communication_details,risk_estimator):
     #Make all the necessary variables global
     #all global variables in romi code is now instance variabes:
     self.status = self.NORMAL
-    self.agent_state = [self.clock(), 1,1,1] #dummy vars for now
-    self.agent = [agent_id,self.agent_state]
     self.TMan = 10
     self.T_RETRY = 3
     self.T_GRANT = 10
@@ -111,6 +102,9 @@ class ManeuverNegotiator():
     # self.ros_measurements.cs2 = cs2
     self.ros_measurements = cs1
 
+    self.agent_state = [self.clock(), 1,1,1] #dummy vars for now
+    self.agent = [agent_id,self.agent_state]
+
     self.intersection = intersection
     #self.initialize(zookeeper_ip)
 
@@ -147,6 +141,13 @@ class ManeuverNegotiator():
 # R = set()
 # time_delay = 100 #Upper bound on transmission delay
 
+  def clock(self):
+    #gets time from ros simulation enviornment
+    #return 1
+    if self.ros_measurements is None:
+      return 1
+    else:
+      return float(self.ros_measurements.t)
 
   def position(self):
     #global x
@@ -251,7 +252,7 @@ class ManeuverNegotiator():
 
       self.agent_state = [self.clock(), self.position(), self.velocity(), self.acceleration()]
 
-
+      self.agent = [self.aID,self.agent_state]
       MR = self.get_MR(self.agent[0])
 
       if((self.agent_state[0] < MR[0] + 2*self.TMan) and MR[1] == 1):
@@ -399,7 +400,10 @@ class ManeuverNegotiator():
     # global aID
     setvalue = str(self.aID) + "," + str(self.agent_state[1]) + "," + str(self.agent_state[2]) + "," + str(self.agent_state[3])
     #following is not in romi's code, but i think it is needed:
+    print("updating... car {0}".format(self.aID))
     self.agent_state = [self.clock(), self.position(),self.velocity(),self.acceleration()]
+    self.agent[1] = self.agent_state
+    #print(str(self.agent_state))
     zookeeper.set(self.handle, "/root/segment/" + str(self.aID), str(self.agent_state))
     t_update = Timer(self.T_UPDATE, self.update)
     t_update.start()
@@ -578,7 +582,7 @@ class ManeuverNegotiator():
     self.car_state_subscriber_handle = rospy.Subscriber(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['car-state-topic'][self.aID],cm.CarState,self.update_agent_state_from_ros)
 
 
-    print("setting up maneuver negotiator ros")
+    #print("setting up maneuver negotiator ros")
     choose_leader_topic = maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['maneuver-negotiation-topics']['choose-leader-topic']
     self.choose_leader_subscriber_handle = rospy.Subscriber(choose_leader_topic, std_msgs.msg.Int8,self.choose_leader_processor)
 
@@ -590,7 +594,7 @@ class ManeuverNegotiator():
     if (self.communication_details == 1):
       self.sub = rospy.Subscriber(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['maneuver-negotiation-topics'][self.aID][0], \
                                  std_msgs.msg.String, self.ros_message_processor)
-      print("subscribing to " + str(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['maneuver-negotiation-topics'][self.aID][0]))
+      #print("subscribing to " + str(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['maneuver-negotiation-topics'][self.aID][0]))
 
   #repurpose this: 
   def choose_leader_processor(self, data):
@@ -677,9 +681,9 @@ class ManeuverNegotiator():
         publisher = self.other_cars[agent_id]
       else:
         self.other_cars[agent_id] = rospy.Publisher(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['maneuver-negotiation-topics'][agent_id][0],\
-                                                    std_msgs.msg.String)
+                                                    std_msgs.msg.String,queue_size=10)
 
-      print("sending {0} to car {1}".format(message,agent_id))
+      print("sending {0} to car {1} by car {2}".format(message,agent_id,self.aID))
       publisher = self.other_cars[agent_id]
       publisher.publish(std_msgs.msg.String(message))
 
@@ -689,6 +693,8 @@ class ManeuverNegotiator():
       
   def initialize(self):
     #self.handle = zookeeper.init(communication_config.NETWORK_OPTIONS['zookeeper-server'])
+    devnull = open(os.devnull,"w")
+    zookeeper.set_log_stream(devnull)
     self.handle = zookeeper.init(maneuver_negotiator_config.GENERAL_OPTIONS['zookeeper-server'])
     #id1 = int(input())
     #self.id1 = int(args.id)

@@ -45,7 +45,17 @@ class Car:
         
         nr_cars = rospy.get_param('nr_cars')
         p = rospy.get_param(rospy.get_name())
-        travelling_direction, turn, startdist =  p.split(" ")
+        p = p.split(" ")
+        travelling_direction = p[0]
+        turn = p[1]
+        startdist = p[2]
+
+        self.init_negotiation_time = None
+        if len(p) > 3:
+            #print("setting negotiation init time")
+            self.init_negotiation_time = float(p[3])
+
+
 
         #save all measurements from all cars. time as key. older entries are removed to avoid too large dicts
         self.state_dicts = [{} for _ in range(nr_cars)]
@@ -135,13 +145,25 @@ class Car:
                 else:
                         
                     self.risk_estimator.update_state(real_time, ms)
+                    #print("time = " + str(msg.t))
+                    if msg.t > self.init_negotiation_time:
+                        # print("time pass")
+                        # print("self.init_negotiation_time = {0}".format(self.init_negotiation_time))
+                        
+                        if (self.init_negotiation_time is not None):
+                            print("initiating trymaneuver")
+                            print("msg.t is {0} , and self.init_negotiation_time is {1}".format(msg.t,self.init_negotiation_time))
+                            thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=())
+                            thread1.start()
+                            self.init_negotiation_time = 1000000 #prevent ever restarting  the thread
+
                     if closed_loop: 
                         es_go = self.risk_estimator.getExpectation(self.id)  
                         if save:
                             with open('../risk_estimation/debug.txt', 'a') as f:
                                 f.write("exectation to go = " + str(es_go) + "\n")
 
-                        print "Expectation to go: ", es_go
+                        #print "Expectation to go: ", es_go
                         old_is = self.Is
                         self.Is = "go" if es_go > 0.5 else "stop" 
                         if old_is != self.Is:
@@ -219,5 +241,7 @@ class Car:
 
 
 if __name__ == '__main__':
+    #numpy.random.seed(10003)
+    random.seed(10003)
     s = Car()
     s.spin()
