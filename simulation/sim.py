@@ -139,7 +139,8 @@ class Car:
 
                     #run maneuver negotiator
                     #print("agent id =" + str(self.id))
-                    self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,1,self.risk_estimator)
+                    #self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,1,self.risk_estimator)
+                    self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,0,self.risk_estimator)
                     self.maneuver_negotiator.initialize()
                 
                 else:

@@ -8,6 +8,7 @@ GENERAL_OPTIONS = {
 UDP_COMMUNICATION_OPTIONS = {
     #key = agent id,
     #value = [ip address, port]
+    0: ['127.0.0.1', 9000],
     1: ['127.0.0.1', 9001],
     2: ['127.0.0.2', 9002],
     3: ['127.0.0.3', 9003],

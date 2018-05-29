@@ -297,6 +297,7 @@ class ManeuverNegotiator():
             self.send_udp_message(message,int(tmp_agent))
             print("sent")
           self.tRetry = Timer(self.T_RETRY, self.t_retry)
+          print("starting retry")
           self.tRetry.start()
         else:
           self.status = self.GET
@@ -312,6 +313,7 @@ class ManeuverNegotiator():
           #sock.sendto(message, (host_ip, int(agents_to_ask)))
           #sock.close()
           self.send_udp_message(message,int(self.agents_to_ask))
+          print("starting t_retry by car {0} first".format(self.aID))
           self.tRetry = Timer(self.T_RETRY, self.t_retry)
           self.tRetry.start()
           print("set timer first time")
@@ -319,6 +321,7 @@ class ManeuverNegotiator():
 
       else:
 
+        print("starting t_retry by car {0}, second case".format(self.aID))
         self.tRetry = Timer(self.T_RETRY, self.t_retry)
         self.tRetry.start()
     elif (self.status == self.GRANT):
@@ -428,7 +431,6 @@ class ManeuverNegotiator():
     # global t_grant
     # global grantID
     # global T_RETRY
-    print ("received " + str(message))
 
     #when messages are recived, udp sends data as is without any formatting,
     #so normal string splitting in here works.
@@ -436,8 +438,9 @@ class ManeuverNegotiator():
     #the actual data, invoke message.data to get them. so depending on communication method,
     #things will change to accomodate this:
 
-    print(self.clock()-t <= self.time_delay)
-    if (self.clock() - t <= self.time_delay):
+    curtime = self.clock()
+    print(curtime-t <= self.time_delay)
+    if (curtime - t <= self.time_delay):
       if (self.communication_details == 1): #if using ros:
         #received string is 'data: "GET,1,1,1,1,1,1,1"' without single quotes,
         # first split extracts the "GET,1,1,1,1,1,1,1" and the second split separates them like usual
@@ -449,6 +452,7 @@ class ManeuverNegotiator():
                 "TagTime":message_split[6], "TagID":message_split[7]}
       if (len(message_split) > 8):
         m_dict["IntendedCourse"] = message_split[8]
+      print ("received " + str(message) + " by car " + str(self.aID) + "sent from  car" + m_dict["Sender"])
       print("status: " + str(self.status))
       if((m_dict["Type"] == "GRANT" or m_dict["Type"] == "DENY") and self.status == self.GET):
         print("Received a grant or deny and status == get")
@@ -528,7 +532,7 @@ class ManeuverNegotiator():
               #sock.close()
               self.send_udp_message(s_message,int(agents))
           sender = m_dict["Sender"]
-          s_message = "GRANT," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
+          s_message = "GRANT," + str(self.agent[0]) + "," + str(curtime) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
           #tmp = "tcp://localhost:" + sender
           #context = zmq.Context()
           #socket = context.socket(zmq.DEALER)
@@ -544,7 +548,7 @@ class ManeuverNegotiator():
           self.t_grant.start()
         else:
           sender = m_dict["Sender"]
-          s_message = "DENY," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
+          s_message = "DENY," + str(self.agent[0]) + "," + str(curtime) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
           #tmp = "tcp://localhost:" + sender
           #context = zmq.Context()
           #socket = context.socket(zmq.DEALER)
@@ -620,17 +624,18 @@ class ManeuverNegotiator():
       port = maneuver_negotiator_config.UDP_COMMUNICATION_OPTIONS[self.aID][1]
       print('udp thread: binding to ' + str((host_ip,port)))
       sock.bind((host_ip, port))
-      msg,address = sock.recvfrom(4096)
+      while 1:
+        msg,address = sock.recvfrom(4096)
 
-      #print("Received -->>: " + msg)
-      t = self.clock()
-      #if(msg == "1"):
-      #    global timeTaken
-      #    timeTaken = time.clock()
-      #    print("TIME BEFORE TRYMANEUVER = %f" % timeTaken)
-      #    tryManeuver()
-      #else:
-      self.message_processing(msg, t)
+        #print("Received -->>: " + msg)
+        t = self.clock()
+        #if(msg == "1"):
+        #    global timeTaken
+        #    timeTaken = time.clock()
+        #    print("TIME BEFORE TRYMANEUVER = %f" % timeTaken)
+        #    tryManeuver()
+        #else:
+        self.message_processing(msg, t)
     else:
       #subscribe to ross
       #in the romis implementation, clock() is caled and then message_processing is called.
@@ -670,8 +675,9 @@ class ManeuverNegotiator():
       target_car_ip = maneuver_negotiator_config.UDP_COMMUNICATION_OPTIONS[car_id][0]
       sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
       agent_port = maneuver_negotiator_config.UDP_COMMUNICATION_OPTIONS[car_id][1]
-      print("agent id = " + str(agent_id))
-      print(str((target_car_ip,agent_port)))
+      print("sending {0} to car {1} by car {2}".format(message,agent_id,self.aID))
+      #print("agent id = " + str(agent_id))
+      #print(str((target_car_ip,agent_port)))
       sock.sendto(message, (target_car_ip, agent_port))
       sock.close()
     else:
