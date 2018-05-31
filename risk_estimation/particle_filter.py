@@ -56,46 +56,6 @@ class ParticleFilter:
         self.best_P = P 
         self.best_S = S
     
-    def clone(self):
-        """
-        Make a deep copy of itself with particles and weights exactly same when
-        clone() was called.
-        Useful to do future projections.
-        """
-
-        #def __init__(self,travelling_directions, intersection, n_particles, initial_measurement, pose_covariance, speed_deviation):
-        cloned_object = ParticleFilter(
-            self.travelling_directions[:],\
-            Intersection.Intersection(),\
-            self.n_particles,\
-            [],\
-            self.pose_covariance,\
-            self.speed_deviation,\
-        )
-        cloned_object.weights = self.weights[:]
-
-        #these are readonly variables and can be copied
-        cloned_object.position_covariance =  self.pose_covariance
-        cloned_object.theta_deviation = self.theta_deviation
-        cloned_object.pose_covariance  = self.pose_covariance
-        cloned_object.speed_deviation = self.speed_deviation
-
-        cloned_object.particles = [x.clone() for x in self.particles]
-        cloned_object.most_likely_state = self.most_likely_state.clone()
-
-        cloned_object.known_Is = self.known_Is 
-        cloned_object.known_Ic = self.known_Ic 
-
-        cloned_object.Es_density = self.Es_density.copy()
-        cloned_object.Is_density = self.Is_density.copy()
-        cloned_object.Ic_density = self.Ic_density.copy()
-
-        cloned_object.best_P = self.best_P[:]
-        cloned_object.best_S = float(self.best_S)
-
-        return cloned_object
-
-
 
     #override functions. Updates existing particles as well.#TODO unclear if this is better or not
     def setKnownIc(self, Ic):
@@ -133,27 +93,32 @@ class ParticleFilter:
             self.Is_density[p.Is] += w
             self.Ic_density[p.Ic] += w
 
-        #TODO maybe take weighted avg of top 10 particles here 
-        i = np.argmax(self.weights)
-        self.best_P = self.particles[i].P
-        self.best_S = self.particles[i].S
+        self.best_P = np.mean([p.P for p in self.particles], axis=0)
+        self.best_S = np.mean([p.S for p in self.particles], axis=0)
 
     
     def get_most_likely_state(self):
-        #get key with highest value from dictionaries
-        Es = max(self.Es_density, key=self.Es_density.get)
-        Ic = max(self.Ic_density, key=self.Ic_density.get)
-        Is = max(self.Is_density, key=self.Is_density.get)
 
-        return StateVector(Es, Is, Ic, self.best_P, self.best_S)
+        return self.Ic_density, self.best_P, self.best_S
         
     
     def step_time(self, id, measurement_vector, most_likely_states, interval):
+        #resample particles by their weight:W
+        #sources obtained: 
+        # for neff comparision: https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python/blob/master/12-Particle-Filters.ipynb
+        # This is a sampling importance resampling. 
+        # http://people.math.aau.dk/~kkb/Undervisning/Bayes14/sorenh/docs/sampling-notes.pdf
+        if self.neff(self.weights) < self.neff_threshold:
+            #indices of particles to resample
+            resampled = np.random.choice(self.particles, self.n_particles, p = self.weights)
+            self.particles = resampled
+
+        
         new_particles = []
         for p in self.particles:
             #project new state
 
-            new_Es = Es_estimate(id, p, self.travelling_directions, self.intersection, most_likely_states)
+            new_Es,_ = Es_estimate(id, p.Ic, p.P, p.S, self.travelling_directions, self.intersection, most_likely_states)
 
             #TODO this is a bit ugly
             if self.known_Is:
@@ -166,7 +131,7 @@ class ParticleFilter:
             else:
                 new_Ic = Ic_estimate(p.Ic, self.intersection.turns)
 
-            new_P, new_S = PS_estimate(p, self.travelling_directions[id], self.intersection, interval, self.pose_covariance, self.speed_deviation)
+            new_P, new_S = PS_estimate(p.P[0], p.P[1], p.P[2],p.S, new_Is, new_Ic, self.travelling_directions[id], self.intersection, interval, self.pose_covariance, self.speed_deviation)
             
             new_particles.append(StateVector(new_Es ,new_Is, new_Ic, new_P, new_S))
             
@@ -178,38 +143,12 @@ class ParticleFilter:
         w_sum = float(sum(new_weights))
         new_weights = [w/w_sum for w in new_weights]
 
-        #resample particles by their weight:W
-        #sources obtained: 
-        # for neff comparision: https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python/blob/master/12-Particle-Filters.ipynb
-        # This is a sampling importance resampling. 
-        # http://people.math.aau.dk/~kkb/Undervisning/Bayes14/sorenh/docs/sampling-notes.pdf
-        if self.neff(new_weights) < self.neff_threshold:
-            #indices of particles to resample
-            indices_resample = np.random.choice(range(self.n_particles), self.n_particles, p = new_weights)
-
-            #make new list of particles
-            new_particles = [new_particles[i] for i in indices_resample]
-
-            #we need the weights of the resampled particles
-            new_weights = [new_weights[i] for i in indices_resample]
-
-        #normalize the weights again
-        w_sum = float(sum(new_weights))
-        new_weights = [w/w_sum for w in new_weights]
-
         #update global lists
-        self.particles = new_particles
         self.weights = new_weights
+        self.particles = new_particles
 
         #update the densities for the state variables
         self.updateDensities()
-            
-    def deepcopy_particles(self):
-        particle_copy = []
-        for p in self.particles:
-            particle_copy.append(StateVector(p.Es,p.Is,p.Ic,p.P,p.S))
-
-        return particle_copy
         
         
 
@@ -281,9 +220,4 @@ class StateVector:
         self.Ic = Ic # {"left", "straight", "right"}
         self.P = P   # (x, y, theta)
         self.S = S   # scalar
-    
-    def clone(self):
-        sv = StateVector(self.Es,self.Is,self.Ic,self.P[:],self.S)
-        return sv
-
 

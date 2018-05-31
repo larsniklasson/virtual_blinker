@@ -15,11 +15,11 @@ from risk_estimation.driver import *
 
 from collections import OrderedDict
 from risk_estimation.Intersection import *
-from maneuver_negotiation.maneuver_negotiator import *
-from maneuver_negotiation.cloud import *
+#from maneuver_negotiation.maneuver_negotiator import *
+#rom maneuver_negotiation.cloud import *
 from threading import Thread, Lock
 
-SLOWDOWN = 2
+SLOWDOWN = 3
 
 KP = 0.4
 KI = 0.00
@@ -45,17 +45,7 @@ class Car:
         
         nr_cars = rospy.get_param('nr_cars')
         p = rospy.get_param(rospy.get_name())
-        p = p.split(" ")
-        travelling_direction = p[0]
-        turn = p[1]
-        startdist = p[2]
-
-        self.init_negotiation_time = None
-        if len(p) > 3:
-            #print("setting negotiation init time")
-            self.init_negotiation_time = float(p[3])
-
-
+        travelling_direction, turn, startdist =  p.split(" ")
 
         #save all measurements from all cars. time as key. older entries are removed to avoid too large dicts
         self.state_dicts = [{} for _ in range(nr_cars)]
@@ -73,7 +63,8 @@ class Car:
         self.path_pub = rospy.Publisher('car_path' + str(self.id), cm.Path, queue_size=10)
 
         
-        self.Is = "go"
+        self.Is = "stop"
+        if self.id == 0: self.Is = "go"
         self.speed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
 
 
@@ -88,13 +79,14 @@ class Car:
         self.path_pub.publish(cm.Path([cm.Position(x,y) for x,y in path], self.id))
 
         self.fm = True
+        self.last_es = [-1, -1, -1]
 
         self.debug = True
     
         # to avoid modifying particle and weights while another thread such as maneuver negotiator's no_conflict is
         # reading
         self.risk_estimator_mutex = Lock() 
-                    
+        self.man_init = False
         
 
     def stateCallback(self, msg):
@@ -114,59 +106,42 @@ class Car:
                 
                 real_time = msg.t/(RATE*SLOWDOWN)
                 
-                plot = False
+                plot = False and self.id == 1
                 closed_loop = True
-                if self.id == 0:
-                    save = False
-                else:
-                    save = True
-                
-                if save:
-                    with open('../risk_estimation/debug.txt', 'a') as f:
-                        #f.write(str((real_time, ms)) + "\n")
-                        pass
+            
                 
                 if self.fm:
-                    if save: open('../risk_estimation/debug.txt', 'w').close() #empty the file
                     self.intersection = Intersection()
-
                     #run risk estimator
-                    self.risk_estimator = RiskEstimator(400,self.intersection, ms, np.eye(3)*0.05, 0.05, real_time,self.risk_estimator_mutex, plot)
+                    self.risk_estimator = RiskEstimator(500, self.intersection, ms, np.eye(3)*0.15, 0.15, real_time,self.risk_estimator_mutex, plot, wipe_dir=True)
                     self.fm = False
                     self.risk_estimator.setKnownIc(self.id, self.course.turn)
                     self.risk_estimator.setKnownIs(self.id, self.Is)
 
 
                     #run maneuver negotiator
-                    #print("agent id =" + str(self.id))
-                    #self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,1,self.risk_estimator)
-                    self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,0,self.risk_estimator)
-                    self.maneuver_negotiator.initialize()
+                    #self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,0,self.risk_estimator)
+                    #self.maneuver_negotiator.initialize()
                 
                 else:
                         
                     self.risk_estimator.update_state(real_time, ms)
-                    #print("time = " + str(msg.t))
-                    if msg.t > self.init_negotiation_time:
-                        # print("time pass")
-                        # print("self.init_negotiation_time = {0}".format(self.init_negotiation_time))
-                        
-                        if (self.init_negotiation_time is not None):
-                            print("initiating trymaneuver")
-                            print("msg.t is {0} , and self.init_negotiation_time is {1}".format(msg.t,self.init_negotiation_time))
-                            thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=())
-                            thread1.start()
-                            self.init_negotiation_time = 1000000 #prevent ever restarting  the thread
-
+                    
                     if closed_loop: 
                         es_go = self.risk_estimator.getExpectation(self.id)  
-                        if save:
-                            with open('../risk_estimation/debug.txt', 'a') as f:
-                                f.write("exectation to go = " + str(es_go) + "\n")
-
-                        #print "Expectation to go: ", es_go
+                        print "Expectation to go: ", es_go
+                        #print self.risk_estimator.isManeuverOk(0, "left")
                         old_is = self.Is
-                        self.Is = "go" if es_go > 0.5 else "stop" 
+
+                        #maintain 3 last es_go.
+                        # if all 3 are greater than 0.5 then we go
+                        self.last_es.pop(0)
+                        self.last_es.append(es_go)
+                        if self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta) or all([e > 0.5 for e in self.last_es]) or self.last_es[-1] > 0.99:
+                            self.Is = "go"
+                        elif all([e <= 0.5 and e >= 0 for e in self.last_es]) or self.last_es[-1] < 0.01:
+                            self.Is = "stop"
+                        
                         if old_is != self.Is:
                             self.risk_estimator.setKnownIs(self.id, self.Is)
 
@@ -206,7 +181,17 @@ class Car:
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = min(self.speed, targetspeed)
         
+        """
+        #start trymaneuever
+        if not self.man_init and self.course.hasPassedRequestLine(self.x, self.y):
+            print("initiating trymaneuver")
+            self.man_init = True
+            thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=())
+            thread1.start()
+        """    
+
         
+
         #save current state. Also delete old one
         d = self.state_dicts[self.id]
         d[self.t] = (self.x, self.y, self.theta, self.speed)
@@ -242,7 +227,6 @@ class Car:
 
 
 if __name__ == '__main__':
-    #numpy.random.seed(10003)
-    random.seed(10003)
+    #random.seed(10003)
     s = Car()
     s.spin()

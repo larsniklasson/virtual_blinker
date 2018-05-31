@@ -61,8 +61,8 @@ class Course:
 
             #acceleration used when given speed doesn't match that profile - then we assume the vehicle will conform to the model
             # It will speed up/slow down until it matches profile again. These accelerations are used to calculate this part
-            self.catchup_acc = 6
-            self.catchup_deacc = -6
+            self.catchup_acc = 6#6
+            self.catchup_deacc = -6#-6
 
             #get 2 speed profiles, one for intention=go and one for intention=stop
             self.sp_go, self.sp_stop = createVProfiles(self.fastspeed, self.slowspeed, self.distance_to_crossing, self.slowdown_acc, self.speedup_acc, self.catchup_acc, self.catchup_deacc)
@@ -164,6 +164,11 @@ class Course:
         else:
             #vehicle has exited the curve
             return abs(self.starting_point[1] - self.curve_start[1]) + pi*self.radius/2 + abs(x - self.curve_end[0])
+
+    def hasReachedPointOfNoReturn(self, x, y, theta):
+        x, y, theta = self.rotate(x, y, theta)
+        d = self.getDistance(x,y,theta)
+        return d > self.distance_to_crossing+1
 
     def hasPassedRequestLine(self, x, y):
         _,y,_ = self.rotate(x,y,0)

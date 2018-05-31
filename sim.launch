@@ -6,9 +6,9 @@
 
 <arg name="nr_cars" default="2"/>
 
-<param name="car0" type="string" value="south straight 50"/> <!-- green car-->
-<param name="car1" type="string" value="north left 80"/> <!--red car -->
-<param name="car2" type="string" value="east left 50"/>
+<param name="car0" type="string" value="south right 0"/>
+<param name="car1" type="string" value="north left 50"/>
+<param name="car2" type="string" value="west left 70"/>
 <param name="car3" type="string" value="west left 50"/>
 
 <node if="$(eval nr_cars >= 1)" name="car0" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>

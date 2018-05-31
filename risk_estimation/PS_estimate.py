@@ -3,9 +3,9 @@ import utils
 import Intersection
 import numpy as np
 
-def PS_estimate(p, travelling_direction, intersection, interval, pose_covariance, speed_deviation):
-    c = intersection.courses[travelling_direction, p.Ic]
-    xnew, ynew, thetanew, newspeed = c.predictNextState(p.P[0], p.P[1], p.P[2], p.S, interval, p.Is)
+def PS_estimate(x,y,theta,speed, Is, Ic, travelling_direction, intersection, interval, pose_covariance, speed_deviation):
+    c = intersection.courses[travelling_direction, Ic]
+    xnew, ynew, thetanew, newspeed = c.predictNextState(x, y, theta,speed, interval, Is)
 
     #TODO add half half with forward projection ?
 

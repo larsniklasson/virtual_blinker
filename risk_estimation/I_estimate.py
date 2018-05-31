@@ -1,7 +1,7 @@
 
 import numpy as np
 def Is_estimate(Is_tminus1, Es_estimate):
-    P_comply = 0.9
+    P_comply = 0.75
     
 
     if (Is_tminus1 == "go" and Es_estimate == "go"):
@@ -19,7 +19,7 @@ def Is_estimate(Is_tminus1, Es_estimate):
 
 
 def Ic_estimate(Ic, turns):
-    P_same = 0.9
+    P_same = 0.5
     nr_turns = len(turns)
 
     density = []
