@@ -120,6 +120,7 @@ class ParticleFilter:
             
             e = {}
             ps = {}
+            
             for p in pc:
                 _,es = Es_estimate(id, p.Ic, p.P, p.S, self.travelling_directions, self.intersection, most_likely_states, ttc_hli)
                 e[p] = es
@@ -135,12 +136,17 @@ class ParticleFilter:
                 for i in Is_list:
                     for c in Ic_list:
                         ps[i,c] = PS_estimate(p.P[0], p.P[1], p.P[2], p.S, i, c, self.travelling_directions[id], self.intersection, interval, self.pose_covariance, self.speed_deviation, flag=True)
-
+            
 
             new_particles = []
             for p,v in pc.iteritems():
                 for _ in range(v):
+                    
+                    
                     new_Es = "go" if random.random() <= e[p] else "stop"
+                    
+                    
+
                     #TODO this is a bit ugly
                     if self.known_Is:
                         new_Is = self.known_Is
@@ -152,9 +158,10 @@ class ParticleFilter:
                     else:
                         new_Ic = Ic_estimate(p.Ic, self.intersection.turns)
                     
-
-                    new_P, new_S = sample(*ps[new_Is, new_Ic], pose_covariance=self.pose_covariance, speed_deviation=self.speed_deviation)
                     
+                    new_P, new_S = sample(*ps[new_Is, new_Ic], pose_covariance=self.pose_covariance, speed_deviation=self.speed_deviation)    
+
+
                     new_particles.append(StateVector(new_Es ,new_Is, new_Ic, new_P, new_S))
 
 
@@ -269,12 +276,25 @@ def normpdf(x, mu, sigma):
 def generate_inital_particles(intersection, initial_pose, initial_speed, nr_particles, pose_covariance, speed_deviation):
     particles = []
 
+    Ic_density = [1.0/len(intersection.turns)]*len(intersection.turns)
     for i in range(nr_particles):
+        
+        x,y,theta = initial_pose
+        speed = initial_speed
+        xy_cov = pose_covariance[0][0]
+        theta_cov = pose_covariance[2][2]
 
+        x_estimate = np.random.normal(x, xy_cov)
+        y_estimate = np.random.normal(y, xy_cov)
+        theta_estimate = np.random.normal(theta, theta_cov)
+        P = x_estimate, y_estimate, theta_estimate
 
-        Es = random.choice(("go", "stop"))
-        Is = random.choice(("go", "stop"))
-        Ic = random.choice(intersection.turns)
+        #p_estimate = np.random.multivariate_normal((xnew, ynew, thetanew), pose_covariance)
+        S = np.random.normal(speed, speed_deviation)
+        
+        Es = "go" if random.random() <= 0.5 else "stop"
+        Is = "go" if random.random() <= 0.5 else "stop"
+        Ic = choice(intersection.turns, Ic_density)
     
         P = np.random.multivariate_normal(initial_pose, pose_covariance)
         S = np.random.normal(initial_speed, speed_deviation)

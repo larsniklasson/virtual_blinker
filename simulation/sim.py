@@ -19,7 +19,7 @@ from risk_estimation.Intersection import *
 #rom maneuver_negotiation.cloud import *
 from threading import Thread, Lock
 
-SLOWDOWN = 3
+SLOWDOWN = 1.5
 
 KP = 0.4
 KI = 0.00
@@ -108,9 +108,19 @@ class Car:
                 
                 plot = False and self.id == 1
                 closed_loop = True
+
+                save = True
             
+                if save and not self.fm:
+                    with open('../risk_estimation/debug.txt', 'a') as f:
+                        f.write(str((real_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
+                
                 
                 if self.fm:
+                    
+                    with open('../risk_estimation/debug.txt', 'w') as f:
+                        f.write(str((real_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
+
                     self.intersection = Intersection()
                     #run risk estimator
                     self.risk_estimator = RiskEstimator(500, self.intersection, ms, np.eye(3)*0.15, 0.15, real_time,self.risk_estimator_mutex, plot, wipe_dir=True)

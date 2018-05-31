@@ -1,6 +1,10 @@
 from driver import *
 from Intersection import *
 from threading import Thread, Lock
+import time
+
+start_time = time.time()
+print start_time
 
 plot = False
 
@@ -10,7 +14,7 @@ with open("debug.txt") as f:
     for line in f:
         x = eval(line[:-1]) # (timestamp, measurement_vector)
         if first:
-            re = RiskEstimator(800, Intersection(), x[1], np.eye(3)*0.15, 0.15, x[0], Lock(), plot, plot)
+            re = RiskEstimator(200, Intersection(), x[1], np.eye(3)*0.15, 0.15, x[0], Lock(), plot, plot)
             id, Ic, Is = x[2]
             re.setKnownIc(id, Ic)
             re.setKnownIs(id, Is)
@@ -25,3 +29,7 @@ with open("debug.txt") as f:
             re.setKnownIs(id, Is)
             re.update_state(x[0], x[1])
         
+
+endtime = time.time()
+
+print "runtime: ", (endtime - start_time)

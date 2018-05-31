@@ -164,8 +164,9 @@ class RootFunction:
     
     #integrate 1/x
     def solveInverseIntegral(self, a, b):
-        f = lambda x: 2*sqrt(max(self.a*x + self.b, 0))/self.a
-        return f(b) - f(a)
+        #f = lambda x: 2*sqrt(max(self.a*x + self.b, 0))/self.a
+        #return f(b) - f(a)
+        return 2*sqrt(max(self.a*b + self.b, 0))/self.a - 2*sqrt(max(self.a*a + self.b, 0))/self.a
 
     def getUpperLimit(self, t, a):
         return (1.0/4) * (4*t*sqrt(self.a*a + self.b) + self.a * t**2 + 4*a)
