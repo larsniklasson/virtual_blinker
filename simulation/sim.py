@@ -19,7 +19,7 @@ from risk_estimation.Intersection import *
 #rom maneuver_negotiation.cloud import *
 from threading import Thread, Lock
 
-SLOWDOWN = 1
+SLOWDOWN = 3
 
 KP = 0.4
 KI = 0.00
@@ -102,13 +102,13 @@ class Car:
             ms = [d[msg.t] for d in self.state_dicts]
             
             
-            if self.id == 1 or self.id == 2: #only send one for now
+            if self.id == 1: #only send one for now
                 
                 real_time = msg.t/(RATE*SLOWDOWN)
                 
                 plot = False
                 closed_loop = True
-                save = True
+                save = False
             
                 if save and not self.fm:
                     with open('../risk_estimation/debug.txt', 'a') as f:
@@ -120,7 +120,7 @@ class Car:
                     self.intersection = Intersection()
 
                     #run risk estimator
-                    self.risk_estimator = RiskEstimator(100, self.intersection, ms, np.eye(3)*0.15, 0.15, real_time,self.risk_estimator_mutex, plot)
+                    self.risk_estimator = RiskEstimator(500, self.intersection, ms, np.eye(3)*0.15, 0.15, real_time,self.risk_estimator_mutex, plot, wipe_dir=True)
                     self.fm = False
                     self.risk_estimator.setKnownIc(self.id, self.course.turn)
                     self.risk_estimator.setKnownIs(self.id, self.Is)
@@ -137,6 +137,7 @@ class Car:
                     if closed_loop: 
                         es_go = self.risk_estimator.getExpectation(self.id)  
                         print "Expectation to go: ", es_go
+                        #print self.risk_estimator.isManeuverOk(0, "left")
                         old_is = self.Is
 
                         #maintain 3 last es_go.
@@ -145,7 +146,7 @@ class Car:
                         self.last_es.append(es_go)
                         if self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta) or all([e > 0.5 for e in self.last_es]) or self.last_es[-1] > 0.99:
                             self.Is = "go"
-                        elif all([e <= 0.5 and e >= 0 for e in self.last_es]):
+                        elif all([e <= 0.5 and e >= 0 for e in self.last_es]) or self.last_es[-1] < 0.01:
                             self.Is = "stop"
                         
                         if old_is != self.Is:

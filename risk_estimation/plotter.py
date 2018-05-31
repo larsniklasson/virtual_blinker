@@ -55,7 +55,7 @@ def plot_particles(p_filters, measurement_vector, t, plot_folder):
         caption_P = [round(field,2) for field in best_P]
         caption_S = round(best_S,2)
 
-        vehicle_text  = "Id {0}:\n Es = {1}\n Is = {2}\n Is = {3}\n Best Pose = {4} \n Best speed = {5} \n\n"
+        vehicle_text  = "Id {0}:\n Es = {1}\n Is = {2}\n Ic = {3}\n Best Pose = {4} \n Best speed = {5} \n\n"
         caption_text  = caption_text + vehicle_text.format( \
                                             i, \
                                             caption_Es,\

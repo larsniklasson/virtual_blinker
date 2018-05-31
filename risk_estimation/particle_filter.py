@@ -92,27 +92,32 @@ class ParticleFilter:
             self.Is_density[p.Is] += w
             self.Ic_density[p.Ic] += w
 
-        #TODO maybe take weighted avg of top 10 particles here 
-        i = np.argmax(self.weights)
-        self.best_P = self.particles[i].P
-        self.best_S = self.particles[i].S
+        self.best_P = np.mean([p.P for p in self.particles], axis=0)
+        self.best_S = np.mean([p.S for p in self.particles], axis=0)
 
     
     def get_most_likely_state(self):
-        #get key with highest value from dictionaries
-        Es = max(self.Es_density, key=self.Es_density.get)
-        Ic = max(self.Ic_density, key=self.Ic_density.get)
-        Is = max(self.Is_density, key=self.Is_density.get)
 
-        return StateVector(Es, Is, Ic, self.best_P, self.best_S)
+        return self.Ic_density, self.best_P, self.best_S
         
     
     def step_time(self, id, measurement_vector, most_likely_states, interval):
+        #resample particles by their weight:W
+        #sources obtained: 
+        # for neff comparision: https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python/blob/master/12-Particle-Filters.ipynb
+        # This is a sampling importance resampling. 
+        # http://people.math.aau.dk/~kkb/Undervisning/Bayes14/sorenh/docs/sampling-notes.pdf
+        if self.neff(self.weights) < self.neff_threshold:
+            #indices of particles to resample
+            resampled = np.random.choice(self.particles, self.n_particles, p = self.weights)
+            self.particles = resampled
+
+        
         new_particles = []
         for p in self.particles:
             #project new state
 
-            new_Es = Es_estimate(id, p, self.travelling_directions, self.intersection, most_likely_states)
+            new_Es,_ = Es_estimate(id, p.Ic, p.P, p.S, self.travelling_directions, self.intersection, most_likely_states)
 
             #TODO this is a bit ugly
             if self.known_Is:
@@ -137,28 +142,9 @@ class ParticleFilter:
         w_sum = float(sum(new_weights))
         new_weights = [w/w_sum for w in new_weights]
 
-        #resample particles by their weight:W
-        #sources obtained: 
-        # for neff comparision: https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python/blob/master/12-Particle-Filters.ipynb
-        # This is a sampling importance resampling. 
-        # http://people.math.aau.dk/~kkb/Undervisning/Bayes14/sorenh/docs/sampling-notes.pdf
-        if self.neff(new_weights) < self.neff_threshold:
-            #indices of particles to resample
-            indices_resample = np.random.choice(range(self.n_particles), self.n_particles, p = new_weights)
-
-            #make new list of particles
-            new_particles = [new_particles[i] for i in indices_resample]
-
-            #we need the weights of the resampled particles
-            new_weights = [new_weights[i] for i in indices_resample]
-
-        #normalize the weights again
-        w_sum = float(sum(new_weights))
-        new_weights = [w/w_sum for w in new_weights]
-
         #update global lists
-        self.particles = new_particles
         self.weights = new_weights
+        self.particles = new_particles
 
         #update the densities for the state variables
         self.updateDensities()

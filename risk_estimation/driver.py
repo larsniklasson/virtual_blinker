@@ -4,12 +4,18 @@ import plotter
 import time
 import os
 import glob
+from E_estimate import *
 dir_path = os.path.dirname(os.path.realpath(__file__))
 plot_folder = os.path.join(dir_path, "plotfolder")
+
 
 class RiskEstimator:
 
     def __init__(self, n_particles, intersection, initial_measurements, pose_covariance, speed_deviation, init_time,mutex,plot=False, wipe_dir=False):
+
+        if not os.path.exists(plot_folder):
+            os.makedirs(plot_folder)
+
 
         if plot and wipe_dir:
             files = glob.glob(plot_folder + "/*")
@@ -70,6 +76,23 @@ class RiskEstimator:
         
         self.mutex.release()
 
+    def isManeuverOk(self, id, turn):
+        self.mutex.acquire()
+        most_likely_states = [f.get_most_likely_state() for f in self.particle_filters]
+        pf = self.particle_filters[id]
+        
+        go_sum = 0
+        for p, w in zip(pf.particles, pf.weights):
+            _, go = Es_estimate(id, turn, p.P, p.S, pf.travelling_directions, pf.intersection, most_likely_states)
+            
+            go_sum += float(go*w)
+        
+        self.mutex.release()
+        return go_sum > 0.5
+
+
+
+
 
     # probability(Es = "go")
     def getExpectation(self, id):
@@ -94,22 +117,6 @@ class RiskEstimator:
         self.mutex.release()
         return risks
 
-    def get_expectation_Es(self,vehicle_id,intended_course=None):
-        #compute expectation of Es:
-        # if intended_course given, compute p(ic != es | ic = x)
-        # useful to measure expectation on a certain maneuver
-
-        expectation = 0.
-        for pfilter in self.particle_filters:
-            for i,s in enumerate(pfilter.particles):
-                weight = pfilter.weights[i]
-                if (intended_course is not None):
-                    if (intended_course == s.Ic):
-                        expectation = expectation + (s.Es*weight)
-                else:
-                    expectation = expectation + (s.Es*weight)
-
-        return expectation
     
     def get_copy(self,vehicle_id):
         self.mutex.acquire()
