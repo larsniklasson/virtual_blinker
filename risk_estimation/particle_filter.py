@@ -6,8 +6,6 @@ from PS_estimate import *
 import math
 import random
 
-from scipy.stats import multivariate_normal
-from scipy.stats import norm
 
 class ParticleFilter:
     def __init__(self,travelling_directions, intersection, n_particles, initial_measurement, pose_covariance, speed_deviation):
@@ -38,8 +36,6 @@ class ParticleFilter:
         self.particles = generate_inital_particles(intersection, P, S, n_particles, self.pose_covariance, self.speed_deviation)
         self.weights = [1.0 / self.n_particles] * self.n_particles
 
-        #doesn't matter what to put here
-        self.most_likely_state = StateVector("go", "go", "straight", P, S)
         
         #is changed if intention overridden
         self.known_Is = None
@@ -93,8 +89,9 @@ class ParticleFilter:
             self.Is_density[p.Is] += w
             self.Ic_density[p.Ic] += w
 
-        self.best_P = np.mean([p.P for p in self.particles], axis=0)
-        self.best_S = np.mean([p.S for p in self.particles], axis=0)
+        
+        self.best_P = np.sum([np.array(p.P)*w for p,w in zip(self.particles, self.weights)], axis=0)
+        self.best_S = np.sum([p.S*w for p,w in zip(self.particles, self.weights)], axis=0)
 
     
     def get_most_likely_state(self):
@@ -102,7 +99,7 @@ class ParticleFilter:
         return self.Ic_density, self.best_P, self.best_S
         
     
-    def step_time(self, id, measurement_vector, most_likely_states, interval):
+    def step_time(self, id, measurement_vector, most_likely_states, interval, ttc_hli):
         #resample particles by their weight:W
         #sources obtained: 
         # for neff comparision: https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python/blob/master/12-Particle-Filters.ipynb
@@ -118,7 +115,7 @@ class ParticleFilter:
         for p in self.particles:
             #project new state
 
-            new_Es,_ = Es_estimate(id, p.Ic, p.P, p.S, self.travelling_directions, self.intersection, most_likely_states)
+            new_Es,_ = Es_estimate(id, p.Ic, p.P, p.S, self.travelling_directions, self.intersection, most_likely_states, ttc_hli)
 
             #TODO this is a bit ugly
             if self.known_Is:
@@ -167,15 +164,20 @@ class ParticleFilter:
         #https://math.stackexchange.com/questions/892832/why-we-consider-log-likelihood-instead-of-likelihood-in-gaussian-distribution
         #calculating this likelihood takes a lot of time as per benchmark profile output
         #https://stats.stackexchange.com/questions/201545/likelihood-calculation-in-particle-filtering
-        mean_xy = p.P[:2]
+        mean_x, mean_y = p.P[:2]
         mean_theta = p.P[-1]
         mean_speed = p.S
 
-        xy = measurement_vector[:2]
+        x,y = measurement_vector[:2]
         theta = measurement_vector[2]
         speed = measurement_vector[3]
 
-        position_likelihood = multivariate_normal.pdf(xy,mean = mean_xy, cov=self.position_covariance)
+        a = self.position_covariance[0][0]
+        x_likelihood = normpdf(x, mean_x, a)
+        y_likelihood = normpdf(y, mean_y, a)
+        position_likelihood = x_likelihood * y_likelihood
+        #position_likelihood = multivariate_normal.pdf(xy,mean = mean_xy, cov=self.position_covariance)
+
         
         upper_bound = mean_theta + math.pi
         lower_bound = mean_theta - math.pi
@@ -187,13 +189,21 @@ class ParticleFilter:
                 theta -= math.pi*2
 
 
-        theta_likelihood = norm.pdf(theta, loc=mean_theta, scale=self.theta_deviation)
+        #theta_likelihood = norm.pdf(theta, loc=mean_theta, scale=self.theta_deviation)
+        theta_likelihood = normpdf(theta, mean_theta, self.theta_deviation)
 
-        speed_likelihood = norm.pdf(speed, loc=mean_speed, scale=self.speed_deviation)
+        #speed_likelihood = norm.pdf(speed, loc=mean_speed, scale=self.speed_deviation)
+        speed_likelihood = normpdf(speed, mean_speed, self.speed_deviation)
 
+        
         pose_likelihood = position_likelihood * theta_likelihood # position and angle are independent so this multiplication is okay
 
         return pose_likelihood * speed_likelihood
+
+def normpdf(x, mu, sigma):
+    u = float((x-mu) / abs(sigma))
+    y = math.exp(-u*u/2) / (math.sqrt(2*math.pi) * abs(sigma))
+    return y
         
 
 def generate_inital_particles(intersection, initial_pose, initial_speed, nr_particles, pose_covariance, speed_deviation):

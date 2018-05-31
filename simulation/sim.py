@@ -102,11 +102,11 @@ class Car:
             ms = [d[msg.t] for d in self.state_dicts]
             
             
-            if self.id == 1 or self.id == 0: #only send one for now
+            if self.id == 1: #only send one for now
                 
                 real_time = msg.t/(RATE*SLOWDOWN)
                 
-                plot = False and self.id == 1
+                plot = True and self.id == 1
                 closed_loop = True
             
                 

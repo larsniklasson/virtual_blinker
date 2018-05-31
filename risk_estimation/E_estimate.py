@@ -4,8 +4,9 @@ import math
 import numpy as np
 import Intersection 
 import utils
+import random
 
-def Es_estimate(carid, ego_Ic, ego_P, ego_S, travelling_directions, intersection, most_likely_states):
+def Es_estimate(carid, ego_Ic, ego_P, ego_S, travelling_directions, intersection, most_likely_states, ttc_hli):
     
 
     ego_travelling_direction = travelling_directions[carid]
@@ -16,13 +17,13 @@ def Es_estimate(carid, ego_Ic, ego_P, ego_S, travelling_directions, intersection
 
     #combine directions with most likely states
     # filter out ego-vehicle
-    blob = zip(travelling_directions, most_likely_states)
+    blob = zip(travelling_directions, most_likely_states, ttc_hli)
     blob = blob[:carid] + blob[carid+1:]
 
     ego_ttc = ego_course.getTimeToCrossing(ego_P[0], ego_P[1], ego_P[2], ego_S, "go")
 
     min_go_vehicles = 1 #P(Es = go). Choose lowest probability out of other vehicles
-    for td, st in blob:
+    for td, st, th in blob:
         
         if not td: continue # has no direction => started inside or past intersection
         
@@ -31,13 +32,15 @@ def Es_estimate(carid, ego_Ic, ego_P, ego_S, travelling_directions, intersection
         
         go_turns = {} #P(Es=go) for the different turns
         for turn in intersection.turns:
+
+
+            hasLeft, ttc = th[turn]
             #course of other vehicle
             c = intersection.courses[td, turn]
-            if c.hasLeftIntersection(*st[1]): 
+            if hasLeft: 
                 go_turns[turn] = 1.0
                 continue
             
-            ttc = c.getTimeToCrossing(*st[1], speed = st[2], Is="go")
             gap = ttc - ego_ttc
             
             #gap model return P(Es=go) If lower than lowest so far, update min variable
@@ -55,5 +58,10 @@ def Es_estimate(carid, ego_Ic, ego_P, ego_S, travelling_directions, intersection
             min_go_vehicles = es_go
 
     g = min_go_vehicles
-    return np.random.choice(["stop", "go"], p=(1-g, g)), g
+    if random.random() <= g:
+        r = "go"
+    else:
+        r = "stop"
+
+    return r, g
     

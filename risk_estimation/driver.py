@@ -31,11 +31,11 @@ class RiskEstimator:
         self.mutex = mutex
 
         #get initial directions that the vehicle are travelling towards
-        travelling_directions = [intersection.getTravellingDirection(x, y, theta) for (x, y, theta, _) in initial_measurements]
+        self.travelling_directions = [intersection.getTravellingDirection(x, y, theta) for (x, y, theta, _) in initial_measurements]
 
         #initialize the particle filters
         self.particle_filters = \
-            [ParticleFilter(travelling_directions, self.intersection, n_particles, m, pose_covariance, speed_deviation) \
+            [ParticleFilter(self.travelling_directions, self.intersection, n_particles, m, pose_covariance, speed_deviation) \
                 for m in initial_measurements]
 
 
@@ -60,16 +60,25 @@ class RiskEstimator:
         self.particle_filters[id].removeKnownIs()
         self.mutex.release()
 
+    def opt(self, state, td):
+        d = {}
+        Ic_dens, P, S = state
+        for turn in self.intersection.turns:
+            c = self.intersection.courses[td,turn]
+            d[turn] = c.hasLeftIntersection(*P), c.getTimeToCrossing(*P, speed=S, Is="go")
+        return d
+
 
     def update_state(self, t, measurements):
         self.mutex.acquire()
         
         most_likely_states = [f.get_most_likely_state() for f in self.particle_filters]
+        ttc_hli = [self.opt(s, td) for s, td in zip(most_likely_states, self.travelling_directions)]
 
         interval = t - self.last_t
 
         for i, pfilter in enumerate(self.particle_filters):
-            pfilter.step_time(i, measurements[i], most_likely_states, interval)
+            pfilter.step_time(i, measurements[i], most_likely_states, interval, ttc_hli)
         
         self.last_t = t
 
@@ -81,11 +90,13 @@ class RiskEstimator:
     def isManeuverOk(self, id, turn):
         self.mutex.acquire()
         most_likely_states = [f.get_most_likely_state() for f in self.particle_filters]
+        ttc_hli = [self.opt(s,td) for s,td in zip(most_likely_states, self.travelling_directions)]
+
         pf = self.particle_filters[id]
         
         go_sum = 0
         for p, w in zip(pf.particles, pf.weights):
-            _, go = Es_estimate(id, turn, p.P, p.S, pf.travelling_directions, pf.intersection, most_likely_states)
+            _, go = Es_estimate(id, turn, p.P, p.S, pf.travelling_directions, pf.intersection, most_likely_states, ttc_hli)
             
             go_sum += float(go*w)
         
