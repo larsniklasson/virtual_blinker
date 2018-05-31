@@ -1,7 +1,7 @@
 from copy import deepcopy
 import numpy as np
 from E_estimate import Es_estimate
-from I_estimate import Is_estimate, Ic_estimate
+from I_estimate import Is_estimate, Ic_estimate, choice
 from PS_estimate import *
 import math
 import random
@@ -105,32 +105,92 @@ class ParticleFilter:
         # for neff comparision: https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python/blob/master/12-Particle-Filters.ipynb
         # This is a sampling importance resampling. 
         # http://people.math.aau.dk/~kkb/Undervisning/Bayes14/sorenh/docs/sampling-notes.pdf
+        
         if self.neff(self.weights) < self.neff_threshold:
             #indices of particles to resample
-            resampled = np.random.choice(self.particles, self.n_particles, p = self.weights)
-            self.particles = resampled
+            resampled = np.random.choice(self.particles, len(self.particles), p=self.weights)
 
-        
-        new_particles = []
-        for p in self.particles:
-            #project new state
+            pc = {}
+            for p in resampled:
+                if p in pc:
+                    pc[p] += 1
+                else:
+                    pc[p] = 1
 
-            new_Es,_ = Es_estimate(id, p.Ic, p.P, p.S, self.travelling_directions, self.intersection, most_likely_states, ttc_hli)
-
-            #TODO this is a bit ugly
-            if self.known_Is:
-                new_Is = self.known_Is
-            else:
-                new_Is = Is_estimate(p.Is, new_Es)
-
-            if self.known_Ic:
-                new_Ic = self.known_Ic
-            else:
-                new_Ic = Ic_estimate(p.Ic, self.intersection.turns)
-
-            new_P, new_S = PS_estimate(p.P[0], p.P[1], p.P[2],p.S, new_Is, new_Ic, self.travelling_directions[id], self.intersection, interval, self.pose_covariance, self.speed_deviation)
             
-            new_particles.append(StateVector(new_Es ,new_Is, new_Ic, new_P, new_S))
+            e = {}
+            ps = {}
+            for p in pc:
+                _,es = Es_estimate(id, p.Ic, p.P, p.S, self.travelling_directions, self.intersection, most_likely_states, ttc_hli)
+                e[p] = es
+                if self.known_Is:
+                    Is_list = [self.known_Is]
+                else:
+                    Is_list = ["go", "stop"]
+                if self.known_Ic:
+                    Ic_list = [self.known_Ic]
+                else:
+                    Ic_list = self.intersection.turns
+
+                for i in Is_list:
+                    for c in Ic_list:
+                        ps[i,c] = PS_estimate(p.P[0], p.P[1], p.P[2], p.S, i, c, self.travelling_directions[id], self.intersection, interval, self.pose_covariance, self.speed_deviation, flag=True)
+
+
+            new_particles = []
+            for p,v in pc.iteritems():
+                for _ in range(v):
+                    new_Es = "go" if random.random() <= e[p] else "stop"
+                    #TODO this is a bit ugly
+                    if self.known_Is:
+                        new_Is = self.known_Is
+                    else:
+                        new_Is = Is_estimate(p.Is, new_Es)
+
+                    if self.known_Ic:
+                        new_Ic = self.known_Ic
+                    else:
+                        new_Ic = Ic_estimate(p.Ic, self.intersection.turns)
+                    
+
+                    new_P, new_S = sample(*ps[new_Is, new_Ic], pose_covariance=self.pose_covariance, speed_deviation=self.speed_deviation)
+                    
+                    new_particles.append(StateVector(new_Es ,new_Is, new_Ic, new_P, new_S))
+
+
+
+
+
+
+
+
+            
+
+
+            #resampled = np.random.choice(self.particles, self.n_particles, p = self.weights)
+            #self.particles = resampled
+
+        else:
+            new_particles = []
+            for p in self.particles:
+                #project new state
+
+                new_Es,_ = Es_estimate(id, p.Ic, p.P, p.S, self.travelling_directions, self.intersection, most_likely_states, ttc_hli)
+
+                #TODO this is a bit ugly
+                if self.known_Is:
+                    new_Is = self.known_Is
+                else:
+                    new_Is = Is_estimate(p.Is, new_Es)
+
+                if self.known_Ic:
+                    new_Ic = self.known_Ic
+                else:
+                    new_Ic = Ic_estimate(p.Ic, self.intersection.turns)
+
+                new_P, new_S = PS_estimate(p.P[0], p.P[1], p.P[2],p.S, new_Is, new_Ic, self.travelling_directions[id], self.intersection, interval, self.pose_covariance, self.speed_deviation)
+                
+                new_particles.append(StateVector(new_Es ,new_Is, new_Ic, new_P, new_S))
             
 
         new_weights = [self.likelihood(p, measurement_vector) for p in new_particles]

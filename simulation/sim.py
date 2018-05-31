@@ -106,7 +106,7 @@ class Car:
                 
                 real_time = msg.t/(RATE*SLOWDOWN)
                 
-                plot = True and self.id == 1
+                plot = False and self.id == 1
                 closed_loop = True
             
                 

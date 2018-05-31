@@ -35,12 +35,21 @@ def Ic_estimate(Ic, turns):
     return choice(turns, density)
 
 
-def choice(turns, density):
-    s = sorted(zip(turns, density), key = lambda (_,d):-d)
-    r = random.random()
-    dsum = 0
-    for t,d in s:
-        if r <= dsum + d:
-            return t
-        else:
-            dsum += d
+def choice(turns, density, n=1):
+    rr = []
+    for _ in range(n):
+        s = sorted(zip(turns, density), key = lambda (_,d):-d)
+        r = random.random()
+        dsum = 0
+        for t,d in s:
+            if r <= dsum + d:
+                rr.append(t)
+                break
+            else:
+                dsum += d
+
+    if len(rr) == 1:
+        return rr[0]
+    else:
+        return rr
+                

@@ -65,7 +65,12 @@ class RiskEstimator:
         Ic_dens, P, S = state
         for turn in self.intersection.turns:
             c = self.intersection.courses[td,turn]
-            d[turn] = c.hasLeftIntersection(*P), c.getTimeToCrossing(*P, speed=S, Is="go")
+            a = c.hasLeftIntersection(*P)
+            if a:
+                b = 0
+            else:
+                b = c.getTimeToCrossing(*P, speed=S, Is="go")
+            d[turn] = a, b
         return d
 
 
