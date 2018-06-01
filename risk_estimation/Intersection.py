@@ -54,6 +54,14 @@ class Intersection:
         #unless changed by a maneuver negotiation protocol
         self.priority_directions = ["south","north"]
 
+        self.relativePositions = {}
+        for td1 in self.travelling_directions:
+            for td2 in self.travelling_directions:
+                if td1 != td2:
+                    rp = self.getRelativePosition(td1, td2)
+                    self.relativePositions[td1, td2] = rp
+
+
 
     #south-north is prio lane TODO store this some other place
     # TODO this will change when priority changes. so it should not be fixed
@@ -87,7 +95,8 @@ class Intersection:
             return True 
 
         #calculate relative position and lookup if ego-vehicle has priority
-        rel_pos_opposing = self.getRelativePosition(travelling_direction, other_vehicle_td)
+        #rel_pos_opposing = self.getRelativePosition(travelling_direction, other_vehicle_td)
+        rel_pos_opposing = self.relativePositions[travelling_direction, other_vehicle_td]
         if self.isOnPrioLane(travelling_direction):
             return self.prioTable[turn][rel_pos_opposing]
 

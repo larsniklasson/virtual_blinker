@@ -151,7 +151,7 @@ class Course:
     def getDistance(self, x, y, theta):
 
         if self.turn == "straight" or y < self.curve_start[1]:
-            return abs(self.starting_point[1] - y)
+            return y - self.starting_point[1]#abs(self.starting_point[1] - y)
 
 
         if (self.turn == "left" and x > self.curve_end[0]) or (self.turn =="right" and x < self.curve_end[0]):
@@ -160,10 +160,10 @@ class Course:
             t = theta-pi/2
             if self.turn == "right":
                 t = -t
-            return abs(self.starting_point[1] - self.curve_start[1]) + self.radius*t
+            return  self.curve_start[1] - self.starting_point[1] + self.radius*t
         else:
             #vehicle has exited the curve
-            return abs(self.starting_point[1] - self.curve_start[1]) + pi*self.radius/2 + abs(x - self.curve_end[0])
+            return  self.curve_start[1] - self.starting_point[1] + pi*self.radius/2 + abs(x - self.curve_end[0])
 
     def hasReachedPointOfNoReturn(self, x, y, theta):
         x, y, theta = self.rotate(x, y, theta)
@@ -225,7 +225,7 @@ class Course:
             return self.starting_point[0], self.starting_point[1] + d, pi/2
 
         #length of section 1,2. i.e. that part before the curve and the curve itself.
-        section1 = abs(self.starting_point[1]-self.curve_start[1])
+        section1 = self.curve_start[1] - self.starting_point[1]
         section2 = self.radius*2*pi/4
         if d < section1:
             return (self.starting_point[0], self.starting_point[1] + d, pi/2)
@@ -254,14 +254,27 @@ class Course:
             else:
                 return self.curve_end[0] + d2, self.curve_end[1], 0
 
+    def getXDeviation(self, x, d):
+        if self.turn == "straight" or d < self.distance_to_crossing:
+            return x - 3.25
+        elif d < self.distance_to_crossing + self.radius*2*pi/4:
+            d2 = d - self.distance_to_crossing
+            v = d2/self.radius
+            if self.turn == "left":
+                ang = v
+            elif self.turn == "right":
+                ang = pi-v
+            
+            a,_ = self.circle_mid
+            
+            return x - (a + self.radius*cos(ang))
+        else:
+            return 0
+
 
     def getPoseAccountOffset(self, old_d, x, newd):
         #if old position was off (in x direction), new one should be off as well
-        p_old = self.getPose(old_d)
+        x_off = self.getXDeviation(x, old_d)
         p_new = self.getPose(newd)
-        if self.turn == "straight" or (self.turn == "left" and p_old[0] > self.curve_end[0]) or (self.turn == "right" and p_old[0] < self.curve_end[0]):
-            return (p_new[0] - (p_old[0] - x), p_new[1], p_new[2])
-        else:
-            return p_new
-            
+        return p_new[0] + x_off, p_new[1], p_new[2]
 

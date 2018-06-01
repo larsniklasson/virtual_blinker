@@ -84,14 +84,25 @@ class ParticleFilter:
         for t in self.Ic_density:
             self.Ic_density[t] = 0
         
+        bx = 0
+        by = 0
+        btheta = 0
+        bs = 0
         for p, w in zip(self.particles, self.weights):
             self.Es_density[p.Es] += w
             self.Is_density[p.Is] += w
             self.Ic_density[p.Ic] += w
+            bx += p.P[0] * w
+            by += p.P[1] * w
+            btheta += p.P[2] *w
+            bs += p.S*w
 
         
-        self.best_P = np.sum([np.array(p.P)*w for p,w in zip(self.particles, self.weights)], axis=0)
-        self.best_S = np.sum([p.S*w for p,w in zip(self.particles, self.weights)], axis=0)
+        self.best_P = bx, by, btheta
+        self.best_S = bs
+
+        #self.best_P = np.sum([np.array(p.P)*w for p,w in zip(self.particles, self.weights)], axis=0)
+        #self.best_S = np.sum([p.S*w for p,w in zip(self.particles, self.weights)], axis=0)
 
     
     def get_most_likely_state(self):
@@ -199,7 +210,6 @@ class ParticleFilter:
                 
                 new_particles.append(StateVector(new_Es ,new_Is, new_Ic, new_P, new_S))
             
-
         new_weights = [self.likelihood(p, measurement_vector) for p in new_particles]
 
 
@@ -266,6 +276,7 @@ class ParticleFilter:
         pose_likelihood = position_likelihood * theta_likelihood # position and angle are independent so this multiplication is okay
 
         return pose_likelihood * speed_likelihood
+
 
 def normpdf(x, mu, sigma):
     u = float((x-mu) / abs(sigma))

@@ -28,13 +28,14 @@ class SpeedProfile:
         function_list = self.getFilteredFunctionList(distance)
 
         ideal_speed = function_list[0][1].getValue(distance)
-        if speed > ideal_speed:
+        if abs(speed - ideal_speed) < 0.5:
+            #just follow speed profile
+            new_distance = self.getDistanceFollowProfile(distance, t, ffl=function_list)
+            return new_distance, self.getSpeed(new_distance)
+
+        elif speed > ideal_speed:
             #need to slow down
             acc = self.catchup_deacc
-        elif speed == ideal_speed:
-            #just follow speed profile
-            new_distance = self.getDistanceFollowProfile(distance, t)
-            return new_distance, self.getSpeed(new_distance)
         else:
             #need to speed up
             acc = self.catchup_acc
@@ -62,9 +63,12 @@ class SpeedProfile:
         return new_distance, newspeed
 
 
-    def getDistanceFollowProfile(self, distance, t):
+    def getDistanceFollowProfile(self, distance, t, ffl = None):
         #current function and it's limit
-        f_limit, f = self.getFilteredFunctionList(distance)[0]
+        if not ffl:
+            ffl = self.getFilteredFunctionList(distance)
+
+        f_limit, f = ffl[0]
 
         #how long does it take to get to the current function segment's limit?
         time_to_limit = f.solveInverseIntegral(distance, f_limit)
@@ -91,12 +95,13 @@ class SpeedProfile:
         function_list = self.getFsCrossing(distance)
         ideal_speed = function_list[0][1].getValue(distance)
 
-        if speed > ideal_speed:
+        if abs(speed - ideal_speed) < 0.5:
+            #alread matching profile
+            return self.getTimeToCrossingFollowProfile(distance, function_list)
+
+        elif speed > ideal_speed:
             #slow down 
             acc = self.catchup_deacc
-        elif speed == ideal_speed:
-            #alread matching profile
-            return self.getTimeToCrossingFollowProfile(distance)
         else:
             #speed up
             acc = self.catchup_acc
@@ -114,8 +119,8 @@ class SpeedProfile:
             
 
 
-    def getTimeToCrossingFollowProfile(self, distance):
-        function_list = self.getFsCrossing(distance)
+    def getTimeToCrossingFollowProfile(self, distance, function_list=None):
+        if not function_list: function_list = self.getFsCrossing(distance)
         t_sum = 0
         for f_limit, f in function_list:
             if f_limit < self.distance_at_crossing:
