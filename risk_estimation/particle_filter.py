@@ -101,6 +101,10 @@ class ParticleFilter:
         self.best_P = bx, by, btheta
         self.best_S = bs
 
+        #maxi = np.argmax(self.weights)
+        #p = self.particles[maxi]
+        #self.best_P = p.P
+        #self.best_S = p.S
         #self.best_P = np.sum([np.array(p.P)*w for p,w in zip(self.particles, self.weights)], axis=0)
         #self.best_S = np.sum([p.S*w for p,w in zip(self.particles, self.weights)], axis=0)
 
@@ -146,7 +150,7 @@ class ParticleFilter:
 
                 for i in Is_list:
                     for c in Ic_list:
-                        ps[i,c] = PS_estimate(p.P[0], p.P[1], p.P[2], p.S, i, c, self.travelling_directions[id], self.intersection, interval, self.pose_covariance, self.speed_deviation, flag=True)
+                        ps[p,i,c] = PS_estimate(p.P[0], p.P[1], p.P[2], p.S, i, c, self.travelling_directions[id], self.intersection, interval, self.pose_covariance, self.speed_deviation, flag=True)
             
 
             new_particles = []
@@ -170,7 +174,7 @@ class ParticleFilter:
                         new_Ic = Ic_estimate(p.Ic, self.intersection.turns)
                     
                     
-                    new_P, new_S = sample(*ps[new_Is, new_Ic], pose_covariance=self.pose_covariance, speed_deviation=self.speed_deviation)    
+                    new_P, new_S = sample(*ps[p,new_Is, new_Ic], pose_covariance=self.pose_covariance, speed_deviation=self.speed_deviation)    
 
 
                     new_particles.append(StateVector(new_Es ,new_Is, new_Ic, new_P, new_S))
@@ -307,8 +311,8 @@ def generate_inital_particles(intersection, initial_pose, initial_speed, nr_part
         Is = "go" if random.random() <= 0.5 else "stop"
         Ic = choice(intersection.turns, Ic_density)
     
-        P = np.random.multivariate_normal(initial_pose, pose_covariance)
-        S = np.random.normal(initial_speed, speed_deviation)
+        #P = np.random.multivariate_normal(initial_pose, pose_covariance)
+        #S = np.random.normal(initial_speed, speed_deviation)
 
         particles.append(StateVector(Es,Is,Ic,P,S))
     return particles

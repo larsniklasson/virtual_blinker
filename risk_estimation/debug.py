@@ -6,7 +6,7 @@ import time
 start_time = time.time()
 print start_time
 
-plot = False
+plot = True
 
 #for the use of a debugger 
 with open("debug.txt") as f:

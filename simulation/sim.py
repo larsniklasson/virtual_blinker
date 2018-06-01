@@ -19,13 +19,13 @@ from risk_estimation.Intersection import *
 #rom maneuver_negotiation.cloud import *
 from threading import Thread, Lock
 
-SLOWDOWN = 1.5
+SLOWDOWN = 1
 
 KP = 0.4
 KI = 0.00
 KD = 0.05
 
-RATE = 20.0/SLOWDOWN
+RATE = 50.0/SLOWDOWN
 
 windup_guard = 100
 
@@ -123,7 +123,7 @@ class Car:
 
                     self.intersection = Intersection()
                     #run risk estimator
-                    self.risk_estimator = RiskEstimator(500, self.intersection, ms, np.eye(3)*0.15, 0.15, real_time,self.risk_estimator_mutex, plot, wipe_dir=True)
+                    self.risk_estimator = RiskEstimator(400, self.intersection, ms, np.eye(3)*0.15, 0.15, real_time,self.risk_estimator_mutex, plot, wipe_dir=True)
                     self.fm = False
                     self.risk_estimator.setKnownIc(self.id, self.course.turn)
                     self.risk_estimator.setKnownIs(self.id, self.Is)

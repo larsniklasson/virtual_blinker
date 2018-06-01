@@ -160,7 +160,7 @@ class Course:
             t = theta-pi/2
             if self.turn == "right":
                 t = -t
-            return  self.curve_start[1] - self.starting_point[1] + self.radius*t
+            return  self.curve_start[1] - self.starting_point[1] + max(0,self.radius*t)
         else:
             #vehicle has exited the curve
             return  self.curve_start[1] - self.starting_point[1] + pi*self.radius/2 + abs(x - self.curve_end[0])
@@ -227,7 +227,7 @@ class Course:
         #length of section 1,2. i.e. that part before the curve and the curve itself.
         section1 = self.curve_start[1] - self.starting_point[1]
         section2 = self.radius*2*pi/4
-        if d < section1:
+        if d <= section1:
             return (self.starting_point[0], self.starting_point[1] + d, pi/2)
         elif d < section1+section2:
             #in the curve
@@ -274,7 +274,7 @@ class Course:
 
     def getPoseAccountOffset(self, old_d, x, newd):
         #if old position was off (in x direction), new one should be off as well
-        x_off = self.getXDeviation(x, old_d)
+        x_off = self.getXDeviation(x, old_d) #prob better to do constant speed projection and take (weighted) avg here
         p_new = self.getPose(newd)
-        return p_new[0] + x_off, p_new[1], p_new[2]
+        return p_new[0], p_new[1], p_new[2]
 
