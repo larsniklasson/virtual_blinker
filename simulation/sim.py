@@ -32,9 +32,9 @@ windup_guard = 100
 carlength = 4
 lookahead = 5
 
-xy_var = 0.15 *10
-theta_var = 0.05*10
-speed_var = 0.10*10
+xy_var = 0.15 * 2#10
+theta_var = 0.05*2#10
+speed_var = 0.10*2#10
 
 # The simulator
 class Car:
