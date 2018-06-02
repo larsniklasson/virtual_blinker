@@ -123,10 +123,12 @@ class ParticleFilter:
         
         if self.neff(self.weights) < self.neff_threshold:
             #indices of particles to resample
-            resampled = np.random.choice(self.particles, len(self.particles), p=self.weights)
+            indices = np.random.choice(range(len(self.particles)), len(self.particles), p=self.weights)
+            resampled = [(self.particles[i], self.weights[i]) for i in indices]
+            pss, wss = zip(*resampled)
 
             pc = {}
-            for p in resampled:
+            for p in pss:
                 if p in pc:
                     pc[p] += 1
                 else:
@@ -193,6 +195,7 @@ class ParticleFilter:
             #self.particles = resampled
 
         else:
+            wss = self.weights
             new_particles = []
             for p in self.particles:
                 #project new state
@@ -214,7 +217,7 @@ class ParticleFilter:
                 
                 new_particles.append(StateVector(new_Es ,new_Is, new_Ic, new_P, new_S))
             
-        new_weights = [self.likelihood(p, measurement_vector) for p in new_particles]
+        new_weights = [self.likelihood(p, measurement_vector)*w for p,w in zip(new_particles,wss)]
 
 
         #normalize weights

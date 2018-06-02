@@ -14,7 +14,7 @@ def draw_arrow(fig,ax,vehicle_pose,length):
     theta = vehicle_pose[2]
     dx = length*math.cos(theta)
     dy = length*math.sin(theta)
-    ax.arrow(x,y,dx,dy,head_width=1.15, head_length=1.1,fc='k', ec='k')
+    ax.arrow(x,y,dx,dy,head_width=2.15, head_length=2.1,fc='green', ec='green')
 
 
 
@@ -28,8 +28,8 @@ def plot_particles(p_filters, measurement_vector, t, plot_folder):
     ax.spines['left'].set_position('center')
     ax.spines['bottom'].set_position('center')
 
-    xlim = (-125, 125)
-    ylim = (-125, 125)
+    xlim = (-80, 80)
+    ylim = (-80, 80)
 
     plt.xlim(*xlim)
     plt.ylim(*ylim)
@@ -70,7 +70,7 @@ def plot_particles(p_filters, measurement_vector, t, plot_folder):
 
             ax.scatter(m[0],m[1], c='r')
         
-        draw_arrow(fig, ax, best_P, 2)
+        draw_arrow(fig, ax, best_P, 4)
     
 
     ax.text(xlim[0],ylim[0] ,caption_text,fontsize=15)

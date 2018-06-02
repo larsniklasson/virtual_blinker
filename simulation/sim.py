@@ -19,18 +19,22 @@ from risk_estimation.Intersection import *
 #rom maneuver_negotiation.cloud import *
 from threading import Thread, Lock
 
-SLOWDOWN = 1
+SLOWDOWN = 1.5
 
 KP = 0.4
 KI = 0.00
 KD = 0.05
 
-RATE = 50.0/SLOWDOWN
+RATE = 15#50.0/SLOWDOWN
 
 windup_guard = 100
 
 carlength = 4
 lookahead = 5
+
+xy_var = 0.15 *10
+theta_var = 0.05*10
+speed_var = 0.10*10
 
 # The simulator
 class Car:
@@ -87,6 +91,8 @@ class Car:
         # reading
         self.risk_estimator_mutex = Lock() 
         self.man_init = False
+
+        self.current_measurement = None
         
 
     def stateCallback(self, msg):
@@ -109,7 +115,7 @@ class Car:
                 plot = False and self.id == 1
                 closed_loop = True
 
-                save = True
+                save = True and self.id == 1
             
                 if save and not self.fm:
                     with open('../risk_estimation/debug.txt', 'a') as f:
@@ -117,13 +123,14 @@ class Car:
                 
                 
                 if self.fm:
-                    
-                    with open('../risk_estimation/debug.txt', 'w') as f:
-                        f.write(str((real_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
+                    if save:
+                        with open('../risk_estimation/debug.txt', 'w') as f:
+                            f.write(str((real_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
 
                     self.intersection = Intersection()
                     #run risk estimator
-                    self.risk_estimator = RiskEstimator(400, self.intersection, ms, np.eye(3)*0.15, 0.15, real_time,self.risk_estimator_mutex, plot, wipe_dir=True)
+                    cov = np.array([[xy_var, 0, 0], [0, xy_var, 0], [0, 0, theta_var]])
+                    self.risk_estimator = RiskEstimator(1000, self.intersection, ms, cov, speed_var, real_time,self.risk_estimator_mutex, plot, wipe_dir=True)
                     self.fm = False
                     self.risk_estimator.setKnownIc(self.id, self.course.turn)
                     self.risk_estimator.setKnownIs(self.id, self.Is)
@@ -139,8 +146,7 @@ class Car:
                     
                     if closed_loop: 
                         es_go = self.risk_estimator.getExpectation(self.id)  
-                        print "Expectation to go: ", es_go
-                        #print self.risk_estimator.isManeuverOk(0, "left")
+                        print "Expectation to go: ", es_go, "id = ", self.id
                         old_is = self.Is
 
                         #maintain 3 last es_go.
@@ -203,8 +209,13 @@ class Car:
         
 
         #save current state. Also delete old one
+        xs = np.random.normal(self.x, xy_var)
+        ys = np.random.normal(self.y, xy_var)
+        ts = np.random.normal(self.theta, theta_var)
+        ss = np.random.normal(self.speed, speed_var)
+        self.current_measurement = xs, ys, ts, ss
         d = self.state_dicts[self.id]
-        d[self.t] = (self.x, self.y, self.theta, self.speed)
+        d[self.t] = xs, ys, ts, ss
         if self.t - 50 in d: del d[self.t - 50]
         
         
@@ -232,7 +243,8 @@ class Car:
         while not rospy.is_shutdown():
             rate.sleep()
             self.update()
-            ts = cm.CarState(self.x, self.y, self.theta, self.speed, self.id, self.t)
+            x,y,t,s = self.current_measurement
+            ts = cm.CarState(x,y,t,s, self.id, self.t)
             self.state_pub.publish(ts)
 
 

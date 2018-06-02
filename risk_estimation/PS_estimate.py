@@ -15,8 +15,8 @@ def PS_estimate(x,y,theta,speed, Is, Ic, travelling_direction, intersection, int
 
 
 def sample(xnew, ynew, thetanew, newspeed, pose_covariance, speed_deviation):
-    xy_cov = pose_covariance[0][0]
-    theta_cov = pose_covariance[2][2]
+    xy_cov = 0.4#pose_covariance[0][0]
+    theta_cov = 0.20#pose_covariance[2][2]
 
     x_estimate = np.random.normal(xnew, xy_cov)
     y_estimate = np.random.normal(ynew, xy_cov)
@@ -24,6 +24,6 @@ def sample(xnew, ynew, thetanew, newspeed, pose_covariance, speed_deviation):
     p_estimate = x_estimate, y_estimate, theta_estimate
 
     #p_estimate = np.random.multivariate_normal((xnew, ynew, thetanew), pose_covariance)
-    s_estimate = np.random.normal(newspeed, speed_deviation)
+    s_estimate = np.random.normal(newspeed, 0.4)#speed_deviation)
 
     return p_estimate, s_estimate
