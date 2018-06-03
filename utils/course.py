@@ -81,7 +81,7 @@ class Course:
             self.radius = abs(self.curve_start[0] - self.curve_end[0])
             self.circle_mid = self.curve_start[0]+self.radius, self.curve_end[1]-self.radius
 
-            self.slowspeed = 25/3.6
+            self.slowspeed = 20/3.6
             self.slowdown_acc = -6
             self.speedup_acc = 4
             self.catchup_acc = 5
@@ -151,18 +151,30 @@ class Course:
     def getDistance(self, x, y, theta):
 
         if self.turn == "straight" or y < self.curve_start[1]:
-            return y - self.starting_point[1]#abs(self.starting_point[1] - y)
+            return y - self.starting_point[1]
 
 
         if (self.turn == "left" and x > self.curve_end[0]) or (self.turn =="right" and x < self.curve_end[0]):
-            #car is in the curve
-            #check theta and assume vehicle is on ideal path
-            t = theta-pi/2
-            if self.turn == "right":
-                t = -t
-            return  self.curve_start[1] - self.starting_point[1] + max(0,self.radius*t)
+            
+            cx, cy = self.circle_mid
+
+            vx = x - cx
+            vy = y - cy
+            magv = sqrt(vx**2 + vy**2)
+            ax = cx + vx/magv * self.radius
+            ay = cy + vy/magv * self.radius
+
+            t = asin((ay - cy)/self.radius)
+
+            if self.turn == "left":
+                theta = t + pi/2
+            elif self.turn == "right":
+                theta = pi/2 - t
+            
+            return  self.curve_start[1] - self.starting_point[1] + self.radius*t
         else:
             #vehicle has exited the curve
+
             return  self.curve_start[1] - self.starting_point[1] + pi*self.radius/2 + abs(x - self.curve_end[0])
 
     def hasReachedPointOfNoReturn(self, x, y, theta):
@@ -209,7 +221,7 @@ class Course:
 
         #get new position from distance. Also send old distance and x to account 
         # for the fact that vehicle might be a little off the path center
-        xnew, ynew,thetanew = self.getPoseAccountOffset(d, x, newd)
+        xnew, ynew,thetanew = self.getPose(newd)
 
         xnew, ynew, thetanew = self.rotate(xnew, ynew, thetanew, dir = -1)
         return (xnew, ynew, thetanew, newspeed)
@@ -253,28 +265,3 @@ class Course:
                 return self.curve_end[0] - d2, self.curve_end[1], pi
             else:
                 return self.curve_end[0] + d2, self.curve_end[1], 0
-
-    def getXDeviation(self, x, d):
-        if self.turn == "straight" or d < self.distance_to_crossing:
-            return x - 3.25
-        elif d < self.distance_to_crossing + self.radius*2*pi/4:
-            d2 = d - self.distance_to_crossing
-            v = d2/self.radius
-            if self.turn == "left":
-                ang = v
-            elif self.turn == "right":
-                ang = pi-v
-            
-            a,_ = self.circle_mid
-            
-            return x - (a + self.radius*cos(ang))
-        else:
-            return 0
-
-
-    def getPoseAccountOffset(self, old_d, x, newd):
-        #if old position was off (in x direction), new one should be off as well
-        x_off = self.getXDeviation(x, old_d) #prob better to do constant speed projection and take (weighted) avg here
-        p_new = self.getPose(newd)
-        return p_new[0], p_new[1], p_new[2]
-

@@ -5,7 +5,7 @@ import time
 
 class PID:
 
-    def __init__(self, P, I, D, windup_guard):
+    def __init__(self, P, I, D):
 
         self.Kp = P
         self.Ki = I
@@ -14,7 +14,7 @@ class PID:
         self.ITerm = 0
 
         self.last_time = time.time()
-        self.windup_guard = windup_guard
+        self.windup_guard = 100
 
         self.last_error = 0.0
         self.clear()

@@ -5,20 +5,19 @@
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find virtual_blinker)/config.rviz" />
 </group>
 
-<arg name="nr_cars" default="2"/>
+<arg name="nr_cars" default="4"/>
+<arg name="plot" default="0"/>
+<arg name="save" default="0"/>
 
-<param name="car0" type="string" value="south left 90"/>
-<param name="car1" type="string" value="north straight 0"/>
-<param name="car2" type="string" value="west left 70"/>
-<param name="car3" type="string" value="west left 50"/>
+<param name="nr_cars" type="int" value="$(arg nr_cars)"/>
+<param name="plot" type="bool" value="$(arg plot)"/>
+<param name="save" type="bool" value="$(arg save)"/>
 
 <node if="$(eval nr_cars >= 1)" name="car0" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
 <node if="$(eval nr_cars >= 2)" name="car1" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
 <node if="$(eval nr_cars >= 3)" name="car2" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
 <node if="$(eval nr_cars >= 4)" name="car3" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
 
-
-<param name="nr_cars" type="int" value="$(arg nr_cars)"/>
 
 
 </launch>

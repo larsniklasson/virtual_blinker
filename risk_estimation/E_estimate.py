@@ -1,18 +1,17 @@
 import gap_models
 
 import math
-import numpy as np
-import Intersection 
+import numpy as np 
 import utils
 import random
 
-def Es_estimate(carid, ego_Ic, ego_P, ego_S, travelling_directions, intersection, most_likely_states, ttc_hli):
+def Es_estimate(carid, ego_Ic, ego_PS, travelling_directions, intersection, most_likely_states, ttc_hli):
     
 
     ego_travelling_direction = travelling_directions[carid]
     ego_course = intersection.courses[ego_travelling_direction, ego_Ic]
 
-    if not travelling_directions[carid] or ego_course.hasLeftIntersection(*ego_P):
+    if not travelling_directions[carid] or ego_course.hasLeftIntersection(*ego_PS[:3]):
         return "go",1
 
     #combine directions with most likely states
@@ -20,7 +19,7 @@ def Es_estimate(carid, ego_Ic, ego_P, ego_S, travelling_directions, intersection
     blob = zip(travelling_directions, most_likely_states, ttc_hli)
     blob = blob[:carid] + blob[carid+1:]
 
-    ego_ttc = ego_course.getTimeToCrossing(ego_P[0], ego_P[1], ego_P[2], ego_S, "go")
+    ego_ttc = ego_course.getTimeToCrossing(*ego_PS, Is="go")
 
     min_go_vehicles = 1 #P(Es = go). Choose lowest probability out of other vehicles
     for td, st, th in blob:

@@ -1,18 +1,19 @@
+import sys
+sys.path.append("..")
+from config import *
+
 import math
 import scipy
+gm = RISK_CONFIG["gap_model"]
+L = gm["L"]
+x0 = gm["x0"]
+k = gm["k"]
+x0_2 = gm["x0_2"]
+k2 = gm["k2"]
 
 #Placeholder general gap model 
 def gap_model(gap):
     #https://en.wikipedia.org/wiki/Logistic_function
-    
-    L = 1.0
-    #positive time
-    x0 = 6.1
-    k = 1
-
-    #negative time
-    x0_2 = 1.5
-    k2 = 3
 
     if gap >= 0:
         return L / (1 + math.exp(-k * (gap - x0)))

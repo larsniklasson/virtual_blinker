@@ -1,26 +1,32 @@
+
+import sys
+sys.path.append("..")
+from config import *
 from driver import *
-from Intersection import *
-from threading import Thread, Lock
 import time
-
-start_time = time.time()
-print start_time
-
+import random
+import numpy as np
 plot = True
 
-xy_var = 0.15 *10
-theta_var = 0.05*10
-speed_var = 0.10*10
+xy_deviation = SIM_CONFIG["xy_deviation"]
+theta_deviation = SIM_CONFIG["theta_deviation"]
+speed_deviation = SIM_CONFIG["speed_deviation"]
 
-cov = np.array([[xy_var, 0, 0], [0, xy_var, 0], [0, 0, theta_var]])
+deviations = xy_deviation, theta_deviation, speed_deviation
 
-#for the use of a debugger 
+total_nr_particles = SIM_CONFIG["total_nr_particles"]
+
+random.seed(1)
+np.random.seed(1)
+plotafter = 0
+
 with open("debug.txt") as f:
     first = True
     for line in f:
         x = eval(line[:-1]) # (timestamp, measurement_vector)
         if first:
-            re = RiskEstimator(1000, Intersection(), x[1], cov, speed_var, x[0], Lock(), plot, plot)
+            pppf = total_nr_particles / (len(x[1])**2)
+            re = RiskEstimator(pppf, x[1], x[0], deviations, plot, plotafter)
             id, Ic, Is = x[2]
             re.setKnownIc(id, Ic)
             re.setKnownIs(id, Is)
@@ -28,7 +34,6 @@ with open("debug.txt") as f:
 
         else:
             print x[0] # timestamp
-            
 
             id, Ic, Is = x[2]
             re.setKnownIc(id, Ic)
@@ -37,5 +42,3 @@ with open("debug.txt") as f:
         
 
 endtime = time.time()
-
-print "runtime: ", (endtime - start_time)

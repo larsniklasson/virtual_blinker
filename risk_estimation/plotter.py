@@ -1,10 +1,13 @@
 
+import sys
+sys.path.append("..")
+from utils.Intersection import *
 import numpy as numpy
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import time
-import Intersection
+
 import math
 import os
 
@@ -44,16 +47,15 @@ def plot_particles(p_filters, measurement_vector, t, plot_folder):
     )
     
     for i, pfilter in enumerate(p_filters):
-        x = [p.P[0] for p in pfilter.particles]
-        y = [p.P[1] for p in pfilter.particles]
-        best_P = pfilter.best_P
-        best_S = pfilter.best_S
+        x = [p.PS[0] for p in pfilter.particles]
+        y = [p.PS[1] for p in pfilter.particles]
+        best_PS = pfilter.best_PS
 
         caption_Es = {k:round(v,2) for k, v in pfilter.Es_density.iteritems()}
         caption_Is = {k:round(v,2) for k, v in pfilter.Is_density.iteritems()}
         caption_Ic = {k:round(v,2) for k, v in pfilter.Ic_density.iteritems()}
-        caption_P = [round(field,2) for field in best_P]
-        caption_S = round(best_S,2)
+        caption_P = [round(field,2) for field in best_PS[:3]]
+        caption_S = round(best_PS[-1],2)
 
         vehicle_text  = "Id {0}:\n Es = {1}\n Is = {2}\n Ic = {3}\n Best Pose = {4} \n Best speed = {5} \n\n"
         caption_text  = caption_text + vehicle_text.format( \
@@ -64,13 +66,13 @@ def plot_particles(p_filters, measurement_vector, t, plot_folder):
                                             caption_P,\
                                             caption_S)
         
-        ax.scatter(x, y, c=str(i), s=1)
-        ax.scatter(best_P[0], best_P[1], c='y')
+        ax.scatter(x, y, s=1)
+        ax.scatter(best_PS[0], best_PS[1], c='y')
         for m in measurement_vector:
 
             ax.scatter(m[0],m[1], c='r')
         
-        draw_arrow(fig, ax, best_P, 4)
+        draw_arrow(fig, ax, best_PS[:3], 4)
     
 
     ax.text(xlim[0],ylim[0] ,caption_text,fontsize=15)

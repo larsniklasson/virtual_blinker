@@ -13,28 +13,30 @@ from geometry import *
 from utils.course import *
 from risk_estimation.driver import *
 
+from config import *
+
 from collections import OrderedDict
-from risk_estimation.Intersection import *
+from utils.Intersection import *
 #from maneuver_negotiation.maneuver_negotiator import *
 #rom maneuver_negotiation.cloud import *
 from threading import Thread, Lock
 
-SLOWDOWN = 1.5
+SLOWDOWN = SIM_CONFIG["slowdown"]
+RATE = SIM_CONFIG["rate"]
+carlength = SIM_CONFIG["carlength"]
+lookahead = SIM_CONFIG["lookahead"]
+xy_deviation = SIM_CONFIG["xy_deviation"]
+theta_deviation = SIM_CONFIG["theta_deviation"]
+speed_deviation = SIM_CONFIG["speed_deviation"]
 
-KP = 0.4
-KI = 0.00
-KD = 0.05
+deviations = xy_deviation, theta_deviation, speed_deviation
 
-RATE = 15#50.0/SLOWDOWN
+total_nr_particles = SIM_CONFIG["total_nr_particles"]
 
-windup_guard = 100
-
-carlength = 4
-lookahead = 5
-
-xy_var = 0.15 * 2#10
-theta_var = 0.05*2#10
-speed_var = 0.10*2#10
+discard_measurement_time = SIM_CONFIG["discard_measurement_time"]
+Es_threshold = SIM_CONFIG["Es_threshold"]
+risk_threshold = SIM_CONFIG["risk_threshold"]
+save_id = SIM_CONFIG["save_id"]
 
 # The simulator
 class Car:
@@ -48,8 +50,17 @@ class Car:
         self.id = int(name[-1])
         
         nr_cars = rospy.get_param('nr_cars')
-        p = rospy.get_param(rospy.get_name())
-        travelling_direction, turn, startdist =  p.split(" ")
+        self.save = rospy.get_param('save') and save_id == self.id
+        self.plot = rospy.get_param('plot')
+
+        if self.save:
+            open('../risk_estimation/debug.txt', 'w').close()
+
+        cd = CARS[self.id]
+        travelling_direction = cd["travelling_direction"]
+        turn = cd["turn"]
+        startdist = cd["starting_distance"]
+        use_riskestimation = cd["use_riskestimation"]
 
         #save all measurements from all cars. time as key. older entries are removed to avoid too large dicts
         self.state_dicts = [{} for _ in range(nr_cars)]
@@ -58,23 +69,29 @@ class Car:
         self.x, self.y, self.theta = self.course.getStartingPose(int(startdist))
 
         #the other vehicle's state topics
-        state_sub_topics = ["car_state" + str(i) for i in range(nr_cars) if i != self.id]
+        if use_riskestimation:
+            state_sub_topics = ["car_state" + str(i) for i in range(nr_cars) if i != self.id]
 
-        for s in state_sub_topics:
-            rospy.Subscriber(s, cm.CarState, self.stateCallback, queue_size=10)
+            for s in state_sub_topics:
+                rospy.Subscriber(s, cm.CarState, self.stateCallback, queue_size=10)
 
+        #for noisy measurements
         self.state_pub = rospy.Publisher('car_state' + str(self.id), cm.CarState, queue_size=10)
+        
+        #for rviz
+        self.true_state_pub = rospy.Publisher('true_car_state' + str(self.id), cm.CarState, queue_size=10)
         self.path_pub = rospy.Publisher('car_path' + str(self.id), cm.Path, queue_size=10)
 
         
         self.Is = "stop"
-        if self.id == 0: self.Is = "go"
+        if not use_riskestimation: self.Is = "go"
+
         self.speed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
 
 
         path = self.course.getPath()
         self.error_calc = ErrorCalc(path) #calculates how far away we are from ideal path
-        self.pid = PID(KP, KI, KD, windup_guard)
+        self.pid = PID(*SIM_CONFIG["pid"])
 
         self.t = 0
         
@@ -83,21 +100,22 @@ class Car:
         self.path_pub.publish(cm.Path([cm.Position(x,y) for x,y in path], self.id))
 
         self.fm = True
-        self.last_es = [-1, -1, -1]
 
-        self.debug = True
-    
-        # to avoid modifying particle and weights while another thread such as maneuver negotiator's no_conflict is
-        # reading
-        self.risk_estimator_mutex = Lock() 
+        self.last_es = [-1, -1, -1] #TODO maybe not useful anymore since much better particle filter
+
+        #has maneuver negotation been initiated or not
         self.man_init = False
 
-        self.current_measurement = None
+
+
+        self.nr_particles_per_particle_filter = total_nr_particles / (nr_cars ** 2)
+
+        
         
 
     def stateCallback(self, msg):
 
-        if self.t - msg.t > 5: # old af message, flush queue. 
+        if self.t - msg.t > 1/RATE * discard_measurement_time: # old af message, flush queue. 
             return 
 
         #save measurement
@@ -107,59 +125,55 @@ class Car:
         if all([(msg.t in d) for d in self.state_dicts]):
             ms = [d[msg.t] for d in self.state_dicts]
             
+            actual_time = float(msg.t)/(RATE*SLOWDOWN)
+        
+            if self.save:
+                with open('../risk_estimation/debug.txt', 'a') as f:
+                    f.write(str((actual_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
             
-            if self.id == 1: #only send one for now
-                
-                real_time = msg.t/(RATE*SLOWDOWN)
-                
-                plot = False and self.id == 1
-                closed_loop = True
-
-                save = True and self.id == 1
             
-                if save and not self.fm:
-                    with open('../risk_estimation/debug.txt', 'a') as f:
-                        f.write(str((real_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
-                
-                
-                if self.fm:
-                    if save:
-                        with open('../risk_estimation/debug.txt', 'w') as f:
-                            f.write(str((real_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
+            if self.fm:
 
-                    self.intersection = Intersection()
-                    #run risk estimator
-                    cov = np.array([[xy_var, 0, 0], [0, xy_var, 0], [0, 0, theta_var]])
-                    self.risk_estimator = RiskEstimator(1000, self.intersection, ms, cov, speed_var, real_time,self.risk_estimator_mutex, plot, wipe_dir=True)
-                    self.fm = False
-                    self.risk_estimator.setKnownIc(self.id, self.course.turn)
-                    self.risk_estimator.setKnownIs(self.id, self.Is)
+                self.intersection = Intersection()
+                #run risk estimator
+                self.risk_estimator = RiskEstimator(self.nr_particles_per_particle_filter,
+                     ms, actual_time, deviations, self.plot)
+                self.fm = False
+
+                self.risk_estimator.setKnownIc(self.id, self.course.turn)
+                self.risk_estimator.setKnownIs(self.id, self.Is)
 
 
-                    #run maneuver negotiator
-                    #self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,0,self.risk_estimator)
-                    #self.maneuver_negotiator.initialize()
-                
-                else:
-                        
-                    self.risk_estimator.update_state(real_time, ms)
+                #run maneuver negotiator
+                #self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,0,self.risk_estimator)
+                #self.maneuver_negotiator.initialize()
+            
+            else:
                     
-                    if closed_loop: 
-                        es_go = self.risk_estimator.getExpectation(self.id)  
-                        print "Expectation to go: ", es_go, "id = ", self.id
-                        old_is = self.Is
+                self.risk_estimator.update_state(actual_time, ms)
+            
+                es_go = self.risk_estimator.getExpectation(self.id)  
+                print "Expectation to go: ", es_go, "id = ", self.id
+                #print self.risk_estimator.isManeuverOk(0, "left")
+                old_is = self.Is
 
-                        #maintain 3 last es_go.
-                        # if all 3 are greater than 0.5 then we go
-                        self.last_es.pop(0)
-                        self.last_es.append(es_go)
-                        if self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta) or all([e > 0.5 for e in self.last_es]) or self.last_es[-1] > 0.99:
-                            self.Is = "go"
-                        elif all([e <= 0.5 and e >= 0 for e in self.last_es]) or self.last_es[-1] < 0.01:
-                            self.Is = "stop"
-                        
-                        if old_is != self.Is:
-                            self.risk_estimator.setKnownIs(self.id, self.Is)
+                #maintain 3 last es_go.
+                # if all 3 are greater than threshold then we go
+                self.last_es.pop(0)
+                self.last_es.append(es_go)
+                if self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta) or all([e > Es_threshold for e in self.last_es]) or self.last_es[-1] > 0.99:
+                    self.Is = "go"
+                elif all([e <= Es_threshold and e >= 0 for e in self.last_es]) or self.last_es[-1] < 0.01:
+                    self.Is = "stop"
+                
+                """risk = max(self.risk_estimator.get_risk())
+                if risk > risk_threshold:
+                    self.Is = "stop"
+                """
+
+
+                if old_is != self.Is:
+                    self.risk_estimator.setKnownIs(self.id, self.Is)
 
                 
         
@@ -178,8 +192,8 @@ class Car:
         if d == 0 :return #ran out of path
 
         steering_angle = self.pid.update(error)
-        steering_angle = min(steering_angle, radians(25))
-        steering_angle = max(steering_angle, radians(-25))
+        steering_angle = min(steering_angle, radians(40))#25
+        steering_angle = max(steering_angle, radians(-40))#25
         
         v = dt * self.speed/SLOWDOWN
         self.x += v * cos(self.theta)
@@ -207,16 +221,20 @@ class Car:
         """    
 
         
+        #add noise
+        xs = np.random.normal(self.x, xy_deviation)
+        ys = np.random.normal(self.y, xy_deviation)
+        ts = np.random.normal(self.theta, theta_deviation)
+        ss = np.random.normal(self.speed, speed_deviation)
 
         #save current state. Also delete old one
-        xs = np.random.normal(self.x, xy_var)
-        ys = np.random.normal(self.y, xy_var)
-        ts = np.random.normal(self.theta, theta_var)
-        ss = np.random.normal(self.speed, speed_var)
-        self.current_measurement = xs, ys, ts, ss
         d = self.state_dicts[self.id]
         d[self.t] = xs, ys, ts, ss
         if self.t - 50 in d: del d[self.t - 50]
+
+        #publish noisy and true state
+        self.state_pub.publish(cm.CarState(xs, ys, ts, ss, self.id, self.t))
+        self.true_state_pub.publish(cm.CarState(self.x, self.y, self.theta, self.speed, self.id, self.t))
         
         
 
@@ -234,7 +252,7 @@ class Car:
         ns = ns * 10**(-9)
         diff = target - (s + ns)
         print "diff", diff
-        rospy.sleep(diff) # 
+        rospy.sleep(diff)
         self.pid.clear()
         self.last_time = rospy.get_time()
 
@@ -243,12 +261,10 @@ class Car:
         while not rospy.is_shutdown():
             rate.sleep()
             self.update()
-            x,y,t,s = self.current_measurement
-            ts = cm.CarState(x,y,t,s, self.id, self.t)
-            self.state_pub.publish(ts)
 
 
 if __name__ == '__main__':
-    #random.seed(10003)
+    random.seed(1)
+    np.random.seed(1)
     s = Car()
     s.spin()

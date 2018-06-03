@@ -1,9 +1,15 @@
 
+import sys
+sys.path.append("..")
+from config import *
+
 import numpy as np
 import random
+
+P_comply = RISK_CONFIG["Is_comply"]
+P_same = RISK_CONFIG["Ic_same"]
+
 def Is_estimate(Is_tminus1, Es_estimate):
-    P_comply = 0.75
-    
 
     if (Is_tminus1 == "go" and Es_estimate == "go"):
         p_go = P_comply
@@ -22,7 +28,6 @@ def Is_estimate(Is_tminus1, Es_estimate):
 
 
 def Ic_estimate(Ic, turns):
-    P_same = 0.5
     nr_turns = len(turns)
 
     density = []
@@ -35,10 +40,13 @@ def Ic_estimate(Ic, turns):
     return choice(turns, density)
 
 
+def foo((_,b)):
+    return -b
+
 def choice(turns, density, n=1):
     rr = []
     for _ in range(n):
-        s = sorted(zip(turns, density), key = lambda (_,d):-d)
+        s = sorted(zip(turns, density), key = foo)
         r = random.random()
         dsum = 0
         for t,d in s:
