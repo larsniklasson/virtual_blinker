@@ -484,18 +484,17 @@ class ManeuverNegotiator():
             self.grantID = m_dict["TagID"]
           elif (self.status == self.GET or self.status == self.TRYGET): #If you're asking for permission but this request precedes yours, then cancel your own request
             self.tRetry.cancel()
+            #Make sure the permissions you've already received are released
+            if (self.status == self.GET):
+            
+              for agents in self.D:
+                #print(tmp)
+                s_message = "RELEASE," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3] + "," + str(self.tag[0]) + "," + str(self.tag[1]))
+                print(s_message)
+                self.send_udp_message(s_message,int(agents))
             self.status = self.GRANTGET
             self.grantID = m_dict["TagID"]
 
-          #Make sure the permissions you've already received are released
-          if (self.status == self.GET): #EME unreachable code!
-
-            for agents in self.D:
-              #print(tmp)
-              s_message = "RELEASE," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3] + "," + str(self.tag[0]) + "," + str(self.tag[1]))
-              print(s_message)
-              self.send_udp_message(s_message,int(agents))
-          
           #Send a GRANT to the sender agent
           sender = m_dict["Sender"]
           s_message = "GRANT," + str(self.agent[0]) + "," + str(curtime) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
