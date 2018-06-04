@@ -32,37 +32,39 @@ import sys
 
 class ManeuverNegotiator():
 
-  #DEFINE THE STATES
-  NORMAL = 1
-  GET = 2
-  DELAY_GET = 3
-  GRANT = 4
-  EXECUTE = 5
-  TRYGET = 6
-
+  ## DEFINE THE STATES
+  NORMAL = 1    # Initial state, no requests sent and no grant given
+  GET = 2       # Waiting for replies from agents in the Safety Membership set
+  GRANTGET = 3  # Grant given to other agent but this agent also wants to ask for permission to do a maneuvre
+  GRANT = 4     # Grant given to other agent and this agent doesn't want to do a maneuvre
+  EXECUTE = 5   # All permissions recieved
+  TRYGET = 6    # Some agents in the Safety Membership set aren't reachable or have answered DENY to our request
 
 
   def __init__(self,agent_id,intersection, communication_details,risk_estimator):
     #Make all the necessary variables global
     #all global variables in romi code is now instance variabes:
     self.status = self.NORMAL
-    self.TMan = 10
+    #self.TMan = 10
     self.T_RETRY = 3
     self.T_GRANT = 10
     self.aID = agent_id
     self.tRetry = []
     self.t_grant = []
-    self.handle  =[ ]#zookeeper handle, init this please
-    self.grantID = 0
-    self.tag = [0,0]
-    self.many = 0
-    self.agents_to_ask = []
+    self.handle  =[ ] # Zookeeper handle, init this please
+    self.grantID = 0  # Id of agent with active grant (The one the vehicle have given a grant to)
+    self.tag = [0,0]  # Associated with a message, on the form: [timestamp, agent id]
+    self.many = 0     # 1 if more than one agent in in Membership Registry, 0 otherwise
+    self.agents_to_ask = [] # Agents in this vehicles Membership Registry
 
     #these were initialized later in romis code
-    self.T_UPDATE = 5
+    #self.T_UPDATE = 5
     self.timeTaken = 0
     #self.time1 = self.clock() # this variable is not used in romi's code
-    self.TM = 15
+    self.TM = 15    # Period of membership protocol
+    self.TMan = 10  # Maneuvre time
+    self.TA = 5     # Period of agent registry update (how often the agents x, v and a is sampled )
+    self.TD = 3     # Upper bound on transmission delay
 
     self.M = set()
     self.D = set()
@@ -149,36 +151,18 @@ class ManeuverNegotiator():
     else:
       return float(self.ros_measurements.t)
 
+  ## Get current position
   def position(self):
-    #global x
-
-    #for now we give the x cordinate.
     return (float(self.ros_measurements.x), float(self.ros_measurements.y),float(self.ros_measurements.theta))
-    #return int(self.ros_measurements.x)
 
-    # if self.aID == 1:
-    #   return int(self.ros_measurements.cs1.x)
-    # elif self.aID == 2:
-    #   return int(self.ros_measurements.cs2.x)
-    
-    # return int(self.ros_measurements.cs1.x)
-    #return x
 
+  ## Get current velocity
   def velocity(self):
-    #global v
     return int(self.ros_measurements.speed)
 
-    # if self.aID == 1:
-    #   return int(self.ros_measurements.cs1.speed)
-    # elif self.aID == 2:
-    #   return int(self.ros_measurements.cs2.speed)
-
-    # #return v
-    # return int(self.ros_measurements.cs2.speed)
-
+  ## Get current acceleration
   def acceleration(self):
     return 1
-    #global a
 
     # if self.aID == 1:
     #   return int(self.ros_measurements.cs1.acceleration)
@@ -187,14 +171,14 @@ class ManeuverNegotiator():
 
     # return int(self.ros_measurements.cs2.acceleration)
 
-
+  ## Retry timer expired, tell the other agents to stop their lease of grant to you. Change status to TRYGET since all agents in R can't be reached
   def t_retry(self,intended_course=None):
     status = self.status
     agents_to_ask = self.agents_to_ask
     #host_ip = self.host_ip
     print("reached retry")
 
-    if(status == self.GET):
+    if(status == self.GET): # If timer expired for this vehicles current request, ask other agents in D to release their grants
       self.status = self.TRYGET
       message = "RELEASE," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
       if (intended_course is not None):
@@ -270,7 +254,7 @@ class ManeuverNegotiator():
           self.D.add(str(self.agents_to_ask))
           self.R.add(str(self.agents_to_ask))  
         message = "GET," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
-        if (intended_course is not None):
+        if (intended_course is not None): #EME Why would this happen?
           message = "GET," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1] + "," + str(intended_course))
         print(message)
         if(self.last()):
@@ -284,19 +268,12 @@ class ManeuverNegotiator():
             print(message)
             tmp_agent = str(agents)
             print(tmp_agent)
-            tmp = "tcp://localhost:" + tmp_agent
+            tmp = "tcp://localhost:" + tmp_agent #EME not needed?
             print(tmp)
-            ##socket.connect(tmp)
-            #print(agents)
-            #socket.send_string(message)
-            #socket.disconnect(tmp)
 
-            #sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-            #sock.sendto(message, (host_ip, int(tmp_agent)))
-            #sock.close()
             self.send_udp_message(message,int(tmp_agent))
             print("sent")
-          self.tRetry = Timer(self.T_RETRY, self.t_retry)
+          self.tRetry = Timer(2*self.TD, self.t_retry)
           print("starting retry")
           self.tRetry.start()
         else:
@@ -314,22 +291,21 @@ class ManeuverNegotiator():
           #sock.close()
           self.send_udp_message(message,int(self.agents_to_ask))
           print("starting t_retry by car {0} first".format(self.aID))
-          self.tRetry = Timer(self.T_RETRY, self.t_retry)
+          self.tRetry = Timer(2*self.TD, self.t_retry) # Retry later if messages delayed more than the upperbound of transmission delays
           self.tRetry.start()
           print("set timer first time")
-
 
       else:
 
         print("starting t_retry by car {0}, second case".format(self.aID))
-        self.tRetry = Timer(self.T_RETRY, self.t_retry)
+        self.tRetry = Timer(self.TA, self.t_retry) # Wait until a fresh membership is available
         self.tRetry.start()
     elif (self.status == self.GRANT):
-      self.status = self.DELAY_GET
+      self.status = self.GRANTGET
 
+  ## Estimate the expectation of the car with register mAR. No conflict if weighted average over a certain threshold
   def no_conflict(self, mAR, time):
     
-
     #mAR = [m_dict["Sender"], m_dict["Time"], m_dict["Position"], m_dict["Velocity"], m_dict["Acc"]]
     sender = mAR[0]
     sent_time = mAR[1]
@@ -371,6 +347,7 @@ class ManeuverNegotiator():
         return 0
     return 1
 
+  ## Dummy function, the agent got permissions from everyone in the SM and executes the manoeuvre in t time units
   def doManeuver(self,t):
     #dummy code, not needed
     #global timeTaken
@@ -382,55 +359,46 @@ class ManeuverNegotiator():
     time.sleep(t)
     print("done")
 
+  ## Returns true when GRANT/DENY received from the last agent
+  ## in agents_to_ask, that is agents in the SM
   def last(self):
     print(len(self.R))
     if(len(self.R) == 0):
       return 1
     return 0
 
+  ## Timer for given grant runs out, go back to NORMAL
   def tgrant(self):
-    # global status
-    # global grantID
     if self.status == self.GRANT:
       self.status = self.NORMAL
       self.grantID = 0
-    if self.status == self.DELAY_GET:
+    if self.status == self.GRANTGET: #If you've been waiting to ask for permission, try again
       self.status = self.NORMAL
       self.grantID = 0
       self.tryManeuver()
 
+  ## Update the agent state in the register for this car in the storage server
   def update(self):
-    # global aID
     setvalue = str(self.aID) + "," + str(self.agent_state[1]) + "," + str(self.agent_state[2]) + "," + str(self.agent_state[3])
-    #following is not in romi's code, but i think it is needed:
+    #IBR: following is not in romi's code, but i think it is needed:
     print("updating... car {0}".format(self.aID))
     self.agent_state = [self.clock(), self.position(),self.velocity(),self.acceleration()]
     self.agent[1] = self.agent_state
-    #print(str(self.agent_state))
-    zookeeper.set(self.handle, "/root/segment/" + str(self.aID), str(self.agent_state))
-    t_update = Timer(self.T_UPDATE, self.update)
+    zookeeper.set(self.handle, "/root/segment/" + str(self.aID), str(self.agent_state)) #Update values stored in zookeeper
+
+    t_update = Timer(self.self.TA, self.update) #Set timer to TA = period of agentstate update
     t_update.start()
 
+  ## Return true if received tag precedes this agent's permission request tag
   def precedes(self,tagTs):
-    #global tag
     return (tagTs < self.tag[0])
 
+  ## Return true if the agent ID in the tag belongs to the same agent that is already granted
   def grantedID(self,tagID):
-    #global grantID
     return (tagID == self.grantID)
 
+  ## Called upon delivery of message to process it's content
   def message_processing(self, message, t):
-    # global status
-    # global agent
-    # global time_delay
-    # global TMan
-    # global M
-    # global R
-    # global D
-    # global tRetry
-    # global t_grant
-    # global grantID
-    # global T_RETRY
 
     #when messages are recived, udp sends data as is without any formatting,
     #so normal string splitting in here works.
@@ -439,63 +407,65 @@ class ManeuverNegotiator():
     #things will change to accomodate this:
 
     curtime = self.clock()
-    print(curtime-t <= self.time_delay)
-    if (curtime - t <= self.time_delay):
+    print(curtime-t <= self.time_delay) 
+    if (curtime - t <= self.time_delay): #Only process message if it arrived within the transmission delay boundary
       if (self.communication_details == 1): #if using ros:
         #received string is 'data: "GET,1,1,1,1,1,1,1"' without single quotes,
         # first split extracts the "GET,1,1,1,1,1,1,1" and the second split separates them like usual
         message_split = message.split('"')[1::2][0].split(',')
       else:
         message_split = message.split(',')
+
+      #Decode the message
       m_dict = {"Type":message_split[0], "Sender":message_split[1], "Time":message_split[2],
                 "Position":message_split[3], "Velocity":message_split[4], "Acc":message_split[5],
                 "TagTime":message_split[6], "TagID":message_split[7]}
       if (len(message_split) > 8):
         m_dict["IntendedCourse"] = message_split[8]
+
       print ("received " + str(message) + " by car " + str(self.aID) + "sent from  car" + m_dict["Sender"])
       print("status: " + str(self.status))
+
+      #If this is an answer to our own request for a manoeuvre
       if((m_dict["Type"] == "GRANT" or m_dict["Type"] == "DENY") and self.status == self.GET):
         print("Received a grant or deny and status == get")
-        self.M.add(m_dict["Type"])
-        self.R.discard(m_dict["Sender"])
-        if(self.last()):
+        self.M.add(m_dict["Type"]) #Add message to set of received messages
+        self.R.discard(m_dict["Sender"]) #Remove this agent from agents we're waiting for
+        
+        if(self.last()): #If all expected replies received
           print("last")
-          self.tRetry.cancel()
+          self.tRetry.cancel() #Stop the retry timer
           print("stopped timer")
-          #STOP TIMER FOR RETRY
+
+          #Check if any agent denied our request
           granted = 1
           for m in self.M:
             if (m == "DENY"):
               print("IM DENYING YOU")
               granted = 0
           self.M.clear()
+
+          #Execute if all agents gave us permission to do the manoeuvre
           if(granted):
             self.status = self.EXECUTE
             self.doManeuver(self.TMan)
             self.status = self.NORMAL
-          else:
+          else: #Else ask the others to release the grant they gave to us
             self.status = self.TRYGET
             for agents in self.D:
-              tmp = "tcp://localhost:" + agents
+              tmp = "tcp://localhost:" + agents #EME not used anymore?
               print(tmp)
-              #context = zmq.Context()
-              #socket = context.socket(zmq.DEALER)
-              #identity = 'me'
-              #socket.identity = identity.encode('ascii')
               s_message = "RELEASE," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
               print(s_message)
-              #socket.connect(tmp)
-              #socket.send_string(s_message)
 
-              #sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-              #sock.sendto(s_message, ('127.0.0.1', int(agents)))
-              #sock.close()
               self.send_udp_message(s_message,int(agents) )
-              # T_RETRY = 2*TD + TMan
-            self.tRetry = Timer(self.T_RETRY, self.t_retry)
+
+            # Try to send a request again after the agent states have been updated
+            self.tRetry = Timer(self.TA, self.t_retry)
             self.tRetry.start()
             print("started timer second time")
-              #START TIMER FOR RETRY, 2TD+TMan
+      
+      # The message contains a request
       elif (m_dict["Type"] == "GET"):
         mAR = [m_dict["Sender"], m_dict["Time"], m_dict["Position"], m_dict["Velocity"],
               m_dict["Acc"]]
@@ -503,71 +473,55 @@ class ManeuverNegotiator():
           mAR.append(m_dict["IntendedCourse"])
         #in romi code, time is converted into int
         #if (no_conflict(mAR, int(m_dict["Time"]) + 2*time_delay + TMan) and
-        if (self.no_conflict(mAR, float(m_dict["Time"]) + 2*self.time_delay + self.TMan) and
-            (self.status == self.NORMAL or self.status == self.TRYGET or
-            (self.status == self.GET and self.precedes(m_dict["TagTime"])) or
-            ((self.status == self.GRANT or self.status == self.DELAY_GET) and self.grantedID(m_dict["TagID"])))):
+        if (self.no_conflict(mAR, float(m_dict["Time"]) + 2*self.time_delay + self.TMan) and #If no conflict = the manoeuvre can be executed without risk in the time 2TD + TMan (The expectation of the vehicle is to go)
+            (self.status == self.NORMAL or self.status == self.TRYGET or #and (we are either not asking for permission, or asking for permission but waiting for T_retry to expire since all agents in SM not reachable or some sent us DENY
+            (self.status == self.GET and self.precedes(m_dict["TagTime"])) or #, or we're asking for permission but this request has a lower timestamp
+            ((self.status == self.GRANT or self.status == self.GRANTGET) and self.grantedID(m_dict["TagID"])))): # or we have already given permission to this agent)
           print("not conlicted")
-          if (self.status == self.NORMAL):
+
+          if (self.status == self.NORMAL): #Give permission if you're not making a request yourself and haven't given it to anyone at this moment
             self.status = self.GRANT
             self.grantID = m_dict["TagID"]
-          elif (self.status == self.GET or self.status == self.TRYGET):
+          elif (self.status == self.GET or self.status == self.TRYGET): #If you're asking for permission but this request precedes yours, then cancel your own request
             self.tRetry.cancel()
-            self.status = self.DELAY_GET
+            self.status = self.GRANTGET
             self.grantID = m_dict["TagID"]
 
+          #Make sure the permissions you've already received are released
+          if (self.status == self.GET): #EME unreachable code!
 
-          if (self.status == self.GET):
             for agents in self.D:
-              #tmp = "tcp://localhost:" + agents
-              print(tmp)
-              #context = zmq.Context()
-              #socket = context.socket(zmq.DEALER)
+              #print(tmp)
               s_message = "RELEASE," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3] + "," + str(self.tag[0]) + "," + str(self.tag[1]))
               print(s_message)
-              #socket.connect(tmp)
-              #socket.send_string(s_message)
-              #sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-              #sock.sendto(s_message, (host_ip, int(agents)))
-              #sock.close()
               self.send_udp_message(s_message,int(agents))
+          
+          #Send a GRANT to the sender agent
           sender = m_dict["Sender"]
           s_message = "GRANT," + str(self.agent[0]) + "," + str(curtime) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
-          #tmp = "tcp://localhost:" + sender
-          #context = zmq.Context()
-          #socket = context.socket(zmq.DEALER)
           print(s_message)
-          #socket.connect(tmp)
-          #socket.send_string(s_message)
-
-          #sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-          #sock.sendto(s_message, (host_ip, int(sender)))
-          #sock.close()
           self.send_udp_message(s_message,int(sender))
-          self.t_grant = Timer(self.T_GRANT, self.tgrant)
+          self.t_grant = Timer(self.2*TD+TMan, self.tgrant) #EME Should be set to time at agetn state update - current time + 2TD + TMan
           self.t_grant.start()
-        else:
+
+        #DENY otherwise
+        else: 
           sender = m_dict["Sender"]
           s_message = "DENY," + str(self.agent[0]) + "," + str(curtime) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
-          #tmp = "tcp://localhost:" + sender
-          #context = zmq.Context()
-          #socket = context.socket(zmq.DEALER)
-          #socket.connect(tmp)
           print("sending msg: " + s_message)
-          #socket.send_string(s_message) 
-
-          #sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-          #sock.sendto(s_message, (host_ip, int(sender)))
-          #sock.close()
           self.send_udp_message(s_message,int(sender))
 
-      elif (m_dict["Type"] == "RELEASE" and (self.status == self.GRANT or self.status == self.DELAY_GET)):
-        #STOP TIMER FOR T_GRANT
+      # A release message arrived, check if it's valid and in that case release the current grant
+      #EME Have to check that the RELEASE matches the received grant? (self.grantID == m_dict["TagID"] and also comparing the timestamps? Or is this implicitly handled as Antonio said?)
+      elif (m_dict["Type"] == "RELEASE" and (self.status == self.GRANT or self.status == self.GRANTGET)):
+        #Stop the grant timer
         self.t_grant.cancel()
         self.grantID = 0
         if (self.status == self.GRANT):
           self.status = self.NORMAL
-        if (self.status == self.DELAY_GET):
+
+        #If you want to send a request, then try to send
+        if (self.status == self.GRANTGET):
           self.status = self.TRYGET
           self.tryManeuver()
 
@@ -714,7 +668,7 @@ class ManeuverNegotiator():
     #port = communication_config.NETWORK_OPTIONS['port-start'] + id1
     #print(id1)
 
-    self.t_update = Timer(self.T_UPDATE, self.update)
+    self.t_update = Timer(self.self.TA, self.update)
     self.t_update.start()
 
     self.setup_ros()
