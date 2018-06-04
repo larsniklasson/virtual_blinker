@@ -51,6 +51,12 @@ class RiskEstimator:
 
         self.updateMostLikelyStates()
 
+        self.grantList= {}  #key = car id, value = [estimated time of finishing intersction, turn]
+
+
+    def add_car_to_grantlist(self, id, time_finishing,turn):
+        self.grantList[id] = [time_finishing,turn]
+
 
 
     #todo this is quite ugly, fix this
