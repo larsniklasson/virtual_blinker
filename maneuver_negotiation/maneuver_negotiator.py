@@ -305,7 +305,7 @@ class ManeuverNegotiator():
 
   ## Estimate the expectation of the car with register mAR. No conflict if weighted average over a certain threshold
   def no_conflict(self, mAR, time):
-    
+
     #mAR = [m_dict["Sender"], m_dict["Time"], m_dict["Position"], m_dict["Velocity"], m_dict["Acc"]]
     sender = mAR[0]
     sent_time = mAR[1]
@@ -315,6 +315,7 @@ class ManeuverNegotiator():
     if(len(mAR)>5):
       sender_course = mAR[5]
     
+    return self.risk_estimator.isManeuverOk(int(sender),int(sender_course))
     #receiving a message implies i have priority
     #if this vehicle is on priority lane:
     cur_pos = self.position()
@@ -355,6 +356,7 @@ class ManeuverNegotiator():
     #print("Clock right now = %f " % time.clock())
     #timeTaken = time.clock() - timeTaken
     #print("The time for this algorithm is %f" % timeTaken)
+    self.risk_estimator.add_car_to_grantlist(self.aID,self.TMan,)
     print("Doing maneuver")
     time.sleep(t)
     print("done")
@@ -498,9 +500,13 @@ class ManeuverNegotiator():
           #Send a GRANT to the sender agent
           sender = m_dict["Sender"]
           s_message = "GRANT," + str(self.agent[0]) + "," + str(curtime) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
+          
+          #once we grant, we add the car to the list of grants, 
+          self.risk_estimator.add_car_to_grantlist(int(sender),curtime+self.TMan, m_dict["IntendedCourse"])
+
           print(s_message)
           self.send_udp_message(s_message,int(sender))
-          self.t_grant = Timer(self.2*TD+TMan, self.tgrant) #EME Should be set to time at agetn state update - current time + 2TD + TMan
+          self.t_grant = Timer(self.2*TD+self.TMan, self.tgrant) #EME Should be set to time at agetn state update - current time + 2TD + TMan
           self.t_grant.start()
 
         #DENY otherwise

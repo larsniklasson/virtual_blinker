@@ -56,7 +56,10 @@ class RiskEstimator:
 
     def add_car_to_grantlist(self, id, time_finishing,turn):
         self.grantList[id] = [time_finishing,turn]
+        self.remove_grant_thread = Timer(self.TD*2+self.TMan,remove_car_from_grantlist,args=(id))
 
+    def remove_car_from_grantlist(self,id):
+        del self.grantList[id]
 
 
     #todo this is quite ugly, fix this
