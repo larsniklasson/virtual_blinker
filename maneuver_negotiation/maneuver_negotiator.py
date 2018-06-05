@@ -8,7 +8,6 @@ import random
 import zookeeper
 import socket
 import argparse
-import communication_config
 import rospy
 import virtual_blinker.msg as cm
 import std_msgs
@@ -129,6 +128,7 @@ class ManeuverNegotiator():
     #v = 30
     #a = 0
     #timeTaken = 0
+    self.maneuver_requested=None #maneuver requested in trymaneuver
 
 #status = NORMAL
 
@@ -259,6 +259,7 @@ class ManeuverNegotiator():
         print(message)
         if(self.last()):
           self.status = self.EXECUTE
+          self.maneuver_requested = intended_course
           self.doManeuver(self.TMan)
           self.status = self.NORMAL
 
@@ -315,7 +316,7 @@ class ManeuverNegotiator():
     if(len(mAR)>5):
       sender_course = mAR[5]
     
-    return self.risk_estimator.isManeuverOk(int(sender),int(sender_course))
+    return self.risk_estimator.isManeuverOk(int(sender),sender_course)
     #receiving a message implies i have priority
     #if this vehicle is on priority lane:
     cur_pos = self.position()
@@ -356,7 +357,7 @@ class ManeuverNegotiator():
     #print("Clock right now = %f " % time.clock())
     #timeTaken = time.clock() - timeTaken
     #print("The time for this algorithm is %f" % timeTaken)
-    self.risk_estimator.add_car_to_grantlist(self.aID,self.TMan,)
+    self.risk_estimator.add_car_to_grantlist(self.aID,self.TMan,self.maneuver_requested)
     print("Doing maneuver")
     time.sleep(t)
     print("done")
@@ -388,7 +389,7 @@ class ManeuverNegotiator():
     self.agent[1] = self.agent_state
     zookeeper.set(self.handle, "/root/segment/" + str(self.aID), str(self.agent_state)) #Update values stored in zookeeper
 
-    t_update = Timer(self.self.TA, self.update) #Set timer to TA = period of agentstate update
+    t_update = threading.Timer(self.TA, self.update) #Set timer to TA = period of agentstate update
     t_update.start()
 
   ## Return true if received tag precedes this agent's permission request tag
@@ -506,7 +507,7 @@ class ManeuverNegotiator():
 
           print(s_message)
           self.send_udp_message(s_message,int(sender))
-          self.t_grant = Timer(self.2*TD+self.TMan, self.tgrant) #EME Should be set to time at agetn state update - current time + 2TD + TMan
+          self.t_grant = threading.Timer(self.TD*2+self.TMan, self.tgrant) #EME Should be set to time at agetn state update - current time + 2TD + TMan
           self.t_grant.start()
 
         #DENY otherwise
@@ -524,6 +525,10 @@ class ManeuverNegotiator():
         self.grantID = 0
         if (self.status == self.GRANT):
           self.status = self.NORMAL
+
+        #remove the granted car from the grant list because we got a release message
+        self.risk_estimator.remove_car_from_grantlist(int(m_dict["Sender"]))
+        self.risk_estimator.remove_grant_thread.stop()
 
         #If you want to send a request, then try to send
         if (self.status == self.GRANTGET):
@@ -673,7 +678,7 @@ class ManeuverNegotiator():
     #port = communication_config.NETWORK_OPTIONS['port-start'] + id1
     #print(id1)
 
-    self.t_update = Timer(self.self.TA, self.update)
+    self.t_update = Timer(self.TA, self.update)
     self.t_update.start()
 
     self.setup_ros()

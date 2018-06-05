@@ -12,7 +12,7 @@ from E_estimate import *
 dir_path = os.path.dirname(os.path.realpath(__file__))
 plot_folder = os.path.join(dir_path, "plotfolder")
 from utils.Intersection import *
-from threading import Lock
+from threading import Lock,Timer
 from config import *
 
 wipe_dir = GEN_CONFIG["wipe_plot_dir"]
@@ -56,10 +56,11 @@ class RiskEstimator:
 
     def add_car_to_grantlist(self, id, time_finishing,turn):
         self.grantList[id] = [time_finishing,turn]
-        self.remove_grant_thread = Timer(self.TD*2+self.TMan,remove_car_from_grantlist,args=(id))
+        self.remove_grant_thread = Timer(time_finishing,self.remove_car_from_grantlist,args=(id))
 
     def remove_car_from_grantlist(self,id):
-        del self.grantList[id]
+        if id in self.grantList:
+            del self.grantList[id]
 
 
     #todo this is quite ugly, fix this
@@ -127,6 +128,7 @@ class RiskEstimator:
         self.mutex.release()
 
     def isManeuverOk(self, id, turn):
+        
         self.mutex.acquire()
         precalculation = self.precalculateForMostLikelyStates()
 

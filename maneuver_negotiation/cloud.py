@@ -6,11 +6,11 @@ import rospy
 #import custom_msgs.msg as cm
 import zookeeper
 import numpy as np
-import communication_config
+import maneuver_negotiator_config
 import sys
 sys.path.append("..")
 import maneuver_negotiation.maneuver_negotiator_config as config
-import risk_estimation.Intersection
+import utils.Intersection
 import virtual_blinker.msg as cm
 
 
@@ -37,7 +37,7 @@ class MembershipCloud:
         self.agent_registry = {}
 
         #Use zookeeper storage instead
-        self.handle = zookeeper.init(config.GENERAL_OPTIONS['zookeeper-server'])
+        self.handle = zookeeper.init(maneuver_negotiator_config.GENERAL_OPTIONS['zookeeper-server'])
         
         #Initiate all agents in the local version of the AR set
         self.getARset()
@@ -46,7 +46,7 @@ class MembershipCloud:
 
         self.ros_measurements = None
         #subscribe to simulation nodes to get the time:
-        self.car_state_subscriber_handle = rospy.Subscriber(config.ROS_COMMUNICATION_OPTIONS['car-state-topic'][1],cm.CarState,self.update_time)
+        self.car_state_subscriber_handle = rospy.Subscriber(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['car-state-topic'][1],cm.CarState,self.update_time)
         #self.car_state_subscriber_handle = rospy.Subscriber(maneuver_negotiation.maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS  
 
     def get_time(self):
@@ -83,8 +83,8 @@ class MembershipCloud:
 
     ## Return True if agent a is within communication distance of b
     def isReachable(self, aID, bID):
-        a_p = eval(self.agent_registry[aID][1])
-        b_p = eval(self.agent_registry[bID][1])
+        a_p = self.agent_registry[aID][1]
+        b_p = self.agent_registry[bID][1]
 
         # If within communication distance
         if (a_p[0] - b_p[0])**2 + (a_p[1] - b_p[1])**2 < r_com**2:
@@ -100,7 +100,12 @@ class MembershipCloud:
         # Threading issue? Compute here instead?
         other_agent_poses = []
         for agent in self.agent_registry.keys():
+            print ("agent registry is {0}".format(self.agent_registry))
+            if self.agent_registry[agent] == []:
+                continue
             other_agent_poses.append([agent, self.agent_registry[agent][1]])
+        if other_agent_poses == []:
+            return []
         return self.intersection.getUnsafeAgents(self.agent_registry[aID][1], other_agent_poses) #Implemented in springClean
 
     ## Update the Safety Membershtimeip (SM) of Agent with id aID
@@ -151,7 +156,7 @@ class MembershipCloud:
 
 if __name__ == '__main__':
     #mc = MembershipCloud(Intersection.Intersection((0.,0.), 7.5, Intersection.IntersectionType.GIVE_WAY_4, 'east-west')) #Center, lane width, type, alignment
-    mc = MembershipCloud(risk_estimation.Intersection.Intersection())
+    mc = MembershipCloud(utils.Intersection.Intersection())
     mc.calcSM()
 
 

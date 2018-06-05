@@ -18,6 +18,7 @@
 <node if="$(eval nr_cars >= 3)" name="car2" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
 <node if="$(eval nr_cars >= 4)" name="car3" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
 
+<node name="cloud" pkg="virtual_blinker" type="cloud.py" output="screen" cwd="node"/>
 
 
 </launch>

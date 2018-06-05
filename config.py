@@ -16,7 +16,7 @@ def car(td, turn, sd, re):
             "use_riskestimation": re}
 
 CARS = {
-    0 : car("north", "left", 40, True),
+    0 : car("north", "left", 60, True),
     1 : car("south", "straight", 40, True),
     2 : car("east", "right", 50, True),
     3 : car("west", "left", 50, True)

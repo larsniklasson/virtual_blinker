@@ -17,8 +17,8 @@ from config import *
 
 from collections import OrderedDict
 from utils.Intersection import *
-#from maneuver_negotiation.maneuver_negotiator import *
-#rom maneuver_negotiation.cloud import *
+from maneuver_negotiation.maneuver_negotiator import *
+from maneuver_negotiation.cloud import *
 from threading import Thread, Lock
 
 SLOWDOWN = SIM_CONFIG["slowdown"]
@@ -145,8 +145,8 @@ class Car:
 
 
                 #run maneuver negotiator
-                #self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,0,self.risk_estimator)
-                #self.maneuver_negotiator.initialize()
+                self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,0,self.risk_estimator)
+                self.maneuver_negotiator.initialize()
             
             else:
                     
@@ -211,14 +211,14 @@ class Car:
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = min(self.speed, targetspeed)
         
-        """
+        
         #start trymaneuever
         if not self.man_init and self.course.hasPassedRequestLine(self.x, self.y):
             print("initiating trymaneuver")
             self.man_init = True
-            thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=())
+            thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=(self.course.turn,))
             thread1.start()
-        """    
+        
 
         
         #add noise

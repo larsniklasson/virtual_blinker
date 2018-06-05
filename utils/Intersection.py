@@ -134,7 +134,7 @@ class Intersection:
         for turn in self.turns:
             ids = []
             for id, pose in agent_poses:
-                if not self.hasRightOfWay(agent_direction, turn, self.getTravellingDirection(pose[0], pose[1], pose[2])):
+                if not self.hasRightOfWay(agent_direction, turn, self.getTravellingDirection(*pose)):
                     ids.append(id)
             unsafe_agents[turn] = ids
 
