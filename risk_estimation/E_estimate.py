@@ -12,7 +12,8 @@ def Es_estimate(carid, ego_Ic, ego_PS, travelling_directions, intersection, most
     ego_course = intersection.courses[ego_travelling_direction, ego_Ic]
 
     if flag:
-        print ego_travelling_direction, ego_Ic
+        pass
+        #print ego_travelling_direction, ego_Ic
 
     if not travelling_directions[carid] or ego_course.hasLeftIntersection(*ego_PS[:3]):
         return "go",1.0

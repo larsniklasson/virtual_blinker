@@ -128,7 +128,7 @@ class Intersection:
     def getUnsafeAgents(self, agent_pose, agent_poses):
 
         unsafe_agents = {}
-        agent_direction = self.getTravellingDirection(*agent_pose)
+        agent_direction = self.getTravellingDirection(*agent_pose) #TODO this will crash when we reach intersection. SOlution: only run gettravellingdirections once per agent.
 
         # Check if any of the other agents have priority over the selected agents for the 3 possible turns
         for turn in self.turns:

@@ -62,7 +62,7 @@ class ManeuverNegotiator():
     #self.time1 = self.clock() # this variable is not used in romi's code
     self.TM = 15    # Period of membership protocol
     self.TMan = 10  # Maneuvre time
-    self.TA = 5     # Period of agent registry update (how often the agents x, v and a is sampled )
+    self.TA = 0.5     # Period of agent registry update (how often the agents x, v and a is sampled )
     self.TD = 3     # Upper bound on transmission delay
 
     self.M = set()
@@ -172,7 +172,7 @@ class ManeuverNegotiator():
     # return int(self.ros_measurements.cs2.acceleration)
 
   ## Retry timer expired, tell the other agents to stop their lease of grant to you. Change status to TRYGET since all agents in R can't be reached
-  def t_retry(self,intended_course=None):
+  def t_retry(self,intended_course):
     status = self.status
     agents_to_ask = self.agents_to_ask
     #host_ip = self.host_ip
@@ -181,8 +181,6 @@ class ManeuverNegotiator():
     if(status == self.GET): # If timer expired for this vehicles current request, ask other agents in D to release their grants
       self.status = self.TRYGET
       message = "RELEASE," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
-      if (intended_course is not None):
-        message = "RELEASE," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1] + "," + str(intended_course))
 
       if(self.many):
         for agents in self.agents_to_ask:
@@ -195,7 +193,7 @@ class ManeuverNegotiator():
           print("sent")
       else:
         self.send_udp_message(message,int(agents_to_ask))
-    self.tryManeuver()
+    self.tryManeuver(intended_course)
 
 
   def get_MR(self,id1):
@@ -210,6 +208,8 @@ class ManeuverNegotiator():
 
 
   def tryManeuver(self,intended_course=None):
+    self.maneuver_requested = intended_course
+
     #global status
     #global agent_state
     #global agent
@@ -259,7 +259,6 @@ class ManeuverNegotiator():
         print(message)
         if(self.last()):
           self.status = self.EXECUTE
-          self.maneuver_requested = intended_course
           self.doManeuver(self.TMan)
           self.status = self.NORMAL
 
@@ -274,7 +273,7 @@ class ManeuverNegotiator():
 
             self.send_udp_message(message,int(tmp_agent))
             print("sent")
-          self.tRetry = Timer(2*self.TD, self.t_retry)
+          self.tRetry = Timer(2*self.TD, self.t_retry, args=(intended_course,))
           print("starting retry")
           self.tRetry.start()
         else:
@@ -292,14 +291,14 @@ class ManeuverNegotiator():
           #sock.close()
           self.send_udp_message(message,int(self.agents_to_ask))
           print("starting t_retry by car {0} first".format(self.aID))
-          self.tRetry = Timer(2*self.TD, self.t_retry) # Retry later if messages delayed more than the upperbound of transmission delays
+          self.tRetry = Timer(2*self.TD, self.t_retry, args=(intended_course,)) # Retry later if messages delayed more than the upperbound of transmission delays
           self.tRetry.start()
           print("set timer first time")
 
       else:
 
         print("starting t_retry by car {0}, second case".format(self.aID))
-        self.tRetry = Timer(self.TA, self.t_retry) # Wait until a fresh membership is available
+        self.tRetry = Timer(self.TA, self.t_retry, args=(intended_course,)) # Wait until a fresh membership is available
         self.tRetry.start()
     elif (self.status == self.GRANT):
       self.status = self.GRANTGET
@@ -489,7 +488,7 @@ class ManeuverNegotiator():
               self.send_udp_message(s_message,int(agents) )
 
             # Try to send a request again after the agent states have been updated
-            self.tRetry = Timer(self.TA, self.t_retry)
+            self.tRetry = Timer(self.TA, self.t_retry, args=(self.maneuver_requested,))
             self.tRetry.start()
             print("started timer second time")
       
