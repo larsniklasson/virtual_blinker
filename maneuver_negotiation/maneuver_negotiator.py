@@ -18,15 +18,6 @@ import maneuver_negotiator_config
 
 import os
 import sys
-#p = os.path.abspath(os.path.dirname(__file__))
-#print(p)
-#exit()
-#print(sys.path)
-#lib_path = os.path.abspath(os.path.join(p, '..', '..', 'risk_estimation', 'src', 'scripts')) #TODO folder structure here
-
-#lib_path = os.path.abspath(communication_config.GENERAL_OPTIONS['risk-estimator-path']) #TODO folder structure here
-#sys.path.append(lib_path)
-#import Intersection
 
 
 class ManeuverNegotiator():
@@ -71,12 +62,8 @@ class ManeuverNegotiator():
 
     self.time_delay = 100
 
-    #ibrahim udp adoption:
-    #global host_ip = '127.0.0.1'
-    self.host_ip = '127.0.0.1'
     #intersection at which the cars are setup
     #intersection = None
-    #port_prefix = '900'
 
     #all measurements are updated to this variable
     #at the same frequency as simulation publishes them.
@@ -90,17 +77,6 @@ class ManeuverNegotiator():
     cs1.speed = 1
     #cs1.acceleration = 1
     cs1.id = 1
-    # cs2 = cm.CarState()
-    # cs2.x = 1
-    # cs2.y = 1
-    # cs2.theta = 1
-    # cs2.speed = 1
-    #cs2.acceleration = 1
-    # cs2.id = 2
-    # self.ros_measurements = cm.TestMsg()
-    # self.ros_measurements.t = 1
-    # self.ros_measurements.cs1 = cs1
-    # self.ros_measurements.cs2 = cs2
     self.ros_measurements = cs1
 
     self.agent_state = [self.clock(), 1,1,1] #dummy vars for now
@@ -114,38 +90,10 @@ class ManeuverNegotiator():
     #used in no_conflict to check risk
     self.risk_estimator = risk_estimator
 
-    #Initiate variables if needed
-    #agents_to_ask = []
-    #many = 0
-    #tag = [0,0]
-    #grantID = 0
-    #aID = 1
-    #T_RETRY = 3
-    #T_GRANT = 10
-    #T_UPDATE = 5
-    #TMan = 10
-    #x = 5
-    #v = 30
-    #a = 0
-    #timeTaken = 0
     self.maneuver_requested=None #maneuver requested in trymaneuver
 
-#status = NORMAL
-
-#time1 = cl<ock()
-
-#A mock up agent_state, will be updated continously to ZooKeeper
-# agent_state = [time1, x, v, a]
-# agent = [aID, agent_state]
-# TM = 15
-# M = set()
-# D = set()
-# R = set()
-# time_delay = 100 #Upper bound on transmission delay
 
   def clock(self):
-    #gets time from ros simulation enviornment
-    #return 1
     if self.ros_measurements is None:
       return 1
     else:
@@ -164,19 +112,12 @@ class ManeuverNegotiator():
   def acceleration(self):
     return 1
 
-    # if self.aID == 1:
-    #   return int(self.ros_measurements.cs1.acceleration)
-    # elif self.aID == 2:
-    #   return int(self.ros_measurements.cs2.acceleration)
-
-    # return int(self.ros_measurements.cs2.acceleration)
 
   ## Retry timer expired, tell the other agents to stop their lease of grant to you. Change status to TRYGET since all agents in R can't be reached
   def t_retry(self,intended_course):
     status = self.status
     agents_to_ask = self.agents_to_ask
-    #host_ip = self.host_ip
-    print("reached retry")
+    print("reached retry trymaneuver")
 
     if(status == self.GET): # If timer expired for this vehicles current request, ask other agents in D to release their grants
       self.status = self.TRYGET
@@ -185,12 +126,7 @@ class ManeuverNegotiator():
       if(self.many):
         for agents in self.agents_to_ask:
           print(message)
-          tmp_agent = str(agents)
-          print(tmp_agent)
-          tmp = "tcp://localhost:" + tmp_agent
-          print(tmp)
           self.send_udp_message(message,int(agents))
-          print("sent")
       else:
         self.send_udp_message(message,int(agents_to_ask))
     self.tryManeuver(intended_course)
@@ -210,24 +146,6 @@ class ManeuverNegotiator():
   def tryManeuver(self,intended_course=None):
     self.maneuver_requested = intended_course
 
-    #global status
-    #global agent_state
-    #global agent
-    #global time1
-    #global TM
-    #global TMan
-    #global D
-    #global R
-    #global tRetry
-    #global aID
-    #global tag
-    #global many
-    #global agents_to_ask
-    #global T_RETRY
-    #global host_ip
-    #context = zmq.Context()
-    #socket = context.socket(zmq.DEALER)
-    identity = 'me'
     #socket.identity = identity.encode('ascii')
     if (self.status == self.NORMAL or self.status == self.GRANT):
       self.tag = [self.clock(), self.aID]
@@ -266,29 +184,14 @@ class ManeuverNegotiator():
           self.status = self.GET
           for agents in self.agents_to_ask:
             print(message)
-            tmp_agent = str(agents)
-            print(tmp_agent)
-            tmp = "tcp://localhost:" + tmp_agent #EME not needed?
-            print(tmp)
-
-            self.send_udp_message(message,int(tmp_agent))
+            self.send_udp_message(message,int(agents))
             print("sent")
           self.tRetry = Timer(2*self.TD, self.t_retry, args=(intended_course,))
           print("starting retry")
           self.tRetry.start()
         else:
           self.status = self.GET
-          #tmp = "tcp://localhost:" + str(agents_to_ask)
-          #print(tmp)
-          #socket.connect(tmp)
-          #print("connected")
-          #socket.send_string(message)
-          #T_RETRY = 2*TD
-
-          #sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
           print("agents_to_ask = " + str(self.agents_to_ask))
-          #sock.sendto(message, (host_ip, int(agents_to_ask)))
-          #sock.close()
           self.send_udp_message(message,int(self.agents_to_ask))
           print("starting t_retry by car {0} first".format(self.aID))
           self.tRetry = Timer(2*self.TD, self.t_retry, args=(intended_course,)) # Retry later if messages delayed more than the upperbound of transmission delays
@@ -350,12 +253,6 @@ class ManeuverNegotiator():
 
   ## Dummy function, the agent got permissions from everyone in the SM and executes the manoeuvre in t time units
   def doManeuver(self,t):
-    #dummy code, not needed
-    #global timeTaken
-    #print("TimeTaken = %f" % timeTaken)
-    #print("Clock right now = %f " % time.clock())
-    #timeTaken = time.clock() - timeTaken
-    #print("The time for this algorithm is %f" % timeTaken)
     self.risk_estimator.add_car_to_grantlist(self.aID,self.TMan,self.maneuver_requested)
     print("Doing maneuver")
     time.sleep(t)
@@ -480,8 +377,6 @@ class ManeuverNegotiator():
           else: #Else ask the others to release the grant they gave to us
             self.status = self.TRYGET
             for agents in self.D:
-              tmp = "tcp://localhost:" + agents #EME not used anymore?
-              print(tmp)
               s_message = "RELEASE," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
               print(s_message)
 
@@ -564,8 +459,6 @@ class ManeuverNegotiator():
   #repurpose this: 
   def setup_ros(self):
     #subscribe to the measurement channel and update variables
-    #rospy.init_node('maneuver_negotiation',anonymous=True)
-    #measurement_topic = communication_config.ROS_OPTIONS['measurement-topic']
 
     #lars have split the measurements to one topic per car instead f a single topic
     #rospy.Subscriber(maneuver_negotiator_config.GENERAL_OPTIONS['measurement-topic'],cm.TestMsg,self.update_agent_state_from_ros)
@@ -617,12 +510,6 @@ class ManeuverNegotiator():
 
         #print("Received -->>: " + msg)
         t = self.clock()
-        #if(msg == "1"):
-        #    global timeTaken
-        #    timeTaken = time.clock()
-        #    print("TIME BEFORE TRYMANEUVER = %f" % timeTaken)
-        #    tryManeuver()
-        #else:
         self.message_processing(msg, t)
     else:
       #subscribe to ross
@@ -645,7 +532,6 @@ class ManeuverNegotiator():
 
 
   def update_agent_state_from_ros(self,data):
-    #print("updating")
     self.ros_measurements = data
 
 
@@ -690,17 +576,6 @@ class ManeuverNegotiator():
     devnull = open(os.devnull,"w")
     zookeeper.set_log_stream(devnull)
     self.handle = zookeeper.init(maneuver_negotiator_config.GENERAL_OPTIONS['zookeeper-server'])
-    #id1 = int(input())
-    #self.id1 = int(args.id)
-
-    #setup network:
-    # global host_ip
-    # host_ip = communication_config.NETWORK_OPTIONS['network-prefix'] + str(id1)
-
-    #aID = id1
-    #agent[0] = id1
-    #port = communication_config.NETWORK_OPTIONS['port-start'] + id1
-    #print(id1)
 
     self.t_update = Timer(self.TA, self.update)
     self.t_update.start()
@@ -713,7 +588,7 @@ class ManeuverNegotiator():
 
     #rospy spinning to be done by the main method which creates this class.
     #spinning here will make the initialize() in a loop where
-    #it cannot return tot he main method. 
+    #it cannot return to the main method. 
     #rospy.spin()
 
 
