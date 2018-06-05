@@ -153,7 +153,10 @@ class Car:
                 self.risk_estimator.update_state(actual_time, ms)
             
                 es_go = self.risk_estimator.getExpectation(self.id)  
-                print "Expectation to go: ", es_go, "id = ", self.id
+                if self.id == 1: 
+                    print "Expectation to go: ", es_go, "id = ", self.id
+                if self.id == 1: print self.course.hasLeftIntersection(self.x, self.y, self.theta)
+
                 #print self.risk_estimator.isManeuverOk(0, "left")
                 old_is = self.Is
 
@@ -213,7 +216,7 @@ class Car:
         
         
         #start trymaneuever
-        if not self.man_init and self.course.hasPassedRequestLine(self.x, self.y):
+        if not self.man_init and self.course.hasPassedRequestLine(self.x, self.y) and self.id == 0:
             print("initiating trymaneuver")
             self.man_init = True
             thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=(self.course.turn,))

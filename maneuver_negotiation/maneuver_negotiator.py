@@ -255,7 +255,7 @@ class ManeuverNegotiator():
           self.R.add(str(self.agents_to_ask))  
         message = "GET," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
         if (intended_course is not None): #EME Why would this happen?
-          message = "GET," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1] + "," + str(intended_course))
+          message = "GET," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1]) + "," + str(intended_course)
         print(message)
         if(self.last()):
           self.status = self.EXECUTE
@@ -418,13 +418,38 @@ class ManeuverNegotiator():
         message_split = message.split('"')[1::2][0].split(',')
       else:
         message_split = message.split(',')
+        
+        mtype = message_split[0]
+        if mtype == "GET":
+          message_split[3] = message_split[3][1:]
+          message_split[5] = message_split[5][:-1]
 
+          m_dict = {"Type":message_split[0], "Sender":message_split[1], "Time":message_split[2],
+                "Position":message_split[3:6], "Velocity":message_split[6], "Acc":message_split[7],
+                "TagTime":message_split[8], "TagID":message_split[9], "IntendedCourse":message_split[10]}
+          
+
+        if mtype == "DENY":
+          m_dict = {"Type":message_split[0], "Sender":message_split[1], "Time":message_split[2],
+                "Position":message_split[3:6], "TagTime":message_split[6], "TagID":message_split[7]}
+
+              
+        if mtype == "RELEASE":
+
+          m_dict = {"Type":message_split[0], "Sender":message_split[1], "Time":message_split[2],
+                "Position":message_split[3:6], "TagTime":message_split[6], "TagID":message_split[7]}
+
+
+        if mtype == "GRANT":
+
+
+          m_dict = {"Type":message_split[0], "Sender":message_split[1], "Time":message_split[2],
+                "Position":message_split[3:6], "TagTime":message_split[6], "TagID":message_split[7]}
+
+        
+  
       #Decode the message
-      m_dict = {"Type":message_split[0], "Sender":message_split[1], "Time":message_split[2],
-                "Position":message_split[3], "Velocity":message_split[4], "Acc":message_split[5],
-                "TagTime":message_split[6], "TagID":message_split[7]}
-      if (len(message_split) > 8):
-        m_dict["IntendedCourse"] = message_split[8]
+      
 
       print ("received " + str(message) + " by car " + str(self.aID) + "sent from  car" + m_dict["Sender"])
       print("status: " + str(self.status))

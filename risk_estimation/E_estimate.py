@@ -5,14 +5,17 @@ import numpy as np
 import utils
 import random
 
-def Es_estimate(carid, ego_Ic, ego_PS, travelling_directions, intersection, most_likely_states, ttc_hli):
+def Es_estimate(carid, ego_Ic, ego_PS, travelling_directions, intersection, most_likely_states, ttc_hli, flag=False):
     
 
     ego_travelling_direction = travelling_directions[carid]
     ego_course = intersection.courses[ego_travelling_direction, ego_Ic]
 
+    if flag:
+        print ego_travelling_direction, ego_Ic
+
     if not travelling_directions[carid] or ego_course.hasLeftIntersection(*ego_PS[:3]):
-        return "go",1
+        return "go",1.0
 
     #combine directions with most likely states
     # filter out ego-vehicle
@@ -27,7 +30,11 @@ def Es_estimate(carid, ego_Ic, ego_PS, travelling_directions, intersection, most
         if not td: continue # has no direction => started inside or past intersection
         
         # ego-vehicle has right of way over this vehicle
-        if intersection.hasRightOfWay(ego_travelling_direction, ego_Ic, td): continue 
+        if intersection.hasRightOfWay(ego_travelling_direction, ego_Ic, td): 
+            if flag: 
+                print "ABCDEFG"
+                print ego_travelling_direction, ego_Ic, td
+            continue 
         
         go_turns = {} #P(Es=go) for the different turns
         for turn in intersection.turns:

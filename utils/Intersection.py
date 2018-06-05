@@ -128,7 +128,7 @@ class Intersection:
     def getUnsafeAgents(self, agent_pose, agent_poses):
 
         unsafe_agents = {}
-        agent_direction = self.getTravellingDirection(agent_pose[0], agent_pose[1], agent_pose[2])
+        agent_direction = self.getTravellingDirection(*agent_pose)
 
         # Check if any of the other agents have priority over the selected agents for the 3 possible turns
         for turn in self.turns:

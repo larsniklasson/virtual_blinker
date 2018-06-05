@@ -136,7 +136,7 @@ class RiskEstimator:
         
         go_sum = 0
         for p, w in zip(pf.particles, pf.weights):
-            _, go = Es_estimate(id, turn, p.PS, pf.travelling_directions, pf.intersection, self.most_likely_states, precalculation)
+            _, go = Es_estimate(id, turn, p.PS, pf.travelling_directions, pf.intersection, self.most_likely_states, precalculation, True)
             
             go_sum += float(go*w)
         

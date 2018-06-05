@@ -100,7 +100,6 @@ class MembershipCloud:
         # Threading issue? Compute here instead?
         other_agent_poses = []
         for agent in self.agent_registry.keys():
-            print ("agent registry is {0}".format(self.agent_registry))
             if self.agent_registry[agent] == []:
                 continue
             other_agent_poses.append([agent, self.agent_registry[agent][1]])
@@ -134,10 +133,16 @@ class MembershipCloud:
 
         #Update MR for agent in zookeeper    
         zookeeper.set(self.handle, "/root/mr/" + str(aID), str(MR))
-        
 
     ## Periodically calculate the Safety Membership (SM) for every agent in the Agent Registry
     def calcSM(self):
+        zookeeper.set(self.handle, "/root/mr/0","[]")
+        zookeeper.set(self.handle, "/root/mr/1","[]")
+        zookeeper.set(self.handle, "/root/segment/1","[]")
+        zookeeper.set(self.handle, "/root/segment/0","[]")
+
+        
+
         global TM
         #print("tm is " + str(TM))
 
@@ -148,9 +153,11 @@ class MembershipCloud:
 
             #Read ARset and store locally
             self.getARset()
-
-            for agent_id in self.agent_registry.keys():
-                self.updateAgentSM(agent_id)
+            if self.agent_registry['0'] == [] or self.agent_registry['1'] == []:
+                pass
+            else:
+                for agent_id in self.agent_registry.keys():
+                    self.updateAgentSM(agent_id)
 
     
 
