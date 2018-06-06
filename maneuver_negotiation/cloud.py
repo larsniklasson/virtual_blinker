@@ -49,6 +49,7 @@ class MembershipCloud:
         self.car_state_subscriber_handle = rospy.Subscriber(maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS['car-state-topic'][1],cm.CarState,self.update_time)
         #self.car_state_subscriber_handle = rospy.Subscriber(maneuver_negotiation.maneuver_negotiator_config.ROS_COMMUNICATION_OPTIONS  
 
+
     def get_time(self):
         if (self.ros_measurements is None):
             return 0
@@ -105,7 +106,8 @@ class MembershipCloud:
             other_agent_poses.append([agent, self.agent_registry[agent][1]])
         if other_agent_poses == []:
             return []
-        return self.intersection.getUnsafeAgents(self.agent_registry[aID][1], other_agent_poses) #Implemented in springClean
+
+        return self.intersection.getUnsafeAgents(aID, self.agent_registry[aID][1], other_agent_poses) #Implemented in springClean
 
     ## Update the Safety Membershtimeip (SM) of Agent with id aID
     ## The agent will have Maneuvre Oppertunity (MO) if all unsafe agents are reachable
@@ -138,10 +140,11 @@ class MembershipCloud:
     def calcSM(self):
         zookeeper.set(self.handle, "/root/mr/0","[]")
         zookeeper.set(self.handle, "/root/mr/1","[]")
+        #zookeeper.set(self.handle, "/root/mr/2","[]")
+        #zookeeper.set(self.handle, "/root/segment/2","[]")
         zookeeper.set(self.handle, "/root/segment/1","[]")
         zookeeper.set(self.handle, "/root/segment/0","[]")
 
-        
 
         global TM
         #print("tm is " + str(TM))
@@ -153,7 +156,7 @@ class MembershipCloud:
 
             #Read ARset and store locally
             self.getARset()
-            if self.agent_registry['0'] == [] or self.agent_registry['1'] == []:
+            if self.agent_registry['0'] == [] or self.agent_registry['1'] == []:# or self.agent_registry['2'] == []:
                 pass
             else:
                 for agent_id in self.agent_registry.keys():

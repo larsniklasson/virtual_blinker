@@ -55,12 +55,15 @@ class RiskEstimator:
 
 
     def add_car_to_grantlist(self, id, time_finishing,turn):
-        self.grantList[id] = [time_finishing,turn]
-        self.remove_grant_thread = Timer(time_finishing,self.remove_car_from_grantlist,args=(id))
+        self.grantList[id] = [self.last_t + time_finishing,turn]
+        self.remove_grant_thread = Timer(time_finishing,self.remove_car_from_grantlist,args=(id,))
+        self.remove_grant_thread.start()
+        print "added car with id", id, "to grantlist. current grantlist: ", self.grantList
 
     def remove_car_from_grantlist(self,id):
         if id in self.grantList:
             del self.grantList[id]
+        print "removed car with id", id, "from grantlist. currentgrantlist:", self.grantList
 
 
     #todo this is quite ugly, fix this
@@ -116,7 +119,7 @@ class RiskEstimator:
         interval = t - self.last_t
 
         for i, pfilter in enumerate(self.particle_filters):
-            pfilter.step_time(i, measurements[i], self.most_likely_states, interval, precalculation)
+            pfilter.step_time(i, measurements[i], self.most_likely_states, interval, precalculation, self.grantList)
         
         self.updateMostLikelyStates()
 
@@ -136,9 +139,11 @@ class RiskEstimator:
         
         go_sum = 0
         for p, w in zip(pf.particles, pf.weights):
-            _, go = Es_estimate(id, turn, p.PS, pf.travelling_directions, pf.intersection, self.most_likely_states, precalculation, True)
+            _, go = Es_estimate(id, turn, p.PS, pf.travelling_directions, pf.intersection, self.most_likely_states, precalculation, self.grantList, True)
+            
             
             go_sum += float(go*w)
+            if id == 1: print go_sum
         
         self.mutex.release()
         return go_sum > 0.5

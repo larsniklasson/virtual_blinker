@@ -105,6 +105,7 @@ class Car:
 
         #has maneuver negotation been initiated or not
         self.man_init = False
+        self.granted = False
 
 
 
@@ -145,7 +146,7 @@ class Car:
 
 
                 #run maneuver negotiator
-                self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,0,self.risk_estimator)
+                self.maneuver_negotiator = ManeuverNegotiator(self, self.id,self.intersection,0,self.risk_estimator)
                 self.maneuver_negotiator.initialize()
             
             else:
@@ -153,10 +154,8 @@ class Car:
                 self.risk_estimator.update_state(actual_time, ms)
             
                 es_go = self.risk_estimator.getExpectation(self.id)  
-                if self.id == 1: 
-                    print "Expectation to go: ", es_go, "id = ", self.id
-                if self.id == 1: print self.course.hasLeftIntersection(self.x, self.y, self.theta)
-
+                #print "Expectation to go: ", es_go, "id = ", self.id
+                
                 #print self.risk_estimator.isManeuverOk(0, "left")
                 old_is = self.Is
 
@@ -173,6 +172,8 @@ class Car:
                 if risk > risk_threshold:
                     self.Is = "stop"
                 """
+                if self.man_init:
+                    self.Is = "go" if self.granted else "stop"
 
 
                 if old_is != self.Is:

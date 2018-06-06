@@ -5,7 +5,7 @@
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find virtual_blinker)/config.rviz" />
 </group>
 
-<arg name="nr_cars" default="4"/>
+<arg name="nr_cars" default="2"/>
 <arg name="plot" default="0"/>
 <arg name="save" default="0"/>
 

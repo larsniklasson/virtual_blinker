@@ -14,6 +14,9 @@ class Intersection:
         self.travelling_directions = ("north", "east", "south", "west")
         self.laneWidth = 7.5
 
+
+        self.cloud_travelling_directions = {}
+
         #mutex used when changing priorities of the intersection
         self.mutex = Lock()
 
@@ -125,16 +128,25 @@ class Intersection:
             return None
 
     ## Return agents that the selected agent hasn't got right-of-way to 
-    def getUnsafeAgents(self, agent_pose, agent_poses):
+    def getUnsafeAgents(self, ego_Id, agent_pose, agent_poses):
 
         unsafe_agents = {}
-        agent_direction = self.getTravellingDirection(*agent_pose) #TODO this will crash when we reach intersection. SOlution: only run gettravellingdirections once per agent.
+        if ego_Id in self.cloud_travelling_directions:
+            agent_direction = self.cloud_travelling_directions[ego_Id]
+        else:
+            agent_direction = self.getTravellingDirection(*agent_pose)
+            self.cloud_travelling_directions[ego_Id] = agent_direction
 
         # Check if any of the other agents have priority over the selected agents for the 3 possible turns
         for turn in self.turns:
             ids = []
             for id, pose in agent_poses:
-                if not self.hasRightOfWay(agent_direction, turn, self.getTravellingDirection(*pose)):
+                if id in self.cloud_travelling_directions:
+                    td = self.cloud_travelling_directions[id]
+                else:
+                    td = self.getTravellingDirection(*pose)
+                    self.cloud_travelling_directions[id] = td
+                if not self.hasRightOfWay(agent_direction, turn, td):
                     ids.append(id)
             unsafe_agents[turn] = ids
 

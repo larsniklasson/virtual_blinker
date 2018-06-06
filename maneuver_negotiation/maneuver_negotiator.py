@@ -20,7 +20,7 @@ import os
 import sys
 
 
-class ManeuverNegotiator():
+class ManeuverNegotiator:
 
   ## DEFINE THE STATES
   NORMAL = 1    # Initial state, no requests sent and no grant given
@@ -31,7 +31,8 @@ class ManeuverNegotiator():
   TRYGET = 6    # Some agents in the Safety Membership set aren't reachable or have answered DENY to our request
 
 
-  def __init__(self,agent_id,intersection, communication_details,risk_estimator):
+  def __init__(self,sim, agent_id,intersection, communication_details,risk_estimator):
+    self.sim = sim
     #Make all the necessary variables global
     #all global variables in romi code is now instance variabes:
     self.status = self.NORMAL
@@ -255,6 +256,7 @@ class ManeuverNegotiator():
   def doManeuver(self,t):
     self.risk_estimator.add_car_to_grantlist(self.aID,self.TMan,self.maneuver_requested)
     print("Doing maneuver")
+    self.sim.granted = True
     time.sleep(t)
     print("done")
 
@@ -359,7 +361,7 @@ class ManeuverNegotiator():
         if(self.last()): #If all expected replies received
           print("last")
           self.tRetry.cancel() #Stop the retry timer
-          print("stopped timer")
+          print("stopped retry timer")
 
           #Check if any agent denied our request
           granted = 1
@@ -395,7 +397,9 @@ class ManeuverNegotiator():
           mAR.append(m_dict["IntendedCourse"])
         #in romi code, time is converted into int
         #if (no_conflict(mAR, int(m_dict["Time"]) + 2*time_delay + TMan) and
-        if (self.no_conflict(mAR, float(m_dict["Time"]) + 2*self.time_delay + self.TMan) and #If no conflict = the manoeuvre can be executed without risk in the time 2TD + TMan (The expectation of the vehicle is to go)
+        nc = self.no_conflict(mAR, float(m_dict["Time"]) + 2*self.time_delay + self.TMan)
+        print "no conflict", nc
+        if (nc and #If no conflict = the manoeuvre can be executed without risk in the time 2TD + TMan (The expectation of the vehicle is to go)
             (self.status == self.NORMAL or self.status == self.TRYGET or #and (we are either not asking for permission, or asking for permission but waiting for T_retry to expire since all agents in SM not reachable or some sent us DENY
             (self.status == self.GET and self.precedes(m_dict["TagTime"])) or #, or we're asking for permission but this request has a lower timestamp
             ((self.status == self.GRANT or self.status == self.GRANTGET) and self.grantedID(m_dict["TagID"])))): # or we have already given permission to this agent)
@@ -422,7 +426,7 @@ class ManeuverNegotiator():
           s_message = "GRANT," + str(self.agent[0]) + "," + str(curtime) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
           
           #once we grant, we add the car to the list of grants, 
-          self.risk_estimator.add_car_to_grantlist(int(sender),curtime+self.TMan, m_dict["IntendedCourse"])
+          self.risk_estimator.add_car_to_grantlist(int(sender),self.TMan, m_dict["IntendedCourse"])
 
           print(s_message)
           self.send_udp_message(s_message,int(sender))
@@ -447,7 +451,7 @@ class ManeuverNegotiator():
 
         #remove the granted car from the grant list because we got a release message
         self.risk_estimator.remove_car_from_grantlist(int(m_dict["Sender"]))
-        self.risk_estimator.remove_grant_thread.stop()
+        self.risk_estimator.remove_grant_thread.cancel()
 
         #If you want to send a request, then try to send
         if (self.status == self.GRANTGET):

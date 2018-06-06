@@ -90,7 +90,7 @@ class ParticleFilter:
         return self.Ic_density, self.best_PS
         
     
-    def step_time(self, id, measurement_vector, most_likely_states, interval, precalculation):
+    def step_time(self, id, measurement_vector, most_likely_states, interval, precalculation, grantlist):
 
         if self.neff(self.weights) < self.neff_threshold:
             #resampling
@@ -116,7 +116,7 @@ class ParticleFilter:
             
             for p in particle_count:
                 _, es_density = Es_estimate(id, p.Ic, p.PS, self.travelling_directions, 
-                                            self.intersection, most_likely_states, precalculation)
+                                            self.intersection, most_likely_states, precalculation, grantlist)
                 Es_dict[p] = es_density
 
                 Is_list = [self.known_Is] if self.known_Is else ["go", "stop"]
@@ -151,7 +151,7 @@ class ParticleFilter:
             for p in self.particles:
                 #project new state
 
-                new_Es,_ = Es_estimate(id, p.Ic, p.PS, self.travelling_directions, self.intersection, most_likely_states, precalculation)
+                new_Es,_ = Es_estimate(id, p.Ic, p.PS, self.travelling_directions, self.intersection, most_likely_states, precalculation, grantlist)
 
                 new_Is = self.known_Is if self.known_Is else Is_estimate(p.Is, new_Es)
                 new_Ic = self.known_Ic if self.known_Ic else Ic_estimate(p.Ic, self.intersection.turns)
