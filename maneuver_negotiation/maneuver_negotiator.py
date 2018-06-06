@@ -197,72 +197,74 @@ class ManeuverNegotiator():
         self.send_udp_message(message,int(agents_to_ask))
     self.tryManeuver()
 
-
+  ## Get Membership Register (MR) entry for agent with id id1 from Zookeeper
+  ## Returns [timestamp, MO, D], MO = maneuvre oppertunity (true if all unsafe agents are reachable, false if not)
   def get_MR(self,id1):
+
+    #EME: Suggested change (Requires zookeeper to be set up properly)
+    (data, stat) = zookeeper.get(self.handle, "/root/MR/" + str(id1), True) 
+    return data
+
+    #EME: Old
     (data, stat) = zookeeper.get(self.handle, "/root/segment/" + str(id1), True)
     children = zookeeper.get_children(self.handle, "/root/segment", True)
     ask_these = ""
     for child in children:
-      if(child != str(id1)):
+      if(child != str(id1)):                      
         ask_these = ask_these + str(child) + ","
-    ask_these = ask_these[0:len(ask_these)-1]
-    return [stat["mtime"], 1, str(ask_these)]
+    ask_these = ask_these[0:len(ask_these)-1]     
+    return [stat["mtime"], 1, str(ask_these)]     # EME MO should not be hardcoded, take from zookeeper instead
+    #EME: End of old
 
-
+  ## Ask for permission to do a maneuvre
   def tryManeuver(self,intended_course=None):
-    #global status
-    #global agent_state
-    #global agent
-    #global time1
-    #global TM
-    #global TMan
-    #global D
-    #global R
-    #global tRetry
-    #global aID
-    #global tag
-    #global many
-    #global agents_to_ask
-    #global T_RETRY
-    #global host_ip
-    #context = zmq.Context()
-    #socket = context.socket(zmq.DEALER)
-    identity = 'me'
+
+    identity = 'me' #EME: Not used?
     #socket.identity = identity.encode('ascii')
-    if (self.status == self.NORMAL or self.status == self.GRANT):
+
+    if (self.status == self.NORMAL or self.status == self.GRANT): # Save timestamp and agent id in tag for the new request
       self.tag = [self.clock(), self.aID]
+
     if (self.status == self.NORMAL or self.status == self.TRYGET):
       self.status = self.TRYGET
 
       self.agent_state = [self.clock(), self.position(), self.velocity(), self.acceleration()]
-
       self.agent = [self.aID,self.agent_state]
-      MR = self.get_MR(self.agent[0])
+      MR = self.get_MR(self.agent[0]) # Get membership registry for this vehicle
 
+      # If the MR isn't too old and all unsafe agents are reachable
       if((self.agent_state[0] < MR[0] + 2*self.TMan) and MR[1] == 1):
+        # Store the Safety Membership set in agents_to_ask
         if(',' in MR[2]):
           self.agents_to_ask = MR[2].split(',')
           self.many = 1
         else:
-          self.agents_to_ask = MR[2]
+          self.agents_to_ask = MR[2] 
           self.many = 0
+
+        # Add the agents in the SM to the set of agents to send a request to and from which we expect a response
+        # EME: No if-else needed
         if(self.many):
           for car in self.agents_to_ask:
             self.D.add(str(car))
             self.R.add(str(car))
         else:
           self.D.add(str(self.agents_to_ask))
-          self.R.add(str(self.agents_to_ask))  
+          self.R.add(str(self.agents_to_ask))
+        
         message = "GET," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
         if (intended_course is not None): #EME Why would this happen?
           message = "GET," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1] + "," + str(intended_course))
         print(message)
+
+        # If all agents in D have answered to the request: execute and go back to normal
         if(self.last()):
           self.status = self.EXECUTE
-          self.doManeuver(self.TMan)
+          self.doManeuver(self.TMan) #EME, Here implemented differently: Not clock() + TMan (Will take processing time into account)
           self.status = self.NORMAL
 
-        elif(self.many):
+        # If not: send a get request to the members of the Safety Membership set and reset the retry timer with 2TD
+        elif(self.many): #EME: Again, do we need to separate if just one or many?
           self.status = self.GET
           for agents in self.agents_to_ask:
             print(message)
@@ -278,28 +280,20 @@ class ManeuverNegotiator():
           self.tRetry.start()
         else:
           self.status = self.GET
-          #tmp = "tcp://localhost:" + str(agents_to_ask)
-          #print(tmp)
-          #socket.connect(tmp)
-          #print("connected")
-          #socket.send_string(message)
-          #T_RETRY = 2*TD
 
-          #sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
           print("agents_to_ask = " + str(self.agents_to_ask))
-          #sock.sendto(message, (host_ip, int(agents_to_ask)))
-          #sock.close()
+
           self.send_udp_message(message,int(self.agents_to_ask))
           print("starting t_retry by car {0} first".format(self.aID))
           self.tRetry = Timer(2*self.TD, self.t_retry) # Retry later if messages delayed more than the upperbound of transmission delays
           self.tRetry.start()
           print("set timer first time")
 
-      else:
-
+      else: # Set timer to exipre when new agent registry update have arrived
         print("starting t_retry by car {0}, second case".format(self.aID))
         self.tRetry = Timer(self.TA, self.t_retry) # Wait until a fresh membership is available
         self.tRetry.start()
+
     elif (self.status == self.GRANT):
       self.status = self.GRANTGET
 
@@ -318,6 +312,7 @@ class ManeuverNegotiator():
     #receiving a message implies i have priority
     #if this vehicle is on priority lane:
     cur_pos = self.position()
+    #EME: Why do we need to check if the car in on the prio lane? Isn't the procedure the same for cars on the non-prio lane?
     if self.intersection.isOnPrioLane(self.intersection.getTravellingDirection(cur_pos[0],cur_pos[1],cur_pos[2])):
       priority=True
     else:
@@ -340,6 +335,7 @@ class ManeuverNegotiator():
       pass
     print("mAR : {0}".format(mAR))
     #print("GRANT ID RIGHT NOW IS: %i", grantID)
+    #EME: Old?
     if(self.grantID != 0):
       if(self.grantID == mAR[0]):
         return 1
@@ -350,7 +346,6 @@ class ManeuverNegotiator():
   ## Dummy function, the agent got permissions from everyone in the SM and executes the manoeuvre in t time units
   def doManeuver(self,t):
     #dummy code, not needed
-    #global timeTaken
     #print("TimeTaken = %f" % timeTaken)
     #print("Clock right now = %f " % time.clock())
     #timeTaken = time.clock() - timeTaken
@@ -361,6 +356,7 @@ class ManeuverNegotiator():
 
   ## Returns true when GRANT/DENY received from the last agent
   ## in agents_to_ask, that is agents in the SM
+  # EME: Should also compare intersection of membership at time of sending request to the current one
   def last(self):
     print(len(self.R))
     if(len(self.R) == 0):
@@ -471,7 +467,7 @@ class ManeuverNegotiator():
               m_dict["Acc"]]
         if (len(message_split) > 8):
           mAR.append(m_dict["IntendedCourse"])
-        #in romi code, time is converted into int
+        #IBR: in romi code, time is converted into int
         #if (no_conflict(mAR, int(m_dict["Time"]) + 2*time_delay + TMan) and
         if (self.no_conflict(mAR, float(m_dict["Time"]) + 2*self.time_delay + self.TMan) and #If no conflict = the manoeuvre can be executed without risk in the time 2TD + TMan (The expectation of the vehicle is to go)
             (self.status == self.NORMAL or self.status == self.TRYGET or #and (we are either not asking for permission, or asking for permission but waiting for T_retry to expire since all agents in SM not reachable or some sent us DENY
