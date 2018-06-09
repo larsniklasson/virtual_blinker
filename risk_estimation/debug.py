@@ -18,7 +18,7 @@ total_nr_particles = SIM_CONFIG["total_nr_particles"]
 
 random.seed(1)
 np.random.seed(1)
-plotafter = 0
+plotafter = 2
 
 with open("debug.txt") as f:
     first = True
@@ -34,6 +34,8 @@ with open("debug.txt") as f:
 
         else:
             print x[0] # timestamp
+            if x[0] > 1.5:
+                pass
 
             id, Ic, Is = x[2]
             re.setKnownIc(id, Ic)

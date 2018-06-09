@@ -16,8 +16,8 @@ def car(td, turn, sd, re):
             "use_riskestimation": re}
 
 CARS = {
-    0 : car("east", "straight", 40, False),
-    1 : car("south", "straight", 40, True),
+    0 : car("north", "left", 40, False),
+    1 : car("south", "straight", 00, True),
     2 : car("east", "right", 50, True),
     3 : car("west", "left", 50, True)
 
@@ -51,8 +51,8 @@ RISK_CONFIG = {
         "x0_2": 1.5,
         "k2": 3
     },
-    "Is_comply": 0.75,
-    "Ic_same": 0.5,
+    "Is_comply": 0.8,
+    "Ic_same": 0.8,
     "grant_threshold": 0.5
 
 

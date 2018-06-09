@@ -202,6 +202,8 @@ class Car:
         
         # follow speed profile
         targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
+        if self.id == 0:
+            targetspeed += 5
         if targetspeed < self.speed:
             targetacc = self.course.catchup_deacc
             self.speed += dt*targetacc/SLOWDOWN
