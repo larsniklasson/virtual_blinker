@@ -223,27 +223,38 @@ class Course:
         xnew, ynew,thetanew = self.getPose(newd)
 
         xc = (x + cos(theta)*speed*t, y + sin(theta)*speed*t, theta, speed)
-
+        
         if Is == "stop":
             diff = speed - newspeed
             if diff > 0:
                 speed_avg = newspeed - diff/2.0
                 speed_dev = max(diff/2.0, min_speed_dev)
             else:
-                speed_avg = (newspeed + speed)/2.0
-                speed_dev = max(abs(diff/2.0), min_speed_dev)
+                lower = speed
+                upper = min(newspeed, min(speed + 10*t, newspeed)*0.9 + newspeed * 0.1)
+
+                speed_avg = (upper + lower) / 2.0
+                speed_dev = max((upper - lower) / 2.0, min_speed_dev)
+                
         else:
-            speed_avg = (newspeed + speed)/2.0
-            speed_dev = max(abs(newspeed - speed)/2.0, min_speed_dev)
-
+            diff = speed - newspeed
+            if diff > 0:
+                upper = speed
+                lower = max(max(speed - 10*t, newspeed) * 0.9 + newspeed*0.1, newspeed)
+            else:
+                lower = speed
+                upper = min(min(speed + 10*t, newspeed) * 0.9 + newspeed*0.1, newspeed)
         
-        x_avg = (xnew + xc[0])/2.0
-        y_avg = (ynew + xc[1])/2.0
-        theta_avg = (thetanew + xc[2])/2.0
+            speed_avg = (upper + lower) / 2.0
+            speed_dev = max((upper - lower) / 2.0, min_speed_dev)
+        
+        x_avg = xnew#(xnew + xc[0])/2.0
+        y_avg = ynew#(ynew + xc[1])/2.0
+        theta_avg = thetanew#(thetanew + xc[2])/2.0
 
-        x_dev = max(deviations[0] / pdc, abs(xnew - xc[0])/2.0)
-        y_dev = max(deviations[0] / pdc, abs(ynew - xc[1])/2.0)
-        theta_dev = max(deviations[1]/pdc, abs(thetanew - xc[2])/2.0)
+        x_dev = max(deviations[0] / pdc, abs(xnew - xc[0]))
+        y_dev = max(deviations[0] / pdc, abs(ynew - xc[1]))
+        theta_dev = max(deviations[1]/pdc, abs(thetanew - xc[2]))
 
 
 

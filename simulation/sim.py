@@ -90,6 +90,7 @@ class Car:
 
 
         path = self.course.getPath()
+
         self.error_calc = ErrorCalc(path) #calculates how far away we are from ideal path
         self.pid = PID(*SIM_CONFIG["pid"])
 
