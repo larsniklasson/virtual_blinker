@@ -57,7 +57,7 @@ class SpeedProfile:
                 else:
                     #t too small to catch up. This means we only follow r. 
                     new_distance =  r.getUpperLimit(t, distance)
-                    newspeed = speed + t * acc
+                    newspeed = self.getSpeed(new_distance) #newspeed = speed + t * acc
                     break
         
         return new_distance, newspeed

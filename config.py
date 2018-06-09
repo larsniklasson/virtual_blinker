@@ -16,7 +16,7 @@ def car(td, turn, sd, re):
             "use_riskestimation": re}
 
 CARS = {
-    0 : car("north", "left", 40, True),
+    0 : car("east", "straight", 40, False),
     1 : car("south", "straight", 40, True),
     2 : car("east", "right", 50, True),
     3 : car("west", "left", 50, True)
@@ -37,7 +37,7 @@ SIM_CONFIG = {
     "discard_measurement_time": 0.15, #seconds
     "Es_threshold": 0.5,
     "risk_threshold": 0.8,
-    "save_id" : 0
+    "save_id" : 1
 
 }
 

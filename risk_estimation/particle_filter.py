@@ -139,7 +139,7 @@ class ParticleFilter:
                     new_Is = self.known_Is if self.known_Is else Is_estimate(p.Is, new_Es)
                     new_Ic = self.known_Ic if self.known_Ic else Ic_estimate(p.Ic, self.intersection.turns)
                     
-                    new_PS = sample(PS_dict[p,new_Is, new_Ic], self.deviations)
+                    new_PS = sample(*PS_dict[p,new_Is, new_Ic])
 
                     new_particles.append(StateVector(new_Es ,new_Is, new_Ic, new_PS))
 

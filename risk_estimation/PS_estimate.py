@@ -9,22 +9,22 @@ pdc = RISK_CONFIG["prediction_dev_coeff"]
 
 def PS_estimate((x,y,theta,speed), Is, Ic, travelling_direction, intersection, interval, deviations, no_sample = False):
     c = intersection.courses[travelling_direction, Ic]
-    new_PS = c.predictNextState(x, y, theta, speed, interval, Is)
+    new_PS, dev = c.predictNextState(x, y, theta, speed, interval, Is, deviations, pdc)
 
     if no_sample:
-        return new_PS
+        return new_PS, dev
     
     
-    return sample(new_PS, deviations)
+    return sample(new_PS, dev)
 
 
 def sample((xnew, ynew, thetanew, newspeed), deviations):
-    xy_deviation, theta_deviation, speed_deviation = deviations
+    x_deviation, y_deviation, theta_deviation, speed_deviation = deviations
 
-    x_estimate = np.random.normal(xnew, xy_deviation / pdc)
-    y_estimate = np.random.normal(ynew, xy_deviation / pdc)
-    theta_estimate = np.random.normal(thetanew, theta_deviation / pdc)
-    s_estimate = np.random.normal(newspeed, speed_deviation / pdc)
+    x_estimate = np.random.normal(xnew, x_deviation)
+    y_estimate = np.random.normal(ynew, y_deviation)
+    theta_estimate = np.random.normal(thetanew, theta_deviation)
+    s_estimate = np.random.normal(newspeed, speed_deviation)
     ps_estimate = np.array((x_estimate, y_estimate, theta_estimate, s_estimate))
 
 

@@ -208,7 +208,8 @@ class Course:
                 return self.sp_go.getTimeToCrossing(d, speed)
 
     
-    def predictNextState(self, x, y, theta, speed, t, Is):
+    def predictNextState(self, x, y, theta, speed, t, Is, deviations, pdc):
+        min_speed_dev = deviations[-1] / pdc
 
         x,y,theta = self.rotate(x,y,theta)
 
@@ -219,12 +220,35 @@ class Course:
         else:
             newd, newspeed = self.sp_go.predict(d, speed, t)
 
-        #get new position from distance. Also send old distance and x to account 
-        # for the fact that vehicle might be a little off the path center
         xnew, ynew,thetanew = self.getPose(newd)
 
-        xnew, ynew, thetanew = self.rotate(xnew, ynew, thetanew, dir = -1)
-        return (xnew, ynew, thetanew, newspeed)
+        xc = (x*cos(theta)*speed*t, y*sin(theta)*speed*t, theta, speed)
+
+        if Is == "stop":
+            diff = speed - newspeed
+            if diff > 0:
+                speed_avg = newspeed - diff/2.0
+                speed_dev = max(diff, min_speed_dev)
+            else:
+                speed_avg = (newspeed + speed)/2.0
+                speed_dev = max(abs(diff), min_speed_dev)
+        else:
+            speed_avg = (newspeed + speed)/2.0
+            speed_dev = max(abs(newspeed - speed), min_speed_dev)
+
+        
+        x_avg = (xnew + xc[0])/2.0
+        y_avg = (ynew + xc[1])/2.0
+        theta_avg = (thetanew + xc[2])/2.0
+
+        x_dev = max(deviations[0] / pdc, abs(xnew - xc[0]))
+        y_dev = max(deviations[0] / pdc, abs(ynew - xc[1]))
+        theta_dev = max(deviations[1]/pdc, abs(thetanew - xc[2]))
+
+
+
+        rx, ry, rt = self.rotate(x_avg, y_avg, theta_avg, dir = -1)
+        return (rx, ry, rt, speed_avg), (x_dev, y_dev, theta_dev, speed_dev)
     
     def getStartingPose(self, d):
         return self.rotate(*self.getPose(d), dir=-1)
