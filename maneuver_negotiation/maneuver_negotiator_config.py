@@ -1,8 +1,14 @@
 GENERAL_OPTIONS = {
     'zookeeper-server' : '127.0.0.1:2181',
-    'TM' : 10 ,#Come up with better values
-    'TD' : 2,
-    'TMan' : 20,
+    'TM' : 10 ,# Period of membership protocol (seconds) , Come up with better values
+    'TD' : 2,  # upper bound on transmission delay (seconds)
+    'TMan' : 20, #upper bound on maneuver execution time (seconds)
+    'CommRadius' : 200, #communication radius which v2x are possible by a car, in meters
+
+    'T_RETRY': 3,
+    'T_GRANT': 10,
+    'TA': 5, #Period of agent registry update (how often the agents x, v and a is sampled )
+
 }
 
 UDP_COMMUNICATION_OPTIONS = {

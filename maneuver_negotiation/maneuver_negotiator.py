@@ -8,21 +8,17 @@ import random
 import zookeeper
 import socket
 import argparse
-import communication_config
 import rospy
 import virtual_blinker.msg as cm
 import std_msgs
 
 import threading
 
-import maneuver_negotiator_config
+import maneuver_negotiator_config as config
 
 import os
 import sys
 #p = os.path.abspath(os.path.dirname(__file__))
-#print(p)
-#exit()
-#print(sys.path)
 #lib_path = os.path.abspath(os.path.join(p, '..', '..', 'risk_estimation', 'src', 'scripts')) #TODO folder structure here
 
 #lib_path = os.path.abspath(communication_config.GENERAL_OPTIONS['risk-estimator-path']) #TODO folder structure here
@@ -46,8 +42,8 @@ class ManeuverNegotiator():
     #all global variables in romi code is now instance variabes:
     self.status = self.NORMAL
     #self.TMan = 10
-    self.T_RETRY = 3
-    self.T_GRANT = 10
+    self.T_RETRY = config.GENERAL_OPTIONS['T_RETRY']
+    self.T_GRANT = config.GENERAL_OPTIONS['T_GRANT']
     self.aID = agent_id
     self.tRetry = []
     self.t_grant = []
@@ -61,23 +57,16 @@ class ManeuverNegotiator():
     #self.T_UPDATE = 5
     self.timeTaken = 0
     #self.time1 = self.clock() # this variable is not used in romi's code
-    self.TM = 15    # Period of membership protocol
-    self.TMan = 10  # Maneuvre time
-    self.TA = 5     # Period of agent registry update (how often the agents x, v and a is sampled )
-    self.TD = 3     # Upper bound on transmission delay
+    self.TM = config.GENERAL_OPTIONS['TM']    # Period of membership protocol
+    self.TMan = config.GENERAL_OPTIONS['TMan']  # Maneuvre time
+    self.TA = config.GENERAL_OPTIONS['TA']     # Period of agent registry update (how often the agents x, v and a is sampled )
+    self.TD = config.GENERAL_OPTIONS['TD']     # Upper bound on transmission delay
 
     self.M = set()
     self.D = set()
     self.R = set()
 
-    self.time_delay = 100
 
-    #ibrahim udp adoption:
-    #global host_ip = '127.0.0.1'
-    self.host_ip = '127.0.0.1'
-    #intersection at which the cars are setup
-    #intersection = None
-    #port_prefix = '900'
 
     #all measurements are updated to this variable
     #at the same frequency as simulation publishes them.
@@ -164,18 +153,10 @@ class ManeuverNegotiator():
   def acceleration(self):
     return 1
 
-    # if self.aID == 1:
-    #   return int(self.ros_measurements.cs1.acceleration)
-    # elif self.aID == 2:
-    #   return int(self.ros_measurements.cs2.acceleration)
-
-    # return int(self.ros_measurements.cs2.acceleration)
-
   ## Retry timer expired, tell the other agents to stop their lease of grant to you. Change status to TRYGET since all agents in R can't be reached
   def t_retry(self,intended_course=None):
     status = self.status
     agents_to_ask = self.agents_to_ask
-    #host_ip = self.host_ip
     print("reached retry")
 
     if(status == self.GET): # If timer expired for this vehicles current request, ask other agents in D to release their grants
@@ -403,8 +384,8 @@ class ManeuverNegotiator():
     #things will change to accomodate this:
 
     curtime = self.clock()
-    print(curtime-t <= self.time_delay) 
-    if (curtime - t <= self.time_delay): #Only process message if it arrived within the transmission delay boundary
+    print(curtime-t <= self.TD) 
+    if (curtime - t <= self.TD): #Only process message if it arrived within the transmission delay boundary
       if (self.communication_details == 1): #if using ros:
         #received string is 'data: "GET,1,1,1,1,1,1,1"' without single quotes,
         # first split extracts the "GET,1,1,1,1,1,1,1" and the second split separates them like usual
@@ -469,7 +450,7 @@ class ManeuverNegotiator():
           mAR.append(m_dict["IntendedCourse"])
         #IBR: in romi code, time is converted into int
         #if (no_conflict(mAR, int(m_dict["Time"]) + 2*time_delay + TMan) and
-        if (self.no_conflict(mAR, float(m_dict["Time"]) + 2*self.time_delay + self.TMan) and #If no conflict = the manoeuvre can be executed without risk in the time 2TD + TMan (The expectation of the vehicle is to go)
+        if (self.no_conflict(mAR, float(m_dict["Time"]) + 2*self.TD + self.TMan) and #If no conflict = the manoeuvre can be executed without risk in the time 2TD + TMan (The expectation of the vehicle is to go)
             (self.status == self.NORMAL or self.status == self.TRYGET or #and (we are either not asking for permission, or asking for permission but waiting for T_retry to expire since all agents in SM not reachable or some sent us DENY
             (self.status == self.GET and self.precedes(m_dict["TagTime"])) or #, or we're asking for permission but this request has a lower timestamp
             ((self.status == self.GRANT or self.status == self.GRANTGET) and self.grantedID(m_dict["TagID"])))): # or we have already given permission to this agent)
