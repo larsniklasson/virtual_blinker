@@ -18,11 +18,11 @@ import virtual_blinker.msg as cm
 #priorityMatrix = np.array([[1,0,0],[0,0,0],[0,0,0]])
 #nonPriorityMatrix = np.array([[1,1,1],[0,1,1],[0,0,1]])
 
-TM = config.GENERAL_OPTIONS['TM'] #SM's update period
-TD = config.GENERAL_OPTIONS['TD'] 
-TMan = config.GENERAL_OPTIONS['TMan']
+TM = config.GENERAL_OPTIONS['TM'] #period of membership update protocol,  #SM's update period
+TD = config.GENERAL_OPTIONS['TD'] #upperbound on transmission delay
+TMan = config.GENERAL_OPTIONS['TMan'] #upperbound on maneuver execution time
+commRadius = config.GENERAL_OPTIONS['CommRadius'] #communication radius which v2x are possible by a car
 
-r_com = 200 #200 m
 
 ## Doesn't have to be reliable? 
 ## It's now reliable due to zookeepers use of TCP, but could be made unreliable if the cloud started to listen to ros topics instead
@@ -88,7 +88,7 @@ class MembershipCloud:
         b_p = self.agent_registry[bID][1]
 
         # If within communication distance
-        if (a_p[0] - b_p[0])**2 + (a_p[1] - b_p[1])**2 < r_com**2:
+        if (a_p[0] - b_p[0])**2 + (a_p[1] - b_p[1])**2 < commRadius**2:
             return True
         return False
 
