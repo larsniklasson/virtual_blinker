@@ -254,13 +254,29 @@ class ManeuverNegotiator:
     last_entering_time = current_time + (2*self.TD) + \
                                     sender_course.getTimeToCrossing(stop_pose_state[0],stop_pose_state[1],stop_pose_state[2],"go")
 
-    sender_last_exiting_time = last_entering_time + self.TMan
+    sender_last_leaving_time = last_entering_time + self.TMan
 
     my_state = self.position()
     my_travelling_direction = self.intersection.getTravellingDirection(*my_state)
     my_course = self.intersection.courses(my_travelling_direction,"straight")
     my_entering_time = current_time + my_course.getTimeToCrossing(my_state,"go")
     my_leaving_time = my_entering_time + self.TMan
+
+
+    safe_gap = my_entering_time - sender_last_leaving_time
+    if (safe_gap > 0): #means if I enter intersection later than sender leaves, safe.
+      return True
+    else: #means if sender leaves intersection later than i enter.
+      #then we have to compare my leaving time vs his entering time:
+      if sender_earliest_entering_time > my_leaving_time: # if sender enters intersection later than I leaves
+        return True
+      else:
+        #possibility for sender entering when i have not left, just about to leave, this should be safe too..
+        #pass for now, but can be developed later
+        pass
+
+    return False
+
 
     #calculate least    possible time sender can enter:
     #offset these two by TMan to get earliest and last possible exit times. 
