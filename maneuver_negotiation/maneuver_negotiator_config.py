@@ -3,7 +3,8 @@ GENERAL_OPTIONS = {
     'TM' : 10 ,#Come up with better values
     'TD' : 2,
     'TMan' : 20,
-    'CommRadius': 200
+    'CommRadius': 200,
+    'TA': 0.5
 }
 
 UDP_COMMUNICATION_OPTIONS = {

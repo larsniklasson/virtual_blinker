@@ -207,8 +207,12 @@ class ManeuverNegotiator:
     elif (self.status == self.GRANT):
       self.status = self.GRANTGET
 
+  def timeoverlapcheck(self):
+    pass
+
   ## Estimate the expectation of the car with register mAR. No conflict if weighted average over a certain threshold
   def no_conflict(self, mAR, current_time):
+    
 
     #mAR = [m_dict["Sender"], m_dict["Time"], m_dict["Position"], m_dict["Velocity"], m_dict["Acc"]]
     sender = mAR[0]
@@ -262,6 +266,9 @@ class ManeuverNegotiator:
     my_entering_time = current_time + my_course.getTimeToCrossing(my_state,"go")
     my_leaving_time = my_entering_time + self.TMan
 
+    return True
+    if (sender_course.hasLeftIntersection(sender_pose) or my_course.hasLeftIntersection(my_state)):
+      return True
 
     safe_gap = my_entering_time - sender_last_leaving_time
     if (safe_gap > 0): #means if I enter intersection later than sender leaves, safe.
@@ -274,7 +281,7 @@ class ManeuverNegotiator:
         return True
       else:
         #possibility for sender entering when i have not left, just about to leave, this should be safe too..
-
+        pass
     return False
 
 
@@ -285,7 +292,7 @@ class ManeuverNegotiator:
 
   ## Dummy function, the agent got permissions from everyone in the SM and executes the manoeuvre in t time units
   def doManeuver(self,t):
-    self.risk_estimator.add_car_to_grantlist(self.aID,self.TMan,self.maneuver_requested)
+    #self.risk_estimator.add_car_to_grantlist(self.aID,self.TMan,self.maneuver_requested)
     print("Doing maneuver")
     self.sim.granted = True
     time.sleep(t)

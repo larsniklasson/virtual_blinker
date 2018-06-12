@@ -189,6 +189,7 @@ class Car:
         self.last_time = now
         
         self.t += 1
+        actual_time = float(self.t)/(RATE*SLOWDOWN)
         
         # scale lookahead w.r.t. speed. slower speed => smaller lookahead and vice versa
         p = getLookaheadPoint((self.x, self.y), self.theta, lookahead*(self.speed / (50/3.6))) #PID "tuned" for 50 km/h
