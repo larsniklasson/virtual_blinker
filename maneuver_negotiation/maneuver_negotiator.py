@@ -213,13 +213,15 @@ class ManeuverNegotiator:
   ## Estimate the expectation of the car with register mAR. No conflict if weighted average over a certain threshold
   def no_conflict(self, mAR, current_time):
     
+    print("in no conflict")
+    print "mar is, ", mAR
 
     #mAR = [m_dict["Sender"], m_dict["Time"], m_dict["Position"], m_dict["Velocity"], m_dict["Acc"]]
     sender = mAR[0]
-    sent_time = mAR[1]
-    sender_pose = mAR[2]
-    sender_speed = mAR[3]
-    sender_acceleration = mAR[4]
+    sent_time = float(mAR[1])
+    sender_pose =map(float,mAR[2])
+    sender_speed = float(mAR[3])
+    sender_acceleration = float(mAR[4])
     if(len(mAR)>5):
       sender_maneuver = mAR[5]
     
@@ -233,7 +235,6 @@ class ManeuverNegotiator:
     We first estimate earliest and last possible time left turning vehicle can enter 
     the intersection. We estimate the earliest and last possible time left turning
     vehicle can leave. we take earliest enter and last leave duration 
-    and see if it overlaps with receivers entering and leaving times.
     """
 
     #calculate earliest possible time sender can enter:
@@ -248,22 +249,23 @@ class ManeuverNegotiator:
     sender_travelling_direction = self.intersection.getTravellingDirection(*sender_pose)
     sender_course = self.intersection.courses[(sender_travelling_direction,sender_maneuver)]
 
-    stop_pose_state = sender_course.predictNextState(sender_pose,sender_speed,stop_interval,"stop")
+    stop_pose_state = sender_course.predictNextState(sender_pose[0],sender_pose[1],sender_pose[2],sender_speed,stop_interval,"stop")
     #fromthen onwards it will take profile of go:
     sender_earliest_entering_time = current_time + stop_interval + \
-                                    sender_course.getTimeToCrossing(stop_pose_state[0],stop_pose_state[1],stop_pose_state[2],"go")
+                                    sender_course.getTimeToCrossing(stop_pose_state[0],stop_pose_state[1],stop_pose_state[2],stop_pose_state[3],"go")
 
-    stop_pose_state = sender_course.predictNextState(sender_pose,sender_speed,2*self.TD,"stop")
+    stop_pose_state = sender_course.predictNextState(sender_pose[0],sender_pose[1],sender_pose[2],sender_speed,2*self.TD,"stop")
     #last_entering_time = current_time + (2*self.TD) + sender_course.getTimeToCrossing(*stop_pose_state,"go")
     last_entering_time = current_time + (2*self.TD) + \
-                                    sender_course.getTimeToCrossing(stop_pose_state[0],stop_pose_state[1],stop_pose_state[2],"go")
+                                    sender_course.getTimeToCrossing(stop_pose_state[0],stop_pose_state[1],stop_pose_state[2],stop_pose_state[3],"go")
 
     sender_last_leaving_time = last_entering_time + self.TMan
 
     my_state = self.position()
+    my_speed = self.velocity()
     my_travelling_direction = self.intersection.getTravellingDirection(*my_state)
-    my_course = self.intersection.courses(my_travelling_direction,"straight")
-    my_entering_time = current_time + my_course.getTimeToCrossing(my_state,"go")
+    my_course = self.intersection.courses[(my_travelling_direction,"straight")]
+    my_entering_time = current_time + my_course.getTimeToCrossing(my_state[0],my_state[1],my_state[2],my_speed,"go")
     my_leaving_time = my_entering_time + self.TMan
 
     return True
