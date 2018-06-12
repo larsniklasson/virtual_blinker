@@ -19,6 +19,11 @@ import maneuver_negotiator_config
 import os
 import sys
 
+sys.path.append("..")
+from config import *
+RATE = SIM_CONFIG['rate']
+SLOWDOWN = SIM_CONFIG['slowdown']
+
 
 class ManeuverNegotiator:
 
@@ -31,7 +36,7 @@ class ManeuverNegotiator:
   TRYGET = 6    # Some agents in the Safety Membership set aren't reachable or have answered DENY to our request
 
 
-  def __init__(self,sim, agent_id,intersection, communication_details,risk_estimator):
+  def __init__(self,sim, agent_id,intersection, communication_details,risk_estimator,initial_direction=None):
     self.sim = sim
     #Make all the necessary variables global
     #all global variables in romi code is now instance variabes:
@@ -92,6 +97,8 @@ class ManeuverNegotiator:
     self.risk_estimator = risk_estimator
 
     self.maneuver_requested=None #maneuver requested in trymaneuver
+
+    self.my_travelling_direction = initial_direction
 
 
   def clock(self):
@@ -211,10 +218,12 @@ class ManeuverNegotiator:
     pass
 
   ## Estimate the expectation of the car with register mAR. No conflict if weighted average over a certain threshold
-  def no_conflict(self, mAR, current_time):
-    
+  def no_conflict(self, mAR, time_tick):
+    global RATE
+    global SLOWDOWN
+    current_time = time_tick/(RATE*SLOWDOWN)
     print("in no conflict")
-    print "mar is, ", mAR
+    print "current time is ", time_tick/(RATE*SLOWDOWN)
 
     #mAR = [m_dict["Sender"], m_dict["Time"], m_dict["Position"], m_dict["Velocity"], m_dict["Acc"]]
     sender = mAR[0]
@@ -247,6 +256,12 @@ class ManeuverNegotiator:
     #this can be done from sender_position and sender_course
     stop_interval = 0.005
     sender_travelling_direction = self.intersection.getTravellingDirection(*sender_pose)
+
+    if (sender_travelling_direction is None):
+      #this happens while i am at the intersection
+      print("sender travel direction is none")
+      print "sender state is ", sender_pose
+      return False
     sender_course = self.intersection.courses[(sender_travelling_direction,sender_maneuver)]
 
     stop_pose_state = sender_course.predictNextState(sender_pose[0],sender_pose[1],sender_pose[2],sender_speed,stop_interval,"stop")
@@ -263,13 +278,20 @@ class ManeuverNegotiator:
 
     my_state = self.position()
     my_speed = self.velocity()
-    my_travelling_direction = self.intersection.getTravellingDirection(*my_state)
+    my_travelling_direction = self.my_travelling_direction
+
+    if (my_travelling_direction is None):
+      #this happens while i am at the intersection
+      print("my travelling direction is none")
+      print "my state is ", my_state
+      return False
+
     my_course = self.intersection.courses[(my_travelling_direction,"straight")]
     my_entering_time = current_time + my_course.getTimeToCrossing(my_state[0],my_state[1],my_state[2],my_speed,"go")
     my_leaving_time = my_entering_time + self.TMan
 
-    return True
-    if (sender_course.hasLeftIntersection(sender_pose) or my_course.hasLeftIntersection(my_state)):
+
+    if (sender_course.hasLeftIntersection(*sender_pose) or my_course.hasLeftIntersection(*my_state)):
       return True
 
     safe_gap = my_entering_time - sender_last_leaving_time
@@ -282,6 +304,7 @@ class ManeuverNegotiator:
         print("not conflicted because leaves before i enter")
         return True
       else:
+        print("sender entering while i am just about to leave")
         #possibility for sender entering when i have not left, just about to leave, this should be safe too..
         pass
     return False

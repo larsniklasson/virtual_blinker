@@ -146,7 +146,7 @@ class Car:
 
 
                 #run maneuver negotiator
-                self.maneuver_negotiator = ManeuverNegotiator(self, self.id,self.intersection,0,self.risk_estimator)
+                self.maneuver_negotiator = ManeuverNegotiator(self, self.id,self.intersection,0,self.risk_estimator,CARS[self.id]["travelling_direction"])
                 self.maneuver_negotiator.initialize()
             
             else:
