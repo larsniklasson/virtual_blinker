@@ -52,16 +52,16 @@ class ManeuverNegotiator:
     #self.T_UPDATE = 5
     self.timeTaken = 0
     #self.time1 = self.clock() # this variable is not used in romi's code
-    self.TM = 15    # Period of membership protocol
-    self.TMan = 10  # Maneuvre time
-    self.TA = 0.5     # Period of agent registry update (how often the agents x, v and a is sampled )
-    self.TD = 3     # Upper bound on transmission delay
+    self.TM = maneuver_negotiator_config.GENERAL_OPTIONS['TM']   # Period of membership protocol
+    self.TMan = maneuver_negotiator_config.GENERAL_OPTIONS['TMan']  # Maneuvre time
+    self.TA = maneuver_negotiator_config.GENERAL_OPTIONS['TA']     # Period of agent registry update (how often the agents x, v and a is sampled )
+    self.TD = maneuver_negotiator_config.GENERAL_OPTIONS['TD']    # Upper bound on transmission delay
 
     self.M = set()
     self.D = set()
     self.R = set()
 
-    self.time_delay = 100
+    #self.time_delay = 100
 
     #intersection at which the cars are setup
     #intersection = None
@@ -265,15 +265,15 @@ class ManeuverNegotiator:
 
     safe_gap = my_entering_time - sender_last_leaving_time
     if (safe_gap > 0): #means if I enter intersection later than sender leaves, safe.
+      print("not conflicted because i enter before sender")
       return True
     else: #means if sender leaves intersection later than i enter.
       #then we have to compare my leaving time vs his entering time:
       if sender_earliest_entering_time > my_leaving_time: # if sender enters intersection later than I leaves
+        print("not conflicted because leaves before i enter")
         return True
       else:
         #possibility for sender entering when i have not left, just about to leave, this should be safe too..
-        #pass for now, but can be developed later
-        pass
 
     return False
 
@@ -339,8 +339,8 @@ class ManeuverNegotiator:
     #things will change to accomodate this:
 
     curtime = self.clock()
-    print(curtime-t <= self.time_delay) 
-    if (curtime - t <= self.time_delay): #Only process message if it arrived within the transmission delay boundary
+    print(curtime-t <= self.TD) 
+    if (curtime - t <= self.TD): #Only process message if it arrived within the transmission delay boundary
       if (self.communication_details == 1): #if using ros:
         #received string is 'data: "GET,1,1,1,1,1,1,1"' without single quotes,
         # first split extracts the "GET,1,1,1,1,1,1,1" and the second split separates them like usual
@@ -428,7 +428,7 @@ class ManeuverNegotiator:
           mAR.append(m_dict["IntendedCourse"])
         #in romi code, time is converted into int
         #if (no_conflict(mAR, int(m_dict["Time"]) + 2*time_delay + TMan) and
-        nc = self.no_conflict(mAR, float(m_dict["Time"]) + 2*self.time_delay + self.TMan)
+        nc = self.no_conflict(mAR, float(m_dict["Time"]) + 2*self.TD + self.TMan)
         print "no conflict", nc
         if (nc and #If no conflict = the manoeuvre can be executed without risk in the time 2TD + TMan (The expectation of the vehicle is to go)
             (self.status == self.NORMAL or self.status == self.TRYGET or #and (we are either not asking for permission, or asking for permission but waiting for T_retry to expire since all agents in SM not reachable or some sent us DENY
