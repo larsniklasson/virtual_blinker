@@ -217,7 +217,7 @@ class ManeuverNegotiator:
     sender_velocity = mAR[3]
     sender_acceleration = mAR[4]
     if(len(mAR)>5):
-      sender_course = mAR[5]
+      sender_maneuver = mAR[5]
     
     """
     No conflict checks time sender enters and leaves intersection overlaps with 
@@ -233,11 +233,16 @@ class ManeuverNegotiator:
     """
 
     #calculate earliest possible time sender can enter:
+    #first, get the course the sender is taking:
+    #this can be done from sender_position and sender_course
+    sender_travelling_direction = self.intersection.getTravellingDirection(*sender_position)
+    sender_course = self.intersection.courses[(sender_travelling_direction,sender_maneuver)]
+
 
     #calculate least    possible time sender can enter:
     #offset these two by TMan to get earliest and last possible exit times. 
     #take the last possible time 
-    return self.risk_estimator.isManeuverOk(int(sender),sender_course)
+    #return self.risk_estimator.isManeuverOk(int(sender),sender_course)
 
   ## Dummy function, the agent got permissions from everyone in the SM and executes the manoeuvre in t time units
   def doManeuver(self,t):
