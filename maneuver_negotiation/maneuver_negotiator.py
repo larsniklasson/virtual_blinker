@@ -219,38 +219,25 @@ class ManeuverNegotiator:
     if(len(mAR)>5):
       sender_course = mAR[5]
     
+    """
+    No conflict checks time sender enters and leaves intersection overlaps with 
+    the recieving vehicle.
+
+    Current scenario is sender is a left turning vehicle, receiver is a straight
+    passing vehicle.
+
+    We first estimate earliest and last possible time left turning vehicle can enter 
+    the intersection. We estimate the earliest and last possible time left turning
+    vehicle can leave. we take earliest enter and last leave duration 
+    and see if it overlaps with receivers entering and leaving times.
+    """
+
+    #calculate earliest possible time sender can enter:
+
+    #calculate least    possible time sender can enter:
+    #offset these two by TMan to get earliest and last possible exit times. 
+    #take the last possible time 
     return self.risk_estimator.isManeuverOk(int(sender),sender_course)
-    #receiving a message implies i have priority
-    #if this vehicle is on priority lane:
-    cur_pos = self.position()
-    if self.intersection.isOnPrioLane(self.intersection.getTravellingDirection(cur_pos[0],cur_pos[1],cur_pos[2])):
-      priority=True
-    else:
-      priority=False
-
-    if (priority):
-
-      #sender_particles,sender_particle_weights = self.risk_estimator.get_copy(sender)
-      expectation = self.risk_estimator.getExpectation(int(sender))
-      #0.5 used for now, increasing this will make our grant more conservative 
-      #as expectation aligns more with 1 (go), it means the car has plenty of time 
-      #gap to do the maneuver
-      if (expectation > 0.5):
-        return True
-      else:
-        return False
-    else:
-      print("non priority case")
-
-      pass
-    print("mAR : {0}".format(mAR))
-    #print("GRANT ID RIGHT NOW IS: %i", grantID)
-    if(self.grantID != 0):
-      if(self.grantID == mAR[0]):
-        return 1
-      else:
-        return 0
-    return 1
 
   ## Dummy function, the agent got permissions from everyone in the SM and executes the manoeuvre in t time units
   def doManeuver(self,t):
