@@ -228,7 +228,9 @@ class ManeuverNegotiator:
     elif (self.status == self.GRANT):
       self.status = self.GRANTGET
 
-  def timeoverlapcheck(self):
+  def watch_maneuver_requester(self,requester_id,requester_course,requester_maneuver):
+    while True:
+      print("watchinggg")
     pass
 
   ## Estimate the expectation of the car with register mAR. No conflict if weighted average over a certain threshold
@@ -310,23 +312,39 @@ class ManeuverNegotiator:
     print "my entering time is: ", my_entering_time
     print "my leaving time is: ", my_leaving_time
 
+    not_conflicted = False
+    #not conflicted because either party has left the intersection
     if (sender_course.hasLeftIntersection(*sender_pose) or my_course.hasLeftIntersection(*my_state)):
-      return True
+      not_conflicted = True
 
     safe_gap = my_entering_time - sender_last_leaving_time
     if (safe_gap > 0): #means if I enter intersection later than sender leaves, safe.
       print("not conflicted because i enter before sender")
-      return True
+      not_conflicted = True
     else: #means if sender leaves intersection later than i enter.
       #then we have to compare my leaving time vs his entering time:
       if sender_earliest_entering_time > my_leaving_time: # if sender enters intersection later than I leaves
         print("not conflicted because leaves before i enter")
-        return True
+        #in this case, our estimation says the sender leaves before i enter, but
+        #due to unforseen circumstances, sender may slowdown and stop inside
+        #the intersection, in this case we have to detect if the vehicle requested is able to finish
+        #maneuver in time. if we detect ahead of time that the vehicle will not be able to finish the 
+        #maneuver in time, we have to slow our car down, this happens in this separate thread which
+        #detects this
+
+        #watch the requester and detect if the vehicle will leave the intersection in time.
+        #start a separate thread on it:
+        #def watch_maneuver_requester(self,requester_id,requester_course,requester_maneuver):
+        self.watch_request_thread = threading.Thread(target=self.watch_maneuver_requester,args=(sender,sender_course,sender_maneuver))
+        self.watch_request_thread.start()
+        not_conflicted = True
       else:
         print("sender entering while i am just about to leave")
         #possibility for sender entering when i have not left, just about to leave, this should be safe too..
         pass
-    return False
+    
+    return not_conflicted
+    
 
 
     #calculate least    possible time sender can enter:
