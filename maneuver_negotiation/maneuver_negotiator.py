@@ -434,6 +434,20 @@ class ManeuverNegotiator:
       print ("received " + str(message) + " by car " + str(self.aID) + "sent from  car" + m_dict["Sender"])
       # print("status: " + str(self.status))
 
+      if (mtype == "GRANT" or mtype == "DENY") and self.status == self.GET:
+        #when a reply is received, membership needs to be queried and
+        #vehicles we should get a reply from ie. self.R should be intersection
+        #of existing self.R and new membership.
+        new_membership = self.get_MR(self.agent[0],self.maneuver_requested)
+        print "in request processing, exisiting membership = " ,self.R
+        print "in request processing, new membership = " , new_membership
+
+        #check if the packet received as membership is valid:
+        if(( self.agent_state[0]/(RATE*SLOWDOWN) < new_membership[0] + 2*self.TMan) and new_membership[1] == 1):
+          new_R =set(self.R)& set(new_membership[2])
+          print "in request processing, new R = " , new_R
+
+
       #If this is an answer to our own request for a manoeuvre
       if((m_dict["Type"] == "GRANT" or m_dict["Type"] == "DENY") and self.status == self.GET):
         # print("Received a grant or deny and status == get")
@@ -506,7 +520,8 @@ class ManeuverNegotiator:
           s_message = "GRANT," + str(self.agent[0]) + "," + str(curtime) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
           
           #once we grant, we add the car to the list of grants, 
-          self.risk_estimator.add_car_to_grantlist(int(sender),self.TMan, m_dict["IntendedCourse"])
+          #we no longeruse this in timeoverlap branch
+          # self.risk_estimator.add_car_to_grantlist(int(sender),self.TMan, m_dict["IntendedCourse"])
 
           print(s_message)
           self.send_udp_message(s_message,int(sender))
