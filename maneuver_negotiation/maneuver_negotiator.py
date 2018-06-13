@@ -140,7 +140,15 @@ class ManeuverNegotiator:
     self.tryManeuver(intended_course)
 
 
-  def get_MR(self,id1):
+  def get_MR(self,id1,intended_course):
+    #EME: Suggested change (Requires zookeeper to be set up properly)
+    (data, stat) = zookeeper.get(self.handle, "/root/mr/" + str(id1), True) 
+    data = eval(data)
+    membership = data[intended_course]
+    membership[2]  = ",".join(membership[2])
+    print "membership is ", membership
+    return membership
+
     (data, stat) = zookeeper.get(self.handle, "/root/segment/" + str(id1), True)
     children = zookeeper.get_children(self.handle, "/root/segment", True)
     ask_these = ""
@@ -148,6 +156,8 @@ class ManeuverNegotiator:
       if(child != str(id1)):
         ask_these = ask_these + str(child) + ","
     ask_these = ask_these[0:len(ask_these)-1]
+    print "ask_these = " + str(ask_these)
+    print "ask_these of type" + str(type(ask_these))
     return [stat["mtime"], 1, str(ask_these)]
 
 
@@ -163,7 +173,7 @@ class ManeuverNegotiator:
       self.agent_state = [self.clock(), self.position(), self.velocity(), self.acceleration()]
 
       self.agent = [self.aID,self.agent_state]
-      MR = self.get_MR(self.agent[0])
+      MR = self.get_MR(self.agent[0],intended_course)
 
       if((self.agent_state[0] < MR[0] + 2*self.TMan) and MR[1] == 1):
         if(',' in MR[2]):
