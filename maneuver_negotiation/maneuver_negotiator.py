@@ -271,10 +271,10 @@ class ManeuverNegotiator:
 
     stop_pose_state = sender_course.predictNextState(sender_pose[0],sender_pose[1],sender_pose[2],sender_speed,2*self.TD,"stop")
     #last_entering_time = current_time + (2*self.TD) + sender_course.getTimeToCrossing(*stop_pose_state,"go")
-    last_entering_time = current_time + (2*self.TD) + \
+    sender_last_entering_time = current_time + (2*self.TD) + \
                                     sender_course.getTimeToCrossing(stop_pose_state[0],stop_pose_state[1],stop_pose_state[2],stop_pose_state[3],"go")
 
-    sender_last_leaving_time = last_entering_time + self.TMan
+    sender_last_leaving_time = sender_last_entering_time + self.TMan
 
     my_state = self.position()
     my_speed = self.velocity()
@@ -290,6 +290,11 @@ class ManeuverNegotiator:
     my_entering_time = current_time + my_course.getTimeToCrossing(my_state[0],my_state[1],my_state[2],my_speed,"go")
     my_leaving_time = my_entering_time + self.TMan
 
+    print "sender earliest entering time is: ", sender_earliest_entering_time
+    print "sender last entering time is: ", sender_last_entering_time
+    print "sender last leaving time is: ", sender_last_leaving_time
+    print "my entering time is: ", my_entering_time
+    print "my leaving time is: ", my_leaving_time
 
     if (sender_course.hasLeftIntersection(*sender_pose) or my_course.hasLeftIntersection(*my_state)):
       return True
