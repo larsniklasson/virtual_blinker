@@ -214,7 +214,7 @@ class ManeuverNegotiator:
           print("starting t_retry by car {0} first".format(self.aID))
           self.tRetry = Timer(2*self.TD, self.t_retry, args=(intended_course,)) # Retry later if messages delayed more than the upperbound of transmission delays
           self.tRetry.start()
-          print("set timer first time")
+          # print("set timer first time")
 
       else:
         #print( self.agent_state[0] < MR[0] + 2*self.TMan) and MR[1] == 1)
@@ -362,9 +362,9 @@ class ManeuverNegotiator:
 
   ## Update the agent state in the register for this car in the storage server
   def update(self):
-    setvalue = str(self.aID) + "," + str(self.agent_state[1]) + "," + str(self.agent_state[2]) + "," + str(self.agent_state[3])
+    # setvalue = str(self.aID) + "," + str(self.agent_state[1]) + "," + str(self.agent_state[2]) + "," + str(self.agent_state[3])
     #IBR: following is not in romi's code, but i think it is needed:
-    print("updating... car {0}".format(self.aID))
+    # print("updating... car {0}".format(self.aID))
     self.agent_state = [self.clock(), self.position(),self.velocity(),self.acceleration()]
     self.agent[1] = self.agent_state
     zookeeper.set(self.handle, "/root/segment/" + str(self.aID), str(self.agent_state)) #Update values stored in zookeeper
@@ -432,11 +432,11 @@ class ManeuverNegotiator:
       
 
       print ("received " + str(message) + " by car " + str(self.aID) + "sent from  car" + m_dict["Sender"])
-      print("status: " + str(self.status))
+      # print("status: " + str(self.status))
 
       #If this is an answer to our own request for a manoeuvre
       if((m_dict["Type"] == "GRANT" or m_dict["Type"] == "DENY") and self.status == self.GET):
-        print("Received a grant or deny and status == get")
+        # print("Received a grant or deny and status == get")
         self.M.add(m_dict["Type"]) #Add message to set of received messages
         self.R.discard(m_dict["Sender"]) #Remove this agent from agents we're waiting for
         
@@ -469,7 +469,6 @@ class ManeuverNegotiator:
             # Try to send a request again after the agent states have been updated
             self.tRetry = Timer(self.TA, self.t_retry, args=(self.maneuver_requested,))
             self.tRetry.start()
-            print("started timer second time")
       
       # The message contains a request
       elif (m_dict["Type"] == "GET"):
@@ -498,7 +497,6 @@ class ManeuverNegotiator:
               for agents in self.D:
                 #print(tmp)
                 s_message = "RELEASE," + str(self.agent[0]) + "," + str(self.agent[1][0]) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3] + "," + str(self.tag[0]) + "," + str(self.tag[1]))
-                print(s_message)
                 self.send_udp_message(s_message,int(agents))
             self.status = self.GRANTGET
             self.grantID = m_dict["TagID"]
@@ -519,7 +517,6 @@ class ManeuverNegotiator:
         else: 
           sender = m_dict["Sender"]
           s_message = "DENY," + str(self.agent[0]) + "," + str(curtime) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
-          print("sending msg: " + s_message)
           self.send_udp_message(s_message,int(sender))
 
       # A release message arrived, check if it's valid and in that case release the current grant
