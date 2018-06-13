@@ -4,11 +4,12 @@ from math import *
 # or horizontal lines (acceleration = 0)
 # To get the time from this you integrate 1/f
 class SpeedProfile:
-    def __init__(self, functionList, distance_at_crossing, catchup_acc, catchup_deacc):
+    def __init__(self, functionList, distance_at_crossing, catchup_acc, catchup_deacc, distance_at_end_of_crossing):
         self.functionList = functionList #list where each entry is a tuple: (d, f) where d is the point where another function takes over from f, i.e. f:s endpoint
         self.distance_at_crossing = distance_at_crossing
         self.catchup_acc = catchup_acc
         self.catchup_deacc = catchup_deacc
+        self.distance_at_end_of_crossing = distance_at_end_of_crossing
 
     #if already passed some function, don't include
     def getFilteredFunctionList(self, distance):
@@ -79,7 +80,7 @@ class SpeedProfile:
             #we still have time left. Call the function recursively
             return self.getDistanceFollowProfile(f_limit, t-time_to_limit)                
     
-                
+ 
     #like getFilteredFunctionList but only return segments before or during the crossing starts
     def getFsCrossing(self, distance):
         function_list = self.getFilteredFunctionList(distance)
@@ -118,6 +119,8 @@ class SpeedProfile:
                 return r.solveInverseIntegral(distance, x) + self.getTimeToCrossingFollowProfile(x)
             
 
+    
+
 
     def getTimeToCrossingFollowProfile(self, distance, function_list=None):
         if not function_list: function_list = self.getFsCrossing(distance)
@@ -131,6 +134,64 @@ class SpeedProfile:
             else:
                 #follow this segment until crossing
                 t_sum += f.solveInverseIntegral(distance, self.distance_at_crossing)
+        return t_sum
+
+
+
+
+    #like getFilteredFunctionList but only return segments before or during the crossing starts
+    def getFsEndOfCrossing(self, distance):
+        function_list = self.getFilteredFunctionList(distance)
+        new_function_list = []
+        for f_limit, f in function_list:
+            new_function_list.append((f_limit, f))
+            if f_limit >= self.distance_at_end_of_crossing:
+                return new_function_list
+
+
+    #get predicted time to reach crossing
+    def getTimeToEndOfCrossing(self, distance, speed):
+        function_list = self.getFsEndOfCrossing(distance)
+        ideal_speed = function_list[0][1].getValue(distance)
+
+        if abs(speed - ideal_speed) < 0.5:
+            #alread matching profile
+            return self.getTimeToEndOfCrossingFollowProfile(distance, function_list)
+
+        elif speed > ideal_speed:
+            #slow down 
+            acc = self.catchup_deacc
+        else:
+            #speed up
+            acc = self.catchup_acc
+
+        r = getRootFunction(distance,speed,acc)
+
+        for f_limit, f in function_list:
+            x = f.solveRoot(r) #intersection_point
+            if x > self.distance_at_end_of_crossing:
+                #intersection point happened after crossing. means we just follow r until the crossing and get time until it reaches
+                return r.solveInverseIntegral(distance,self.distance_at_end_of_crossing)
+            if x < f_limit:
+                #intersection happened before function limit, get the time it took and then follow the profile
+                return r.solveInverseIntegral(distance, x) + self.getTimeToEndOfCrossingFollowProfile(x)
+            
+
+    
+
+
+    def getTimeToEndOfCrossingFollowProfile(self, distance, function_list=None):
+        if not function_list: function_list = self.getFsEndOfCrossing(distance)
+        t_sum = 0
+        for f_limit, f in function_list:
+            if f_limit < self.distance_at_end_of_crossing:
+                #follow this segment until it's limit
+                t_sum += f.solveInverseIntegral(distance, f_limit)
+                #update current distance
+                distance = f_limit
+            else:
+                #follow this segment until crossing
+                t_sum += f.solveInverseIntegral(distance, self.distance_at_end_of_crossing)
         return t_sum
 
 
@@ -189,7 +250,7 @@ def getRootFunction(distance, speed, acc):
 
     
 #create two profiles for the V-profile, one for intention=stop and one for intention=go
-def createVProfiles(fastspeed, slowspeed, crossing_distance, slowdown_acc, speedup_acc, catchup_acc, catchup_deacc):
+def createVProfiles(fastspeed, slowspeed, crossing_distance, slowdown_acc, speedup_acc, catchup_acc, catchup_deacc, crossing_end_distance):
     #math stuff to work out the parameters of the functions and their limits
     s1 = fastspeed
     s2 = slowspeed
@@ -223,14 +284,14 @@ def createVProfiles(fastspeed, slowspeed, crossing_distance, slowdown_acc, speed
                   (cd, RootFunction(a1,b1)),
                   (float("inf"), HorizontalLineFunction(0))]
     
-    p1 = SpeedProfile(flist_go, cd, catchup_acc, catchup_deacc)
-    p2 = SpeedProfile(flist_stop, cd, catchup_acc, catchup_deacc)
+    p1 = SpeedProfile(flist_go, cd, catchup_acc, catchup_deacc, crossing_end_distance)
+    p2 = SpeedProfile(flist_stop, cd, catchup_acc, catchup_deacc, crossing_end_distance)
     return p1,p2
 
 
 
 #create two profiles for the Flat-profile, one for intention=stop and one for intention=go
-def createFlatProfiles(fastspeed, crossing_distance, slowdown_acc,catchup_acc, catchup_deacc):
+def createFlatProfiles(fastspeed, crossing_distance, slowdown_acc,catchup_acc, catchup_deacc, crossing_end_distance):
     s1 = fastspeed
     d = crossing_distance
     
@@ -244,9 +305,9 @@ def createFlatProfiles(fastspeed, crossing_distance, slowdown_acc,catchup_acc, c
                   (d, RootFunction(a1,b1)),
                   (float("inf"), HorizontalLineFunction(0)) ]
 
-    p1 = SpeedProfile(flist_go, d, catchup_acc, catchup_deacc)
+    p1 = SpeedProfile(flist_go, d, catchup_acc, catchup_deacc, crossing_end_distance)
 
-    p2 = SpeedProfile(flist_stop, d, catchup_acc, catchup_deacc)
+    p2 = SpeedProfile(flist_stop, d, catchup_acc, catchup_deacc, crossing_end_distance)
     return p1,p2
     
 

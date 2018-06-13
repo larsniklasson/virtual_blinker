@@ -50,7 +50,8 @@ class Course:
             self.end_point = (-125, 3.25)
             self.radius = abs(self.curve_start[0] - self.curve_end[0])
             self.circle_mid = self.curve_start[0]-self.radius, self.curve_end[1]-self.radius
-            
+
+            self.distance_to_end_of_crossing = pi*2*self.radius/4 + self.distance_to_crossing
             #s2 in diagram
             self.slowspeed = 20/3.6
 
@@ -65,7 +66,7 @@ class Course:
             self.catchup_deacc = -6#-6
 
             #get 2 speed profiles, one for intention=go and one for intention=stop
-            self.sp_go, self.sp_stop = createVProfiles(self.fastspeed, self.slowspeed, self.distance_to_crossing, self.slowdown_acc, self.speedup_acc, self.catchup_acc, self.catchup_deacc)
+            self.sp_go, self.sp_stop = createVProfiles(self.fastspeed, self.slowspeed, self.distance_to_crossing, self.slowdown_acc, self.speedup_acc, self.catchup_acc, self.catchup_deacc, self.distance_to_end_of_crossing)
 
             #spline these points to get smooth 90 degree curve
             curve = [(3.25, -7.6),(3.25, -7.55),(3.25, -7.5),(-7.5, 3.25),(-7.55, 3.25),(-7.6, 3.25)]
@@ -81,13 +82,16 @@ class Course:
             self.radius = abs(self.curve_start[0] - self.curve_end[0])
             self.circle_mid = self.curve_start[0]+self.radius, self.curve_end[1]-self.radius
 
+
+            self.distance_to_end_of_crossing = pi*2*self.radius/4 + self.distance_to_crossing
+
             self.slowspeed = 20/3.6
             self.slowdown_acc = -6
             self.speedup_acc = 4
             self.catchup_acc = 5
             self.catchup_deacc = -7
 
-            self.sp_go, self.sp_stop = createVProfiles(self.fastspeed, self.slowspeed, self.distance_to_crossing, self.slowdown_acc, self.speedup_acc, self.catchup_acc, self.catchup_deacc)
+            self.sp_go, self.sp_stop = createVProfiles(self.fastspeed, self.slowspeed, self.distance_to_crossing, self.slowdown_acc, self.speedup_acc, self.catchup_acc, self.catchup_deacc, self.distance_to_end_of_crossing)
 
 
             curve = [(3.25, -7.6),(3.25, -7.55),(3.25, -7.5),(7.5, -3.25),(7.55, -3.25),(7.6, -3.25)]
@@ -103,7 +107,10 @@ class Course:
             self.catchup_acc = 8
             self.catchup_deacc = -9
 
-            self.sp_go, self.sp_stop = createFlatProfiles(self.fastspeed, self.distance_to_crossing, self.slowdown_acc, self.catchup_acc, self.catchup_deacc)
+
+            self.distance_to_end_of_crossing = 7.5*2 + self.distance_to_crossing
+
+            self.sp_go, self.sp_stop = createFlatProfiles(self.fastspeed, self.distance_to_crossing, self.slowdown_acc, self.catchup_acc, self.catchup_deacc, self.distance_to_end_of_crossing)
 
             self.path = [self.starting_point, self.end_point]
 
@@ -194,6 +201,17 @@ class Course:
         else:
             return d >= self.distance_to_crossing + self.radius*pi/2-2.5
     
+
+    def getTimeToEndOfCrossing(self, x, y, theta, speed):
+        x,y,theta = self.rotate(x,y,theta)
+
+        #get distance and lookup time to crossing
+        d = self.getDistance(x,y,theta)
+        if d >= self.distance_to_end_of_crossing:
+            return 0
+        else:
+            return self.sp_go.getTimeToEndOfCrossing(d, speed)
+
     def getTimeToCrossing(self, x, y, theta, speed, Is):
         x,y,theta = self.rotate(x,y,theta)
 
