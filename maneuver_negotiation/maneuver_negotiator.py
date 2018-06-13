@@ -105,7 +105,7 @@ class ManeuverNegotiator:
     if self.ros_measurements is None:
       return 1
     else:
-      return float(self.ros_measurements.t)
+      return float(self.ros_measurements.t/(RATE*SLOWDOWN))
 
   ## Get current position
   def position(self):
@@ -175,7 +175,7 @@ class ManeuverNegotiator:
       self.agent = [self.aID,self.agent_state]
       MR = self.get_MR(self.agent[0],intended_course)
 
-      if((self.agent_state[0] < MR[0] + 2*self.TMan) and MR[1] == 1):
+      if(( self.agent_state[0]/(RATE*SLOWDOWN) < MR[0] + 2*self.TMan) and MR[1] == 1):
         if(',' in MR[2]):
           self.agents_to_ask = MR[2].split(',')
           self.many = 1
@@ -217,6 +217,10 @@ class ManeuverNegotiator:
           print("set timer first time")
 
       else:
+        #print( self.agent_state[0] < MR[0] + 2*self.TMan) and MR[1] == 1)
+        print "self.agent_state[0] is ", self.agent_state[0]
+        print "MR[0] is ", MR[0]
+        print "2*self.TMan is", 2*self.TMan
 
         print("starting t_retry by car {0}, second case".format(self.aID))
         self.tRetry = Timer(self.TA, self.t_retry, args=(intended_course,)) # Wait until a fresh membership is available
