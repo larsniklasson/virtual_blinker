@@ -12,6 +12,8 @@ sys.path.append("..")
 import maneuver_negotiation.maneuver_negotiator_config as config
 import utils.Intersection
 import virtual_blinker.msg as cm
+import config as sim_config
+
 
 
 
@@ -54,7 +56,8 @@ class MembershipCloud:
         if (self.ros_measurements is None):
             return 0
         else:
-            return self.ros_measurements.t
+            #convert to actual simulation time
+            return self.ros_measurements.t/(sim_config.SIM_CONFIG["rate"]*sim_config.SIM_CONFIG["slowdown"])
 
     def update_time(self,data):
         #print("updating")
