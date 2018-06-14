@@ -187,6 +187,13 @@ class Car:
                     if (self.watch_sender_course.hasLeftIntersection(sender_pose[0],sender_pose[1],sender_pose[2])):
                         print "left intersection!!"
                         self.watch_sender = False
+                    
+                    estimated_finish_time = actual_time + self.watch_sender_course.getTimeToEndOfCrossing(*sender_pose)
+                    print "estimated time finish = ", estimated_finish_time
+                    print "upper bound = ", self.watch_sender_Tman_upperbound
+                    if (estimated_finish_time > self.watch_sender_Tman_upperbound):
+                        print "not gonna finish!!!"
+                    
                 
                 """risk = max(self.risk_estimator.get_risk())
                 if risk > risk_threshold:
