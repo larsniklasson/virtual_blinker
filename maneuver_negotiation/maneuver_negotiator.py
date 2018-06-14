@@ -99,6 +99,9 @@ class ManeuverNegotiator:
     self.maneuver_requested=None #maneuver requested in trymaneuver
 
     self.my_travelling_direction = initial_direction
+    self.watch_sender = False
+    self.watch_sender_course = None
+    self.watch_sender_Tman_upperbound  = None
 
 
   def clock(self):
@@ -318,23 +321,33 @@ class ManeuverNegotiator:
     safe_gap = my_entering_time - sender_last_leaving_time
     if (safe_gap > 0): #means if I enter intersection later than sender leaves, safe.
       print("not conflicted because i enter after sender leaves")
+      #in this case, our estimation says the sender leaves before i enter, but
+      #due to unforseen circumstances, sender may slowdown and stop inside
+      #the intersection, in this case we have to detect if the vehicle requested is able to finish
+      #maneuver in time. if we detect ahead of time that the vehicle will not be able to finish the 
+      #maneuver in time, we have to slow our car down,
+
+      #this detection needs to be done only when granting.
+      #there can be instances where there are no conflicts and still cannot grant because
+      #this vehicle is not in NORMAL state or some other cases. So, 
+      #in here we flag ourself to look for the other vehicle once we are sure we are granting
+      #the vehicle permission, that happens after no_conflict call and when we want to grant.
+      # we check the following flags and signal the simulator loop to watch for the other vehicle.
+
+
+      #watch the requester and detect if the vehicle will leave the intersection in time.
+      #start a separate thread on it:
+      #def watch_maneuver_requester(self,requester_id,requester_course,requester_maneuver):
+      #self.watch_request_thread = threading.Thread(target=self.watch_maneuver_requester,args=(sender,sender_course,sender_maneuver,sender_last_leaving_time))
+      #self.watch_request_thread.start()
+      self.watch_sender_course = sender_course
+      self.watch_sender = True
+      self.watch_sender_Tman_upperbound = sender_last_entering_time + self.TMan
       not_conflicted = True
     else: 
       #then we have to compare my leaving time vs his entering time:
       if sender_earliest_entering_time > my_leaving_time: # if sender enters intersection later than I leaves
-        print("not conflicted because sender leaves before i enter")
-        #in this case, our estimation says the sender leaves before i enter, but
-        #due to unforseen circumstances, sender may slowdown and stop inside
-        #the intersection, in this case we have to detect if the vehicle requested is able to finish
-        #maneuver in time. if we detect ahead of time that the vehicle will not be able to finish the 
-        #maneuver in time, we have to slow our car down, this happens in this separate thread which
-        #detects this
-
-        #watch the requester and detect if the vehicle will leave the intersection in time.
-        #start a separate thread on it:
-        #def watch_maneuver_requester(self,requester_id,requester_course,requester_maneuver):
-        self.watch_request_thread = threading.Thread(target=self.watch_maneuver_requester,args=(sender,sender_course,sender_maneuver,sender_last_leaving_time))
-        self.watch_request_thread.start()
+        print("not conflicted because sender enters after i leave")
         not_conflicted = True
     
 
@@ -515,7 +528,7 @@ class ManeuverNegotiator:
           mAR.append(m_dict["IntendedCourse"])
         #in romi code, time is converted into int
         #if (no_conflict(mAR, int(m_dict["Time"]) + 2*time_delay + TMan) and
-        nc = self.no_conflict(mAR, float(m_dict["Time"]) + 2*self.TD + self.TMan)
+        nc = self.no_conflict(mAR, float(m_dict["Time"])) # + 2*self.TD + self.TMan)
         print "no conflict", nc
         if (nc and #If no conflict = the manoeuvre can be executed without risk in the time 2TD + TMan (The expectation of the vehicle is to go)
             (self.status == self.NORMAL or self.status == self.TRYGET or #and (we are either not asking for permission, or asking for permission but waiting for T_retry to expire since all agents in SM not reachable or some sent us DENY
@@ -526,6 +539,12 @@ class ManeuverNegotiator:
           if (self.status == self.NORMAL): #Give permission if you're not making a request yourself and haven't given it to anyone at this moment
             self.status = self.GRANT
             self.grantID = m_dict["TagID"]
+
+            #signal simulator that we need to watch the vehicle
+            if(self.watch_sender):
+              self.sim.watch_sender = True
+              self.sim.watch_sender_course = self.watch_sender_course
+              self.sim.watch_sender_Tman_upperbound = self.watch_sender_Tman_upperbound
           elif (self.status == self.GET or self.status == self.TRYGET): #If you're asking for permission but this request precedes yours, then cancel your own request
             self.tRetry.cancel()
             #Make sure the permissions you've already received are released

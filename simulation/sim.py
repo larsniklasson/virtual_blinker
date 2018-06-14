@@ -107,6 +107,20 @@ class Car:
         self.man_init = False
         self.granted = False
 
+        # this flag will be true once the vehicle gives a grant to a vehicle in which
+        # this vehicle enters intersection after the vehicle we grant. 
+        # in this case other vehicle where the other vehicle was unable to complete the 
+        # maneuver within TMan, we should detect that this would be the case ahead of time
+        # and slow down early 
+        # when this flag is true, a function called self.watch_sender runs which check
+        # against the measurements its sending and early detect if it is able to complete the
+        # maneuver within Tman. if not, this vehicles expectation will be to stop.
+        # the flag will become false once we receive a new measurement that says it has left
+        # the intersection.
+        self.watch_sender = False
+        self.watch_sender_course = None
+        self.watch_sender_Tman_upperbound  = None
+
 
 
         self.nr_particles_per_particle_filter = total_nr_particles / (nr_cars ** 2)
@@ -167,6 +181,12 @@ class Car:
                     self.Is = "go"
                 elif all([e <= Es_threshold and e >= 0 for e in self.last_es]) or self.last_es[-1] < 0.01:
                     self.Is = "stop"
+                if (self.watch_sender):
+                    print("watchingg")
+                    sender_pose = ms[int(self.maneuver_negotiator.grantID)]
+                    if (self.watch_sender_course.hasLeftIntersection(sender_pose[0],sender_pose[1],sender_pose[2])):
+                        print "left intersection!!"
+                        self.watch_sender = False
                 
                 """risk = max(self.risk_estimator.get_risk())
                 if risk > risk_threshold:
