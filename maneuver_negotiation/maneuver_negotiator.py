@@ -359,7 +359,7 @@ class ManeuverNegotiator:
 
   ## Dummy function, the agent got permissions from everyone in the SM and executes the manoeuvre in t time units
   def doManeuver(self,t):
-    #self.risk_estimator.add_car_to_grantlist(self.aID,self.TMan,self.maneuver_requested)
+    self.risk_estimator.add_car_to_grantlist(self.aID,self.TMan,self.maneuver_requested)
     print("Doing maneuver")
     self.sim.granted = True
     time.sleep(t)
@@ -543,8 +543,7 @@ class ManeuverNegotiator:
           s_message = "GRANT," + str(self.agent[0]) + "," + str(curtime) + "," + str(self.agent[1][1]) + "," + str(self.agent[1][2]) + "," + str(self.agent[1][3]) + "," + str(self.tag[0]) + "," + str(self.tag[1])
           
           #once we grant, we add the car to the list of grants, 
-          #we no longeruse this in timeoverlap branch
-          # self.risk_estimator.add_car_to_grantlist(int(sender),self.TMan, m_dict["IntendedCourse"])
+          self.risk_estimator.add_car_to_grantlist(int(sender),self.TMan, m_dict["IntendedCourse"])
 
           print(s_message)
           self.send_udp_message(s_message,int(sender))
@@ -567,8 +566,8 @@ class ManeuverNegotiator:
           self.status = self.NORMAL
 
         #remove the granted car from the grant list because we got a release message
-        # self.risk_estimator.remove_car_from_grantlist(int(m_dict["Sender"]))
-        # self.risk_estimator.remove_grant_thread.cancel()
+        self.risk_estimator.remove_car_from_grantlist(int(m_dict["Sender"]))
+        self.risk_estimator.remove_grant_thread.cancel()
 
         #If you want to send a request, then try to send
         if (self.status == self.GRANTGET):

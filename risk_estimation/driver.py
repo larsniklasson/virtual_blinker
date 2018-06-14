@@ -55,6 +55,8 @@ class RiskEstimator:
 
 
     def add_car_to_grantlist(self, id, time_finishing,turn):
+        #self.last_t is in simulation time. as we receive the value as t that was passed by the sim.py that
+        #already calculates the actual time. so using this to make timer run is not a problem.
         self.grantList[id] = [self.last_t + time_finishing,turn]
         self.remove_grant_thread = Timer(time_finishing,self.remove_car_from_grantlist,args=(id,))
         self.remove_grant_thread.start()
