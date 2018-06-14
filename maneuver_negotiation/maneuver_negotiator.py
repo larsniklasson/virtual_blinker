@@ -228,7 +228,7 @@ class ManeuverNegotiator:
     elif (self.status == self.GRANT):
       self.status = self.GRANTGET
 
-  def watch_maneuver_requester(self,requester_id,requester_course,requester_maneuver):
+  def watch_maneuver_requester(self,requester_id,requester_course,requester_maneuver,sender_last_leaving_time):
     pass
 
   ## Estimate the expectation of the car with register mAR. No conflict if weighted average over a certain threshold
@@ -333,7 +333,7 @@ class ManeuverNegotiator:
         #watch the requester and detect if the vehicle will leave the intersection in time.
         #start a separate thread on it:
         #def watch_maneuver_requester(self,requester_id,requester_course,requester_maneuver):
-        self.watch_request_thread = threading.Thread(target=self.watch_maneuver_requester,args=(sender,sender_course,sender_maneuver))
+        self.watch_request_thread = threading.Thread(target=self.watch_maneuver_requester,args=(sender,sender_course,sender_maneuver,sender_last_leaving_time))
         self.watch_request_thread.start()
         not_conflicted = True
     
