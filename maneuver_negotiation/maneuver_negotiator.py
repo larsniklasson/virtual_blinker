@@ -229,8 +229,6 @@ class ManeuverNegotiator:
       self.status = self.GRANTGET
 
   def watch_maneuver_requester(self,requester_id,requester_course,requester_maneuver):
-    while True:
-      print("watchinggg")
     pass
 
   ## Estimate the expectation of the car with register mAR. No conflict if weighted average over a certain threshold
@@ -290,7 +288,7 @@ class ManeuverNegotiator:
     sender_last_entering_time = current_time + (2*self.TD) + \
                                     sender_course.getTimeToCrossing(stop_pose_state[0],stop_pose_state[1],stop_pose_state[2],stop_pose_state[3],"go")
 
-    sender_last_leaving_time = sender_last_entering_time + self.TMan
+    sender_last_leaving_time = sender_last_entering_time + sender_course.getTimeToEndOfCrossing(*stop_pose_state)
 
     my_state = self.position()
     my_speed = self.velocity()
@@ -304,7 +302,7 @@ class ManeuverNegotiator:
 
     my_course = self.intersection.courses[(my_travelling_direction,"straight")]
     my_entering_time = current_time + my_course.getTimeToCrossing(my_state[0],my_state[1],my_state[2],my_speed,"go")
-    my_leaving_time = my_entering_time + self.TMan
+    my_leaving_time = my_entering_time + my_course.getTimeToEndOfCrossing(my_state[0],my_state[1],my_state[2],my_speed)
 
     print "sender earliest entering time is: ", sender_earliest_entering_time
     print "sender last entering time is: ", sender_last_entering_time
@@ -319,12 +317,12 @@ class ManeuverNegotiator:
 
     safe_gap = my_entering_time - sender_last_leaving_time
     if (safe_gap > 0): #means if I enter intersection later than sender leaves, safe.
-      print("not conflicted because i enter before sender")
+      print("not conflicted because i enter after sender leaves")
       not_conflicted = True
-    else: #means if sender leaves intersection later than i enter.
+    else: 
       #then we have to compare my leaving time vs his entering time:
       if sender_earliest_entering_time > my_leaving_time: # if sender enters intersection later than I leaves
-        print("not conflicted because leaves before i enter")
+        print("not conflicted because sender leaves before i enter")
         #in this case, our estimation says the sender leaves before i enter, but
         #due to unforseen circumstances, sender may slowdown and stop inside
         #the intersection, in this case we have to detect if the vehicle requested is able to finish
@@ -338,10 +336,17 @@ class ManeuverNegotiator:
         self.watch_request_thread = threading.Thread(target=self.watch_maneuver_requester,args=(sender,sender_course,sender_maneuver))
         self.watch_request_thread.start()
         not_conflicted = True
-      else:
-        print("sender entering while i am just about to leave")
-        #possibility for sender entering when i have not left, just about to leave, this should be safe too..
-        pass
+    
+
+    #things could be optimized here by checking if sender enters intersection 
+    #while this vehicle is about to leave. 
+    #in this if condition, it checks this just about to leave is like within one second. 
+    #which may be save
+    if (my_leaving_time - sender_earliest_entering_time  <= 0.2):
+
+      print("sender enters just im about to leave")
+      print "time is " ,(sender_earliest_entering_time - my_leaving_time)
+      not_conflicted = True
     
     return not_conflicted
     
@@ -562,8 +567,8 @@ class ManeuverNegotiator:
           self.status = self.NORMAL
 
         #remove the granted car from the grant list because we got a release message
-        self.risk_estimator.remove_car_from_grantlist(int(m_dict["Sender"]))
-        self.risk_estimator.remove_grant_thread.cancel()
+        # self.risk_estimator.remove_car_from_grantlist(int(m_dict["Sender"]))
+        # self.risk_estimator.remove_grant_thread.cancel()
 
         #If you want to send a request, then try to send
         if (self.status == self.GRANTGET):
