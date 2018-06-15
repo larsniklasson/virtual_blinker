@@ -355,7 +355,7 @@ class ManeuverNegotiator:
     #while this vehicle is about to leave. 
     #in this if condition, it checks this just about to leave is like within one second. 
     #which may be save
-    if (my_leaving_time - sender_earliest_entering_time  <= 0.2):
+    if ( (my_leaving_time - sender_earliest_entering_time  <= 0.2) and (my_leaving_time - sender_earliest_entering_time) >=0):
 
       print("sender enters just im about to leave")
       print "time is " ,(sender_earliest_entering_time - my_leaving_time)
