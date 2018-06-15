@@ -120,6 +120,7 @@ class Car:
         self.watch_sender = False
         self.watch_sender_course = None
         self.watch_sender_Tman_upperbound  = None
+        self.watch_sender_not_going_to_finish = False
 
 
 
@@ -194,15 +195,16 @@ class Car:
                     print "upper bound = ", self.watch_sender_Tman_upperbound
                     if (estimated_finish_time > self.watch_sender_Tman_upperbound):
                         print "not gonna finish!!!"
-                        self.Is = "stop"
-                    
-                
+                        self.watch_sender_not_going_to_finish = True
+                    else:
+                        self.watch_sender_not_going_to_finish = False
+
                 """risk = max(self.risk_estimator.get_risk())
                 if risk > risk_threshold:
                     self.Is = "stop"
                 """
                 if self.man_init:
-                    self.Is = "go" if self.granted else "stop"
+                    self.Is = "go" if (self.granted and not self.watch_sender_not_going_to_finish) else "stop"
 
 
                 if old_is != self.Is:
