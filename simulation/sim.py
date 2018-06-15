@@ -181,6 +181,7 @@ class Car:
                     self.Is = "go"
                 elif all([e <= Es_threshold and e >= 0 for e in self.last_es]) or self.last_es[-1] < 0.01:
                     self.Is = "stop"
+
                 if (self.watch_sender):
                     print("watchingg")
                     sender_pose = ms[int(self.maneuver_negotiator.grantID)]
@@ -193,6 +194,7 @@ class Car:
                     print "upper bound = ", self.watch_sender_Tman_upperbound
                     if (estimated_finish_time > self.watch_sender_Tman_upperbound):
                         print "not gonna finish!!!"
+                        self.Is = "stop"
                     
                 
                 """risk = max(self.risk_estimator.get_risk())
