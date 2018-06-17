@@ -281,12 +281,12 @@ class ManeuverNegotiator:
       return False
     sender_course = self.intersection.courses[(sender_travelling_direction,sender_maneuver)]
 
-    stop_pose_state = sender_course.predictNextState(sender_pose[0],sender_pose[1],sender_pose[2],sender_speed,stop_interval,"stop")
+    stop_pose_state = sender_course.predictNextState_old(sender_pose[0],sender_pose[1],sender_pose[2],sender_speed,stop_interval,"stop")
     #fromthen onwards it will take profile of go:
     sender_earliest_entering_time = current_time + stop_interval + \
                                     sender_course.getTimeToCrossing(stop_pose_state[0],stop_pose_state[1],stop_pose_state[2],stop_pose_state[3],"go")
 
-    stop_pose_state = sender_course.predictNextState(sender_pose[0],sender_pose[1],sender_pose[2],sender_speed,2*self.TD,"stop")
+    stop_pose_state = sender_course.predictNextState_old(sender_pose[0],sender_pose[1],sender_pose[2],sender_speed,2*self.TD,"stop")
     #last_entering_time = current_time + (2*self.TD) + sender_course.getTimeToCrossing(*stop_pose_state,"go")
     sender_last_entering_time = current_time + (2*self.TD) + \
                                     sender_course.getTimeToCrossing(stop_pose_state[0],stop_pose_state[1],stop_pose_state[2],stop_pose_state[3],"go")

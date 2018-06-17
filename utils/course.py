@@ -226,16 +226,16 @@ class Course:
                 return self.sp_go.getTimeToCrossing(d, speed)
 
     
-    def predictNextState(self, x, y, theta, speed, t, Is):
+    def predictNextState_old(self, x, y, theta, speed, t, Is):
 
         x,y,theta = self.rotate(x,y,theta)
 
         #lookup current distance and then predict the distance (and speed) after t sec
         d = self.getDistance(x,y,theta)
         if Is == "stop":
-            newd, newspeed = self.sp_stop.predict(d, speed, t)
+            newd, newspeed = self.sp_stop.predict_old(d, speed, t)
         else:
-            newd, newspeed = self.sp_go.predict(d, speed, t)
+            newd, newspeed = self.sp_go.predict_old(d, speed, t)
 
         #get new position from distance. Also send old distance and x to account 
         # for the fact that vehicle might be a little off the path center
@@ -283,3 +283,56 @@ class Course:
                 return self.curve_end[0] - d2, self.curve_end[1], pi
             else:
                 return self.curve_end[0] + d2, self.curve_end[1], 0
+
+    def predictNextState(self, x, y, theta, speed, t, Is, deviations, pdc):
+        min_speed_dev = deviations[-1] / pdc
+
+        x,y,theta = self.rotate(x,y,theta)
+
+        #lookup current distance and then predict the distance (and speed) after t sec
+        d = self.getDistance(x,y,theta)
+        if Is == "stop":
+            newd, newspeed = self.sp_stop.predict(d, speed, t)
+        else:
+            newd, newspeed = self.sp_go.predict(d, speed, t)
+
+        xnew, ynew,thetanew = self.getPose(newd)
+
+        xc = (x + cos(theta)*speed*t, y + sin(theta)*speed*t, theta, speed)
+        
+        if Is == "stop":
+            diff = speed - newspeed
+            if diff > 0:
+                speed_avg = newspeed - diff/2.0
+                speed_dev = max(diff/2.0, min_speed_dev)
+            else:
+                lower = speed
+                upper = min(newspeed, min(speed + 10*t, newspeed)*0.9 + newspeed * 0.1)
+
+                speed_avg = (upper + lower) / 2.0
+                speed_dev = max((upper - lower) / 2.0, min_speed_dev)
+                
+        else:
+            diff = speed - newspeed
+            if diff > 0:
+                upper = speed
+                lower = max(max(speed - 10*t, newspeed) * 0.9 + newspeed*0.1, newspeed)
+            else:
+                lower = speed
+                upper = min(min(speed + 10*t, newspeed) * 0.9 + newspeed*0.1, newspeed)
+        
+            speed_avg = (upper + lower) / 2.0
+            speed_dev = max((upper - lower) / 2.0, min_speed_dev)
+        
+        x_avg = xnew#(xnew + xc[0])/2.0
+        y_avg = ynew#(ynew + xc[1])/2.0
+        theta_avg = thetanew#(thetanew + xc[2])/2.0
+
+        x_dev = max(deviations[0] / pdc, abs(xnew - xc[0]))
+        y_dev = max(deviations[0] / pdc, abs(ynew - xc[1]))
+        theta_dev = max(deviations[1]/pdc, abs(thetanew - xc[2]))
+
+
+
+        rx, ry, rt = self.rotate(x_avg, y_avg, theta_avg, dir = -1)
+        return (rx, ry, rt, speed_avg), (x_dev, y_dev, theta_dev, speed_dev)

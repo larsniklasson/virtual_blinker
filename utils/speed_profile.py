@@ -24,7 +24,7 @@ class SpeedProfile:
         
 
     #predict next distance and speed
-    def predict(self, distance, speed, t):
+    def predict_old(self, distance, speed, t):
 
         function_list = self.getFilteredFunctionList(distance)
 
@@ -59,6 +59,46 @@ class SpeedProfile:
                     #t too small to catch up. This means we only follow r. 
                     new_distance =  r.getUpperLimit(t, distance)
                     newspeed = speed + t * acc
+                    break
+        
+        return new_distance, newspeed
+
+    #predict next distance and speed
+    def predict(self, distance, speed, t):
+
+        function_list = self.getFilteredFunctionList(distance)
+
+        ideal_speed = function_list[0][1].getValue(distance)
+        if abs(speed - ideal_speed) < 0.5:
+            #just follow speed profile
+            new_distance = self.getDistanceFollowProfile(distance, t, ffl=function_list)
+            return new_distance, self.getSpeed(new_distance)
+
+        elif speed > ideal_speed:
+            #need to slow down
+            acc = self.catchup_deacc
+        else:
+            #need to speed up
+            acc = self.catchup_acc
+
+        
+        r = getRootFunction(distance,speed,acc)
+
+        #the current speed does match the profile, we need to catch up (or down) to it.
+        for f_limit, f in function_list:
+            x = f.solveRoot(r) #intersection point  NOTE: Not talking about the 4-way intersection here
+            if x < f_limit:
+                #intersection point happened to be in the same function segment
+                time_to_intersection_point = r.solveInverseIntegral(distance, x)
+                if time_to_intersection_point < t:
+                    #we caught up to profile and still has some time left
+                    new_distance =  self.getDistanceFollowProfile(x, t - time_to_intersection_point)
+                    newspeed = self.getSpeed(new_distance)
+                    break
+                else:
+                    #t too small to catch up. This means we only follow r. 
+                    new_distance =  r.getUpperLimit(t, distance)
+                    newspeed = self.getSpeed(new_distance) #newspeed = speed + t * acc
                     break
         
         return new_distance, newspeed
@@ -310,6 +350,5 @@ def createFlatProfiles(fastspeed, crossing_distance, slowdown_acc,catchup_acc, c
     p2 = SpeedProfile(flist_stop, d, catchup_acc, catchup_deacc, crossing_end_distance)
     return p1,p2
     
-
 
 
