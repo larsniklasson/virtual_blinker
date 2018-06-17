@@ -247,6 +247,14 @@ class Car:
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = min(self.speed, targetspeed)
         
+        targetspeed = 9000
+        targetacc = 0
+        if targetspeed < self.speed:
+            self.speed += dt*targetacc/SLOWDOWN
+            self.speed += max(self.speed,targetspeed)
+        else:
+            self.speed += dt*targetacc/SLOWDOWN
+            self.speed += min(self.speed,targetspeed)
         
         #start trymaneuever
         if not self.man_init and self.course.hasPassedRequestLine(self.x, self.y) and self.id == 0:
