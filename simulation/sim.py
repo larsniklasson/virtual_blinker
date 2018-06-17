@@ -61,6 +61,7 @@ class Car:
         turn = cd["turn"]
         startdist = cd["starting_distance"]
         use_riskestimation = cd["use_riskestimation"]
+        self.use_known_I = cd["use_known_I"]
 
         #save all measurements from all cars. time as key. older entries are removed to avoid too large dicts
         self.state_dicts = [{} for _ in range(nr_cars)]
@@ -156,8 +157,9 @@ class Car:
                      ms, actual_time, deviations, self.plot)
                 self.fm = False
 
-                self.risk_estimator.setKnownIc(self.id, self.course.turn)
-                self.risk_estimator.setKnownIs(self.id, self.Is)
+                if self.use_known_I:
+                    self.risk_estimator.setKnownIc(self.id, self.course.turn)
+                    self.risk_estimator.setKnownIs(self.id, self.Is)
 
 
                 #run maneuver negotiator
@@ -203,11 +205,10 @@ class Car:
                 if risk > risk_threshold:
                     self.Is = "stop"
                 """
-                if self.man_init:
-                    self.Is = "go" if (self.granted and not self.watch_sender_not_going_to_finish) else "stop"
+                #if self.man_init:
+                #    self.Is = "go" if (self.granted and not self.watch_sender_not_going_to_finish) else "stop"
 
-
-                if old_is != self.Is:
+                if old_is != self.Is and self.use_known_I:
                     self.risk_estimator.setKnownIs(self.id, self.Is)
 
                 
@@ -238,23 +239,19 @@ class Car:
         
         # follow speed profile
         targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
+        if self.id == 0:
+            targetspeed = 999999
         if targetspeed < self.speed:
             targetacc = self.course.catchup_deacc
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = max(self.speed, targetspeed)
         else:
             targetacc = self.course.catchup_acc
+            if self.id == 0:
+                targetacc = 1
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = min(self.speed, targetspeed)
         
-        targetspeed = 9000
-        targetacc = 0
-        if targetspeed < self.speed:
-            self.speed += dt*targetacc/SLOWDOWN
-            self.speed += max(self.speed,targetspeed)
-        else:
-            self.speed += dt*targetacc/SLOWDOWN
-            self.speed += min(self.speed,targetspeed)
         
         #start trymaneuever
         if not self.man_init and self.course.hasPassedRequestLine(self.x, self.y) and self.id == 0:
@@ -263,7 +260,10 @@ class Car:
             thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=(self.course.turn,))
             thread1.start()
         
-
+        if self.man_init:
+            self.Is = "go" if (self.granted and not self.watch_sender_not_going_to_finish) else "stop"
+            if self.use_known_I:
+                self.risk_estimator.setKnownIs(self.id, self.Is)
         
         #add noise
         xs = np.random.normal(self.x, xy_deviation)
