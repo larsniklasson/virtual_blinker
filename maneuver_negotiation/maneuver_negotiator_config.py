@@ -1,8 +1,8 @@
 GENERAL_OPTIONS = {
     'zookeeper-server' : '127.0.0.1:2181',
-    'TM' : 10 ,#Come up with better values
+    'TM' : 5,#Come up with better values
     'TD' : 0.5,
-    'TMan' : 10,
+    'TMan' : 5,
     'CommRadius': 200,
     'TA': 0.5
 }

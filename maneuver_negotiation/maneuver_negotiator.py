@@ -57,7 +57,7 @@ class ManeuverNegotiator:
     #self.T_UPDATE = 5
     self.timeTaken = 0
     #self.time1 = self.clock() # this variable is not used in romi's code
-    self.TM = maneuver_negotiator_config.GENERAL_OPTIONS['TM']   # Period of membership protocol
+    #self.TM = maneuver_negotiator_config.GENERAL_OPTIONS['TM']   # Period of membership protocol
     self.TMan = maneuver_negotiator_config.GENERAL_OPTIONS['TMan']  # Maneuvre time
     self.TA = maneuver_negotiator_config.GENERAL_OPTIONS['TA']     # Period of agent registry update (how often the agents x, v and a is sampled )
     self.TD = maneuver_negotiator_config.GENERAL_OPTIONS['TD']    # Upper bound on transmission delay

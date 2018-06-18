@@ -3,6 +3,7 @@ from utils.Intersection import Intersection
 GEN_CONFIG = {
     "wipe_plot_dir": True,
     "intersection": Intersection(),
+    "enable_maneuver_negotiator" : False, #this config only applies for car 0, as it is makinga left turn
 
     #plot,save,nr_cars done in sim.launch
 

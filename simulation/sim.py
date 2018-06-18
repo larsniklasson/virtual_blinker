@@ -20,6 +20,7 @@ from utils.Intersection import *
 from maneuver_negotiation.maneuver_negotiator import *
 from maneuver_negotiation.cloud import *
 from threading import Thread, Lock
+import time
 
 SLOWDOWN = SIM_CONFIG["slowdown"]
 RATE = SIM_CONFIG["rate"]
@@ -53,8 +54,9 @@ class Car:
         self.save = rospy.get_param('save') and save_id == self.id
         self.plot = rospy.get_param('plot')
 
-        if self.save:
-            open('../risk_estimation/debug.txt', 'w').close()
+        if self.save and self.id == save_id:
+           self.f = open('../experimentation/' + str(int(time.time())) + "_coordinates.csv", 'w')
+           self.f_risk = open('../experimentation/' + str(int(time.time())) + "_risk.csv", 'w')
 
         cd = CARS[self.id]
         travelling_direction = cd["travelling_direction"]
@@ -126,6 +128,7 @@ class Car:
 
 
         self.nr_particles_per_particle_filter = total_nr_particles / (nr_cars ** 2)
+        self.enable_maneuver_negotiator = GEN_CONFIG["enable_maneuver_negotiator"]
 
         
         
@@ -144,9 +147,8 @@ class Car:
             
             actual_time = float(msg.t)/(RATE*SLOWDOWN)
         
-            if self.save:
-                with open('../risk_estimation/debug.txt', 'a') as f:
-                    f.write(str((actual_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
+            if self.save and save_id == self.id:
+                self.f.write(str((actual_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
             
             
             if self.fm:
@@ -248,17 +250,18 @@ class Car:
         else:
             targetacc = self.course.catchup_acc
             if self.id == 0:
-                targetacc = 1
+                targetacc = 5
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = min(self.speed, targetspeed)
         
         
         #start trymaneuever
         if not self.man_init and self.course.hasPassedRequestLine(self.x, self.y) and self.id == 0:
-            print("initiating trymaneuver")
-            self.man_init = True
-            thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=(self.course.turn,))
-            thread1.start()
+            if self.enable_maneuver_negotiator :
+                print("initiating trymaneuver")
+                self.man_init = True
+                thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=(self.course.turn,))
+                thread1.start()
         
         if self.man_init:
             self.Is = "go" if (self.granted and not self.watch_sender_not_going_to_finish) else "stop"
