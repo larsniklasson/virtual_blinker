@@ -8,10 +8,12 @@
 <arg name="nr_cars" default="2"/>
 <arg name="plot" default="0"/>
 <arg name="save" default="0"/>
+<arg name="enable_negotiator" default="false"/>
 
 <param name="nr_cars" type="int" value="$(arg nr_cars)"/>
 <param name="plot" type="bool" value="$(arg plot)"/>
 <param name="save" type="bool" value="$(arg save)"/>
+<param name="enable_negotiator" type="bool" value="$(arg enable_negotiator)"/>
 
 <node if="$(eval nr_cars >= 1)" name="car0" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
 <node if="$(eval nr_cars >= 2)" name="car1" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>

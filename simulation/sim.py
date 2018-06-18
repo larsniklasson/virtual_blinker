@@ -54,9 +54,15 @@ class Car:
         self.save = rospy.get_param('save') and save_id == self.id
         self.plot = rospy.get_param('plot')
 
+        self.enable_maneuver_negotiator = rospy.get_param("enable_negotiator")
         if self.save and self.id == save_id:
-           self.f = open(GEN_CONFIG['save_directory'] + str(int(time.time())) + "_coordinates.csv", 'w')
-           self.f_risk = open(GEN_CONFIG['save_directory'] + str(int(time.time())) + "_risk.csv", 'w')
+            fileid= str(int(time.time()))
+            if self.enable_maneuver_negotiator:
+                self.f = open(GEN_CONFIG['save_directory'] + fileid + "_mn_coordinates.csv", 'w')
+                self.f_risk = open(GEN_CONFIG['save_directory'] + fileid + "_mn_risk.csv", 'w')
+            else:
+                self.f = open(GEN_CONFIG['save_directory'] +fileid  + "_coordinates.csv", 'w')
+                self.f_risk = open(GEN_CONFIG['save_directory'] +fileid + "_risk.csv", 'w')
 
         cd = CARS[self.id]
         travelling_direction = cd["travelling_direction"]
@@ -128,7 +134,6 @@ class Car:
 
 
         self.nr_particles_per_particle_filter = total_nr_particles / (nr_cars ** 2)
-        self.enable_maneuver_negotiator = GEN_CONFIG["enable_maneuver_negotiator"]
 
         
         
@@ -254,7 +259,7 @@ class Car:
         else:
             targetacc = self.course.catchup_acc
             if self.id == 0:
-                targetacc = 5
+                targetacc = 1
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = min(self.speed, targetspeed)
         
