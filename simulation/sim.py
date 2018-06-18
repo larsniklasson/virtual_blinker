@@ -55,8 +55,8 @@ class Car:
         self.plot = rospy.get_param('plot')
 
         if self.save and self.id == save_id:
-           self.f = open('../experimentation/' + str(int(time.time())) + "_coordinates.csv", 'w')
-           self.f_risk = open('../experimentation/' + str(int(time.time())) + "_risk.csv", 'w')
+           self.f = open(GEN_CONFIG['save_directory'] + str(int(time.time())) + "_coordinates.csv", 'w')
+           self.f_risk = open(GEN_CONFIG['save_directory'] + str(int(time.time())) + "_risk.csv", 'w')
 
         cd = CARS[self.id]
         travelling_direction = cd["travelling_direction"]
@@ -171,6 +171,10 @@ class Car:
             else:
                     
                 self.risk_estimator.update_state(actual_time, ms)
+                risk_list = self.risk_estimator.get_risk()
+                if self.save and self.id == save_id:
+                    print(str(risk_list))
+                    self.f_risk.write(",".join(map(str,risk_list)) + "\n")
             
                 es_go = self.risk_estimator.getExpectation(self.id)  
                 #print "Expectation to go: ", es_go, "id = ", self.id
@@ -282,6 +286,20 @@ class Car:
         #publish noisy and true state
         self.state_pub.publish(cm.CarState(xs, ys, ts, ss, self.id, self.t))
         self.true_state_pub.publish(cm.CarState(self.x, self.y, self.theta, self.speed, self.id, self.t))
+
+        print actual_time
+        print GEN_CONFIG['simulation_end_time']
+
+        if float(actual_time) > GEN_CONFIG['simulation_end_time']:
+            print actual_time
+            print GEN_CONFIG['simulation_end_time']
+            print("shutting down")
+            self.f_risk.close()
+            self.f_risk.flush()
+            self.f.flush()
+            self.f.close()
+            
+            rospy.signal_shutdown("simulation ended")
         
         
 

@@ -4,6 +4,8 @@ GEN_CONFIG = {
     "wipe_plot_dir": True,
     "intersection": Intersection(),
     "enable_maneuver_negotiator" : False, #this config only applies for car 0, as it is makinga left turn
+    "save_directory": "../experiment_results/blue_accelerate_green_constant/acceleration/1/",
+    "simulation_end_time": 10.0
 
     #plot,save,nr_cars done in sim.launch
 
