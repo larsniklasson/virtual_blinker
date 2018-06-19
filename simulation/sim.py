@@ -178,7 +178,6 @@ class Car:
                 self.risk_estimator.update_state(actual_time, ms)
                 risk_list = self.risk_estimator.get_risk()
                 if self.save and self.id == save_id:
-                    print(str(risk_list))
                     self.f_risk.write(",".join(map(str,risk_list)) + "\n")
             
                 es_go = self.risk_estimator.getExpectation(self.id)  
@@ -292,8 +291,8 @@ class Car:
         self.state_pub.publish(cm.CarState(xs, ys, ts, ss, self.id, self.t))
         self.true_state_pub.publish(cm.CarState(self.x, self.y, self.theta, self.speed, self.id, self.t))
 
-        print actual_time
-        print GEN_CONFIG['simulation_end_time']
+        # print actual_time
+        # print GEN_CONFIG['simulation_end_time']
 
         if float(actual_time) > GEN_CONFIG['simulation_end_time']:
             print actual_time

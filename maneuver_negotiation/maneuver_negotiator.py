@@ -275,10 +275,11 @@ class ManeuverNegotiator:
     sender_travelling_direction = self.intersection.getTravellingDirection(*sender_pose)
 
     if (sender_travelling_direction is None):
-      #this happens while i am at the intersection
       print("sender travel direction is none")
       print "sender state is ", sender_pose
       return False
+    else:
+      print "sender travel direction is: ", sender_travelling_direction
     sender_course = self.intersection.courses[(sender_travelling_direction,sender_maneuver)]
 
     stop_pose_state = sender_course.predictNextState_old(sender_pose[0],sender_pose[1],sender_pose[2],sender_speed,stop_interval,"stop")
@@ -315,8 +316,9 @@ class ManeuverNegotiator:
 
     not_conflicted = False
     #not conflicted because either party has left the intersection
+    print "i have left the intersection: ", my_course.hasLeftIntersection(*my_state)
     if (sender_course.hasLeftIntersection(*sender_pose) or my_course.hasLeftIntersection(*my_state)):
-      not_conflicted = True
+      return True
 
     safe_gap = my_entering_time - sender_last_leaving_time
     if (safe_gap > 0): #means if I enter intersection later than sender leaves, safe.
