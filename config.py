@@ -11,18 +11,21 @@ GEN_CONFIG = {
 
 }
 
-def car(td, turn, sd, re, ki):
+def car(td, turn, sd, re, ki,follow_expectation,emergency_break):
     return {"travelling_direction": td, 
             "turn": turn, 
             "starting_distance": sd, 
             "use_riskestimation": re,
-            "use_known_I": ki}
+            "use_known_I": ki,
+            "follow_expectation":follow_expectation,
+            "emergency_break":emergency_break}
+
 
 CARS = {
-    0 : car("north", "left", 50, True, False),
-    1 : car("south", "straight", 50, True, True),
-    2 : car("east", "right", 50, True, True),
-    3 : car("west", "left", 50, True, True)
+    0 : car("north", "left", 50,True, False,False,False),
+    1 : car("south", "straight", 20,True, True,True,True),
+    2 : car("east", "right", 50, True, True,True,True),
+    3 : car("west", "left", 50, True, True,True,True)
 
 }
 

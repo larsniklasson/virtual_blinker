@@ -64,12 +64,12 @@ class Car:
                 self.f = open(GEN_CONFIG['save_directory'] +fileid  + "_coordinates.csv", 'w')
                 self.f_risk = open(GEN_CONFIG['save_directory'] +fileid + "_risk.csv", 'w')
 
-        cd = CARS[self.id]
-        travelling_direction = cd["travelling_direction"]
-        turn = cd["turn"]
-        startdist = cd["starting_distance"]
-        use_riskestimation = cd["use_riskestimation"]
-        self.use_known_I = cd["use_known_I"]
+        self.cd = CARS[self.id]
+        travelling_direction = self.cd["travelling_direction"]
+        turn = self.cd["turn"]
+        startdist = self.cd["starting_distance"]
+        use_riskestimation = self.cd["use_riskestimation"]
+        self.use_known_I = self.cd["use_known_I"]
 
         #save all measurements from all cars. time as key. older entries are removed to avoid too large dicts
         self.state_dicts = [{} for _ in range(nr_cars)]
@@ -191,9 +191,11 @@ class Car:
                 self.last_es.pop(0)
                 self.last_es.append(es_go)
                 if self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta) or all([e > Es_threshold for e in self.last_es]) or self.last_es[-1] > 0.99:
-                    self.Is = "go"
+                    if self.cd["follow_expectation"]:
+                        self.Is = "go"
                 elif all([e <= Es_threshold and e >= 0 for e in self.last_es]) or self.last_es[-1] < 0.01:
-                    self.Is = "stop"
+                    if self.cd["follow_expectation"]:
+                        self.Is = "stop"
 
                 if (self.watch_sender):
                     print("watchingg")
@@ -211,10 +213,15 @@ class Car:
                     else:
                         self.watch_sender_not_going_to_finish = False
 
-                """risk = max(self.risk_estimator.get_risk())
-                if risk > risk_threshold:
+                risk = self.risk_estimator.get_risk()
+                del risk[self.id] # remove myself
+                risk = max(risk)
+                if self.id == 1:
+                    print "risk = ", self.risk_estimator.get_risk()
+                    print "expectation = ", self.risk_estimator.getExpectation(self.id)
+                if self.cd["emergency_break"] and risk > risk_threshold:
                     self.Is = "stop"
-                """
+               
                 #if self.man_init:
                 #    self.Is = "go" if (self.granted and not self.watch_sender_not_going_to_finish) else "stop"
 
@@ -249,16 +256,16 @@ class Car:
         
         # follow speed profile
         targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
-        if self.id == 0:
-            targetspeed = 999999
+        # if self.id == 0 and not self.man_init:
+        #     targetspeed = 999999
         if targetspeed < self.speed:
             targetacc = self.course.catchup_deacc
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = max(self.speed, targetspeed)
         else:
             targetacc = self.course.catchup_acc
-            if self.id == 0:
-                targetacc = 1
+            # if self.id == 0 and not self.man_init:
+            #     targetacc = 1
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = min(self.speed, targetspeed)
         
@@ -294,16 +301,16 @@ class Car:
         # print actual_time
         # print GEN_CONFIG['simulation_end_time']
 
-        if float(actual_time) > GEN_CONFIG['simulation_end_time']:
-            print actual_time
-            print GEN_CONFIG['simulation_end_time']
-            print("shutting down")
-            self.f_risk.close()
-            self.f_risk.flush()
-            self.f.flush()
-            self.f.close()
+        # if float(actual_time) > GEN_CONFIG['simulation_end_time']:
+        #     print actual_time
+        #     print GEN_CONFIG['simulation_end_time']
+        #     print("shutting down")
+        #     self.f_risk.close()
+        #     self.f_risk.flush()
+        #     self.f.flush()
+        #     self.f.close()
             
-            rospy.signal_shutdown("simulation ended")
+        #     rospy.signal_shutdown("simulation ended")
         
         
 
