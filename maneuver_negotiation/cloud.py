@@ -3,6 +3,7 @@
 ## Gets data from all vehicles and broadcast their membership sets? Or upon request?
 
 import rospy
+import os
 #import custom_msgs.msg as cm
 import zookeeper
 import numpy as np
@@ -37,6 +38,8 @@ class MembershipCloud:
         self.nbr_agents = 2 #TODO Get from launch file: rospy.get_param('nr_cars')
 
         self.agent_registry = {}
+        devnull = open(os.devnull,"w")
+        zookeeper.set_log_stream(devnull)
 
         #Use zookeeper storage instead
         self.handle = zookeeper.init(maneuver_negotiator_config.GENERAL_OPTIONS['zookeeper-server'])

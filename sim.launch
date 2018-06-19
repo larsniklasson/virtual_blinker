@@ -8,7 +8,7 @@
 <arg name="nr_cars" default="2"/>
 <arg name="plot" default="0"/>
 <arg name="save" default="0"/>
-<arg name="enable_negotiator" default="false"/>
+<arg name="enable_negotiator" default="true"/>
 
 <param name="nr_cars" type="int" value="$(arg nr_cars)"/>
 <param name="plot" type="bool" value="$(arg plot)"/>
