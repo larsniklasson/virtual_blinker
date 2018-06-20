@@ -271,7 +271,27 @@ class ManeuverNegotiator:
     #
     #first, get the course the sender is taking:
     #this can be done from sender_position and sender_course
+
+    my_state = self.position()
+    my_speed = self.velocity()
+    my_travelling_direction = self.my_travelling_direction
+
+    if (my_travelling_direction is None):
+      #this happens while i am at the intersection
+      print("my travelling direction is none")
+      print "my state is ", my_state
+      return False
+
+    my_course = self.intersection.courses[(my_travelling_direction,"straight")]
+    my_entering_time = current_time + my_course.getTimeToCrossing(my_state[0],my_state[1],my_state[2],my_speed,"go")
+    my_leaving_time = my_entering_time + my_course.getTimeToEndOfCrossing(my_state[0],my_state[1],my_state[2],my_speed)
+
     stop_interval = 0.005
+
+    if (my_course.hasLeftIntersection(*my_state)):
+      return True
+
+
     sender_travelling_direction = self.intersection.getTravellingDirection(*sender_pose)
 
     if (sender_travelling_direction is None):
@@ -294,19 +314,7 @@ class ManeuverNegotiator:
 
     sender_last_leaving_time = sender_last_entering_time + sender_course.getTimeToEndOfCrossing(*stop_pose_state)
 
-    my_state = self.position()
-    my_speed = self.velocity()
-    my_travelling_direction = self.my_travelling_direction
 
-    if (my_travelling_direction is None):
-      #this happens while i am at the intersection
-      print("my travelling direction is none")
-      print "my state is ", my_state
-      return False
-
-    my_course = self.intersection.courses[(my_travelling_direction,"straight")]
-    my_entering_time = current_time + my_course.getTimeToCrossing(my_state[0],my_state[1],my_state[2],my_speed,"go")
-    my_leaving_time = my_entering_time + my_course.getTimeToEndOfCrossing(my_state[0],my_state[1],my_state[2],my_speed)
 
     print "sender earliest entering time is: ", sender_earliest_entering_time
     print "sender last entering time is: ", sender_last_entering_time
@@ -317,7 +325,7 @@ class ManeuverNegotiator:
     not_conflicted = False
     #not conflicted because either party has left the intersection
     print "i have left the intersection: ", my_course.hasLeftIntersection(*my_state)
-    if (sender_course.hasLeftIntersection(*sender_pose) or my_course.hasLeftIntersection(*my_state)):
+    if (sender_course.hasLeftIntersection(*sender_pose)):
       return True
 
     safe_gap = my_entering_time - sender_last_leaving_time
