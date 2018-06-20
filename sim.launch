@@ -9,7 +9,7 @@
 <arg name="plot" default="0"/>
 <arg name="save" default="0"/>
 <arg name="enable_negotiator" default="true"/>
-<arg name="file_prefix" default=""> <!-- used during automated simulation to prefix simulation output with git commit hash -->
+<arg name="file_prefix" default="" /> <!-- used during automated simulation to prefix simulation output with git commit hash -->
 
 <param name="nr_cars" type="int" value="$(arg nr_cars)"/>
 <param name="plot" type="bool" value="$(arg plot)"/>
