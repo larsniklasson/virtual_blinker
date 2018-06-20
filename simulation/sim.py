@@ -62,8 +62,8 @@ class Car:
                 self.f = open(GEN_CONFIG['save_directory'] + fileid + "_" + commitcode + "_mn_coordinates.csv", 'w')
                 self.f_risk = open(GEN_CONFIG['save_directory'] + fileid + "_" + commitcode + "_mn_risk.csv", 'w')
             else:
-                self.f = open(GEN_CONFIG['save_directory'] +fileid  + "_coordinates.csv", 'w')
-                self.f_risk = open(GEN_CONFIG['save_directory'] +fileid + "_risk.csv", 'w')
+                self.f = open(GEN_CONFIG['save_directory'] +fileid + "_" + commitcode + "_coordinates.csv", 'w')
+                self.f_risk = open(GEN_CONFIG['save_directory'] +fileid + "_" + commitcode + "_risk.csv", 'w')
 
         self.cd = CARS[self.id]
         travelling_direction = self.cd["travelling_direction"]
