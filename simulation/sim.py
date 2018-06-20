@@ -260,16 +260,16 @@ class Car:
         
         # follow speed profile
         targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
-        # if self.id == 0 and not self.man_init:
-        #     targetspeed = 999999
+        if self.id == 0 and not self.man_init:
+            targetspeed = 999999
         if targetspeed < self.speed:
             targetacc = self.course.catchup_deacc
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = max(self.speed, targetspeed)
         else:
             targetacc = self.course.catchup_acc
-            # if self.id == 0 and not self.man_init:
-            #     targetacc = 2
+            if self.id == 0 and not self.man_init:
+                targetacc = 1
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = min(self.speed, targetspeed)
         
