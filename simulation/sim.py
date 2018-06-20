@@ -94,6 +94,10 @@ class Car:
         
         self.Is = "stop"
         if not use_riskestimation: self.Is = "go"
+        
+        #if we are not following expectation, we follow the speed profile of go 
+        if not self.cd['follow_expectation']:
+            self.Is = "go"
 
         self.speed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
 
@@ -265,7 +269,7 @@ class Car:
         else:
             targetacc = self.course.catchup_acc
             # if self.id == 0 and not self.man_init:
-            #     targetacc = 1
+            #     targetacc = 2
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = min(self.speed, targetspeed)
         
