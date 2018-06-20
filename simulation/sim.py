@@ -269,7 +269,7 @@ class Car:
         else:
             targetacc = self.course.catchup_acc
             if self.id == 0 and not self.man_init:
-                targetacc = 2
+                targetacc = 1
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = min(self.speed, targetspeed)
         

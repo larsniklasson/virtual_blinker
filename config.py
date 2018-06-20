@@ -23,7 +23,7 @@ def car(td, turn, sd, re, ki,follow_expectation,emergency_break):
 
 CARS = {
     0 : car("north", "left", 50,True, False,False,False),
-    1 : car("south", "straight", 20,True, True,True,True),
+    1 : car("south", "straight", 50,True, True,True,True),
     2 : car("east", "right", 50, True, True,True,True),
     3 : car("west", "left", 50, True, True,True,True)
 
