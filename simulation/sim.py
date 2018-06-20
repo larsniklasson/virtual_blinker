@@ -57,9 +57,10 @@ class Car:
         self.enable_maneuver_negotiator = rospy.get_param("enable_negotiator")
         if self.save and self.id == save_id:
             fileid= str(int(time.time()))
+            commitcode = str(rospy.get_param("file_prefix"))
             if self.enable_maneuver_negotiator:
-                self.f = open(GEN_CONFIG['save_directory'] + fileid + "_mn_coordinates.csv", 'w')
-                self.f_risk = open(GEN_CONFIG['save_directory'] + fileid + "_mn_risk.csv", 'w')
+                self.f = open(GEN_CONFIG['save_directory'] + fileid + "_" + commitcode + "_mn_coordinates.csv", 'w')
+                self.f_risk = open(GEN_CONFIG['save_directory'] + fileid + "_" + commitcode + "_mn_risk.csv", 'w')
             else:
                 self.f = open(GEN_CONFIG['save_directory'] +fileid  + "_coordinates.csv", 'w')
                 self.f_risk = open(GEN_CONFIG['save_directory'] +fileid + "_risk.csv", 'w')

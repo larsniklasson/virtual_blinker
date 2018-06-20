@@ -3,7 +3,7 @@ from utils.Intersection import Intersection
 GEN_CONFIG = {
     "wipe_plot_dir": True,
     "intersection": Intersection(),
-    "save_directory": "../experiment_results/blue_accelerate_green_constant/acceleration/1/",
+    "save_directory": "../experiment_results/blue_accelerate_green_constant/A1-acceleration/",
     "simulation_end_time": 10.0
 
     #plot,save,nr_cars done in sim.launch
