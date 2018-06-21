@@ -183,7 +183,7 @@ class Car:
                 self.risk_estimator.update_state(actual_time, ms)
                 risk_list = self.risk_estimator.get_risk()
                 if self.save and self.id == save_id:
-                    self.f_risk.write(",".join(map(str,risk_list)) + "\n")
+                    self.f_risk.write(str(actual_time) + ",".join(map(str,risk_list)) + "\n")
             
                 es_go = self.risk_estimator.getExpectation(self.id)  
                 #print "Expectation to go: ", es_go, "id = ", self.id
@@ -203,7 +203,7 @@ class Car:
                         self.Is = "stop"
 
                 if (self.watch_sender):
-                    print("watchingg")
+                    rint("watchingg")
                     sender_pose = ms[int(self.maneuver_negotiator.grantID)]
                     if (self.watch_sender_course.hasLeftIntersection(sender_pose[0],sender_pose[1],sender_pose[2])):
                         print "left intersection!!"
@@ -261,16 +261,16 @@ class Car:
         
         # follow speed profile
         targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
-        # if self.id == 0 and not self.man_init:
-        #     targetspeed = 999999
+        if self.id == 0 and not self.man_init:
+            targetspeed = 999999
         if targetspeed < self.speed:
             targetacc = self.course.catchup_deacc
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = max(self.speed, targetspeed)
         else:
             targetacc = self.course.catchup_acc
-            # if self.id == 0 and not self.man_init:
-            #     targetacc = 4
+            if self.id == 0 and not self.man_init:
+                targetacc = 4
             self.speed += dt*targetacc/SLOWDOWN
             self.speed = min(self.speed, targetspeed)
         
