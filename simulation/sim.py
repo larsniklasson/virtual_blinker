@@ -203,7 +203,7 @@ class Car:
                         self.Is = "stop"
 
                 if (self.watch_sender):
-                    rint("watchingg")
+                    print("watchingg")
                     sender_pose = ms[int(self.maneuver_negotiator.grantID)]
                     if (self.watch_sender_course.hasLeftIntersection(sender_pose[0],sender_pose[1],sender_pose[2])):
                         print "left intersection!!"
