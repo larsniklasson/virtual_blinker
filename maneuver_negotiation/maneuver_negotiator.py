@@ -387,6 +387,7 @@ class ManeuverNegotiator:
     self.sim.granted = True
     time.sleep(t)
     print("done")
+    self.sim.granted = False
 
   ## Returns true when GRANT/DENY received from the last agent
   ## in agents_to_ask, that is agents in the SM
