@@ -1,46 +1,59 @@
+#!/usr/bin/env python
 
 import sys
 sys.path.append("..")
 from config import *
-from driver import *
 import time
 import random
 import numpy as np
-plot = True
-
-xy_deviation = SIM_CONFIG["xy_deviation"]
-theta_deviation = SIM_CONFIG["theta_deviation"]
-speed_deviation = SIM_CONFIG["speed_deviation"]
-
-deviations = xy_deviation, theta_deviation, speed_deviation
-
-total_nr_particles = SIM_CONFIG["total_nr_particles"]
+import virtual_blinker.msg as cm 
+import rospy
+from RE2 import *
+from config import *
 
 random.seed(1)
 np.random.seed(1)
-plotafter = 2
 
+rospy.init_node('debugger')
+
+try:
+    vis = rospy.get_param('vis')
+    nr_cars = rospy.get_param('nr_cars')
+except:
+    vis=0
+    nr_cars=2 
+
+publishers = [rospy.Publisher("true_car_state" + str(i), cm.CarState, queue_size=50) for i in range(nr_cars)]
+travelling_directions = ["north", "south"]
+re = RE2(travelling_directions)
+if vis: rospy.sleep(5)
+
+c = 0
 with open("debug.txt") as f:
-    first = True
     for line in f:
-        x = eval(line[:-1]) # (timestamp, measurement_vector)
-        if first:
-            pppf = total_nr_particles / (len(x[1])**2)
-            re = RiskEstimator(pppf, x[1], x[0], deviations, plot, plotafter)
-            id, Ic, Is = x[2]
-            re.setKnownIc(id, Ic)
-            re.setKnownIs(id, Is)
-            first = False
+        c += 1
+        if rospy.is_shutdown():
+            break
+        t, ms,_ = eval(line[:-1])
 
-        else:
-            print x[0] # timestamp
-            if x[0] > 1.5:
-                pass
 
-            id, Ic, Is = x[2]
-            re.setKnownIc(id, Ic)
-            re.setKnownIs(id, Is)
-            re.update_state(x[0], x[1])
-        
 
-endtime = time.time()
+        dev = [0.2, 0.2, 0.04, 0.1]
+
+        ms = [(x+np.random.normal(0,dev[0]/5), \
+        y+np.random.normal(0,dev[1]/5), \
+        theta+np.random.normal(0,dev[2]/5), \
+        speed+np.random.normal(0,dev[3]/5)) for x,y,theta,speed in ms]
+
+        re.update_state(t, ms, [dev, dev])
+
+
+        for id,(x,y,theta,s) in zip(range(len(ms)),ms):
+            m = cm.CarState(x,y,theta,s,id,0)
+            publishers[id].publish(m)
+
+        print 
+        print t, re.intentionDensities[0]
+
+        if c % 10 == 0 and t > 2:
+            raw_input()

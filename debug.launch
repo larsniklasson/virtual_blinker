@@ -1,0 +1,15 @@
+<launch>
+<arg name="vis" default="1"/>
+<group if="$(arg vis)">
+    <node name= "visualization" pkg= "virtual_blinker" type="visualization.py" output="screen" cwd="node"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find virtual_blinker)/config.rviz" />
+</group>
+
+<arg name="nr_cars" default="2"/>
+
+<param name="vis" type="boolean" value="$(arg vis)"/>
+<param name="nr_cars" type="int" value="$(arg nr_cars)"/>
+
+<node name="debug" pkg="virtual_blinker" type="debug.py" output="screen" cwd="node"/>
+
+</launch>

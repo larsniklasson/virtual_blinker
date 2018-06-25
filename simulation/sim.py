@@ -83,7 +83,7 @@ class Car:
         self.path_pub = rospy.Publisher('car_path' + str(self.id), cm.Path, queue_size=10)
 
         
-        self.Is = "stop"
+        self.Is = "go"
         if not use_riskestimation: self.Is = "go"
 
         self.speed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
@@ -115,6 +115,8 @@ class Car:
         
 
     def stateCallback(self, msg):
+
+        print "callback", self.id
 
         if self.t - msg.t > 1/RATE * discard_measurement_time: # old af message, flush queue. 
             return 
@@ -150,7 +152,8 @@ class Car:
                 #self.maneuver_negotiator.initialize()
             
             else:
-                    
+                pass
+                """    
                 self.risk_estimator.update_state(actual_time, ms)
             
                 es_go = self.risk_estimator.getExpectation(self.id)  
@@ -167,14 +170,15 @@ class Car:
                 elif all([e <= Es_threshold and e >= 0 for e in self.last_es]) or self.last_es[-1] < 0.01:
                     self.Is = "stop"
                 
-                """risk = max(self.risk_estimator.get_risk())
+                risk = max(self.risk_estimator.get_risk())
                 if risk > risk_threshold:
                     self.Is = "stop"
-                """
+                
 
 
                 if old_is != self.Is:
                     self.risk_estimator.setKnownIs(self.id, self.Is)
+                """
 
                 
         
@@ -204,7 +208,7 @@ class Car:
         # follow speed profile
         targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
         if self.id == 0:
-            targetspeed += 5
+            targetspeed += 0
         if targetspeed < self.speed:
             targetacc = self.course.catchup_deacc
             self.speed += dt*targetacc/SLOWDOWN
@@ -225,10 +229,10 @@ class Car:
 
         
         #add noise
-        xs = np.random.normal(self.x, xy_deviation)
-        ys = np.random.normal(self.y, xy_deviation)
-        ts = np.random.normal(self.theta, theta_deviation)
-        ss = np.random.normal(self.speed, speed_deviation)
+        xs = self.x#np.random.normal(self.x, xy_deviation)
+        ys = self.y#np.random.normal(self.y, xy_deviation)
+        ts = self.theta#np.random.normal(self.theta, theta_deviation)
+        ss = self.speed#np.random.normal(self.speed, speed_deviation)
 
         #save current state. Also delete old one
         d = self.state_dicts[self.id]
