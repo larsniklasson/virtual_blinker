@@ -82,12 +82,13 @@ class SpeedProfile:
     
                 
     #like getFilteredFunctionList but only return segments before or during the crossing starts
-    def getFsCrossing(self, distance):
-        function_list = self.getFilteredFunctionList(distance)
+    def getFsCrossing(self, distance, function_list=None, limit = None):
+        if not limit:limit = self.distance_at_crossing
+        if not function_list: function_list = self.getFilteredFunctionList(distance)
         new_function_list = []
         for f_limit, f in function_list:
             new_function_list.append((f_limit, f))
-            if f_limit >= self.distance_at_crossing:
+            if f_limit >= limit:
                 return new_function_list
 
 
@@ -120,19 +121,38 @@ class SpeedProfile:
                 return r.solveInverseIntegral(distance, x) + self.getTimeToCrossingFollowProfile(x)
             
 
+    def getTimeToCrossing2(self, distance, speed):
+        ideal_speed = self.getSpeed(distance)
+        diff = speed - ideal_speed
+        diff = max(-10/3.6, diff)
 
-    def getTimeToCrossingFollowProfile(self, distance, function_list=None):
+        if distance <= self.distance_at_crossing:
+            fl = [(d, f.addDiff(diff)) for d, f in self.getFsCrossing(distance, limit=self.distance_at_crossing)]
+            return self.getTimeToCrossingFollowProfile(distance, fl)
+        else:
+            fl = [(d, f.addDiff(diff)) for d, f in self.getFsCrossing(self.distance_at_crossing, limit=distance)]
+            return -self.getTimeToCrossingFollowProfile(self.distance_at_crossing, fl, distance)
+
+
+        
+
+
+        
+
+    def getTimeToCrossingFollowProfile(self, distance, function_list=None, limit=None):
+        if not limit:
+            limit = self.distance_at_crossing
         if not function_list: function_list = self.getFsCrossing(distance)
         t_sum = 0
         for f_limit, f in function_list:
-            if f_limit < self.distance_at_crossing:
+            if f_limit < limit:
                 #follow this segment until it's limit
                 t_sum += f.solveInverseIntegral(distance, f_limit)
                 #update current distance
                 distance = f_limit
             else:
                 #follow this segment until crossing
-                t_sum += f.solveInverseIntegral(distance, self.distance_at_crossing)
+                t_sum += f.solveInverseIntegral(distance, limit)
         return t_sum
 
 
@@ -141,6 +161,9 @@ class HorizontalLineFunction:
     def __init__(self, k):
         self.k = float(k)
     
+    def addDiff(self, diff):
+        return HorizontalLineFunction(self.k + diff)
+
     def getValue(self,x):
         return self.k
 
@@ -162,18 +185,27 @@ class HorizontalLineFunction:
 
 #Constant acceleration in a distance-speed diagram => f(x) = sqrt(a*x + b)
 class RootFunction:
-    def __init__(self, a, b):
+    def __init__(self, a, b, c = 0):
         self.a = float(a)
         self.b = float(b)
+        self.c = float(c)
+
+    def addDiff(self,diff):
+        return RootFunction(self.a, self.b, self.c + diff)
     
     def getValue(self, x):
-        return sqrt(self.a*x + self.b)
+        return sqrt(self.a*x + self.b)+self.c
     
     #integrate 1/x
-    def solveInverseIntegral(self, a, b):
-        #f = lambda x: 2*sqrt(max(self.a*x + self.b, 0))/self.a
-        #return f(b) - f(a)
-        return 2*sqrt(max(self.a*b + self.b, 0))/self.a - 2*sqrt(max(self.a*a + self.b, 0))/self.a
+    def solveInverseIntegral(self, low, upp):
+        
+        l = 2*(sqrt(self.a*low+self.b) - \
+                      self.c*log(sqrt(self.a*low+self.b)+self.c))/self.a
+
+        u = 2*(sqrt(self.a*upp+self.b) - \
+                      self.c*log(sqrt(self.a*upp+self.b)+self.c))/self.a
+        return u-l
+        #return 2*sqrt(max(self.a*b + self.b, 0))/self.a - 2*sqrt(max(self.a*a + self.b, 0))/self.a
 
     def getUpperLimit(self, t, a):
         return (1.0/4) * (4*t*sqrt(self.a*a + self.b) + self.a * t**2 + 4*a)

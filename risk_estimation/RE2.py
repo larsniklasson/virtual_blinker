@@ -61,20 +61,39 @@ class RE2:
         
         T = {}
 
-        si = 30
         for car in range(self.nr_cars):
             trav_dir = self.travelling_directions[car]
+            x,y,theta,speed = ms[car]
+            xd, yd, td, sd = deviations[car]
             for turn in self.turns:
                 c = self.intersection.courses[trav_dir,turn]
-                x,y,theta,speed = ms[car]
-                xd, yd, td, sd = deviations[car]
-                x = np.random.normal(x, xd, si)
-                y = np.random.normal(y, yd, si)
-                theta = np.random.normal(theta, td, si)
-                speed = np.random.normal(speed, sd, si)
+                
+                tt = c.rotate(*c.getPose(c.getDistance(*c.rotate(x,y,theta))), dir=-1)[2]
+                px, py = x+xd*0.8*cos(tt),y+yd*0.8*sin(tt)
 
-                r = np.array([c.getTimeToCrossing(*a, Is="go")for a in zip(x,y, theta, speed)])
-                m, s = np.mean(r), np.std(r)
+                if c.getDistance(*c.rotate(px,py,0)) > c.distance_to_crossing:
+                    ps = speed - sd*0.8-0.5
+                else:
+                    ps = speed + sd*0.8+0.5
+
+                
+
+                mx, my = x-xd*0.8*cos(tt),y-yd*0.8*sin(tt)
+
+                if c.getDistance(*c.rotate(mx,my,0)) > c.distance_to_crossing:
+                    m_s = speed + sd*0.8+0.5
+                else:
+                    m_s = speed - sd*0.8-0.5
+
+                a = c.getTimeToCrossing2(px, py,theta,ps, Is="go")
+                b = c.getTimeToCrossing2(mx, my,theta,m_s, Is="go")
+
+                m = (a+b)/2
+
+                s = abs(m-a)
+
+
+                #print car, turn, m, s
                 T[car, turn] = m, s
         
 
