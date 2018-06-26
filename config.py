@@ -16,9 +16,9 @@ def car(td, turn, sd, re):
             "use_riskestimation": re}
 
 CARS = {
-    0 : car("north", "left", 40, True),
-    1 : car("south", "straight", 00, True),
-    2 : car("east", "right", 50, True),
+    0 : car("south", "straight", 00, True),
+    1 : car("west", "right", 50, True),
+    2 : car("north", "left", 80, True),
     3 : car("west", "left", 50, True)
 
 }
@@ -28,7 +28,7 @@ SIM_CONFIG = {
     "theta_deviation" : 0.1,
     "speed_deviation": 0.2,
     "slowdown": 5,
-    "rate": 100,
+    "rate": 50,
     "pid" : (0.4, 0.0, 0.05),
     "lookahead": 5,
     "carlength": 4,

@@ -199,8 +199,9 @@ class Course:
 
         #get distance and lookup time to crossing
         d = self.getDistance(x,y,theta)
-        if d >= self.distance_to_crossing:
-            return 0
+        diff = d - self.distance_to_crossing
+        if diff >= 0:
+            return -diff/speed
         else:
             if Is == "stop":
                 return self.sp_stop.getTimeToCrossing(d, speed)

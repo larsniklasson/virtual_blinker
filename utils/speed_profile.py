@@ -1,4 +1,5 @@
 from math import *
+import numpy as np
 
 # A speed-distance graph made up of multiple functions, either rootfunctions (constant acceleration, see below) 
 # or horizontal lines (acceleration = 0)
@@ -92,10 +93,11 @@ class SpeedProfile:
 
     #get predicted time to reach crossing
     def getTimeToCrossing(self, distance, speed):
+
         function_list = self.getFsCrossing(distance)
         ideal_speed = function_list[0][1].getValue(distance)
 
-        if abs(speed - ideal_speed) < 0.5:
+        if abs(speed - ideal_speed) < 0.1:
             #alread matching profile
             return self.getTimeToCrossingFollowProfile(distance, function_list)
 

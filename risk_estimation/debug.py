@@ -21,10 +21,10 @@ try:
     nr_cars = rospy.get_param('nr_cars')
 except:
     vis=0
-    nr_cars=2 
+    nr_cars=2
 
 publishers = [rospy.Publisher("true_car_state" + str(i), cm.CarState, queue_size=50) for i in range(nr_cars)]
-travelling_directions = ["north", "south"]
+travelling_directions = ["south", "west"]
 re = RE2(travelling_directions)
 if vis: rospy.sleep(5)
 
@@ -53,7 +53,10 @@ with open("debug.txt") as f:
             publishers[id].publish(m)
 
         print 
-        print t, re.intentionDensities[0]
+        print t, re.getRisk(0), re.getRisk(1)
+        print re.expectationDensities
+        print re.intentionDensities[0]
+        print re.intentionDensities[1]
 
-        if c % 10 == 0 and t > 2:
+        if c % 5 == 0 and t > 2:
             raw_input()
