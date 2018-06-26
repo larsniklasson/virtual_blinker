@@ -19,8 +19,7 @@ CARS = {
     0 : car("south", "straight", 00, True),
     1 : car("west", "right", 50, True),
     2 : car("north", "left", 80, True),
-    3 : car("west", "left", 50, True)
-
+    3 : car("east", "left", 50, True)
 }
 
 SIM_CONFIG = {

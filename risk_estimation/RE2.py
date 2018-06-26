@@ -4,6 +4,10 @@ from utils.Intersection import *
 from math import *
 import scipy.stats as sp
 
+def normal_cdf(x, mu, sigma):
+    q = math.erf((x-mu) / (sigma*math.sqrt(2.0)))
+    return (1.0 + q) / 2.0
+
 class RE2:
     def __init__(self, td):
         self.travelling_directions = td
@@ -39,7 +43,7 @@ class RE2:
                     
                     list = self.Ldict[car,turn,i]
                     list.append(thisL)
-                    if len(list) > 3:
+                    if len(list) > 2:
                         del list[0]
                     
                     L = sum([w*l for w,l in zip(list, range(1,len(list)+1))])
@@ -94,8 +98,8 @@ class RE2:
                         mean_other, std_other = T[othercar, turn_other]
                         gap_mean, gap_std = mean_other - mean_ego, sqrt(std_ego**2 + std_other**2)
                         
-                        p_gap_enough = 1 - (sp.norm.cdf(x=5, loc=gap_mean, scale=gap_std) - \
-                                       sp.norm.cdf(x=-2, loc=gap_mean, scale=gap_std))
+                        p_gap_enough = 1 - (normal_cdf(5, gap_mean, gap_std) - \
+                                       normal_cdf(-2, gap_mean, gap_std))
                         
                         e_sum += p_gap_enough * (self.intentionDensities[othercar][turn_other, "go"] + \
                                                     self.intentionDensities[othercar][turn_other, "stop"])
