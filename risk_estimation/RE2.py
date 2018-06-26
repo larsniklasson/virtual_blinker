@@ -43,7 +43,7 @@ class RE2:
                     
                     list = self.Ldict[car,turn,i]
                     list.append(thisL)
-                    if len(list) > 2:
+                    if len(list) > 3:
                         del list[0]
                     
                     L = sum([w*l for w,l in zip(list, range(1,len(list)+1))])
@@ -72,9 +72,9 @@ class RE2:
                 px, py = x+xd*0.8*cos(tt),y+yd*0.8*sin(tt)
 
                 if c.getDistance(*c.rotate(px,py,0)) > c.distance_to_crossing:
-                    ps = speed - sd*0.8-0.5
+                    ps = speed - sd*0.8
                 else:
-                    ps = speed + sd*0.8+0.5
+                    ps = speed + sd*0.8
 
                 
 
@@ -118,7 +118,7 @@ class RE2:
                         gap_mean, gap_std = mean_other - mean_ego, sqrt(std_ego**2 + std_other**2)
                         
                         p_gap_enough = 1 - (normal_cdf(5, gap_mean, gap_std) - \
-                                       normal_cdf(-2, gap_mean, gap_std))
+                                       normal_cdf(-1, gap_mean, gap_std))
                         
                         e_sum += p_gap_enough * (self.intentionDensities[othercar][turn_other, "go"] + \
                                                     self.intentionDensities[othercar][turn_other, "stop"])
@@ -150,7 +150,6 @@ class RE2:
         return sum
         
         
-
 
 def getOpt(c, (x,y,theta,speed), Is):
     x,y,theta = c.rotate(x,y,theta)

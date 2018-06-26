@@ -52,10 +52,17 @@ with open("debug.txt") as f:
             m = cm.CarState(x,y,theta,s,id,0)
             publishers[id].publish(m)
         
-        print re.expectationDensities
+        """
+        print
+        print "intentions 3:"
+        print re.intentionDensities[3]
+        print "risk:"
+        for i in range(nr_cars):
+            print i, ":", re.getRisk(i)
         
         
         
         if c % 5 == 0 and t > 2:
             raw_input()
+        """
         

@@ -131,6 +131,7 @@ class Car:
             actual_time = float(msg.t)/(RATE*SLOWDOWN)
         
             if self.save:
+                print "SAVING********"
                 with open('../risk_estimation/debug.txt', 'a') as f:
                     f.write(str((actual_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
             
