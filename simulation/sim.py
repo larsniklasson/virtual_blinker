@@ -160,6 +160,8 @@ class Car:
             if self.save and save_id == self.id:
                 self.f.write(str((actual_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
             
+            if self.save and save_id == self.id and self.watch_sender and self.watch_sender_not_going_to_finish:
+                self.f.write(str((actual_time, ms, (self.id, self.course.turn, self.Is), " other car not going to finish maneuver")) + "\n")
             
             if self.fm:
 
@@ -183,7 +185,7 @@ class Car:
                 self.risk_estimator.update_state(actual_time, ms)
                 risk_list = self.risk_estimator.get_risk()
                 if self.save and self.id == save_id:
-                    self.f_risk.write(str(actual_time) + ",".join(map(str,risk_list)) + "\n")
+                    self.f_risk.write(str(actual_time) +", " + ",".join(map(str,risk_list)) + "\n")
             
                 es_go = self.risk_estimator.getExpectation(self.id)  
                 #print "Expectation to go: ", es_go, "id = ", self.id
@@ -215,6 +217,7 @@ class Car:
                     if (estimated_finish_time > self.watch_sender_Tman_upperbound):
                         print "not gonna finish!!!"
                         self.watch_sender_not_going_to_finish = True
+                        self.Is = "stop"
                     else:
                         self.watch_sender_not_going_to_finish = False
 
@@ -284,9 +287,25 @@ class Car:
                 thread1.start()
         
         if self.man_init:
-            self.Is = "go" if (self.granted and not self.watch_sender_not_going_to_finish) else "stop"
+            # self.Is = "go" if (self.granted and not self.watch_sender_not_going_to_finish) else "stop"
+            # above commented line is written more clearer below
+            if (self.id == 0):
+                if (self.granted):
+                    self.Is = "go"
+                else:
+                    self.Is = "stop"
+
             if self.use_known_I:
                 self.risk_estimator.setKnownIs(self.id, self.Is)
+
+        if (self.id == 1):
+            # print "watch sender", self.watch_sender
+            # print "sender_not going go finish", self.watch_sender_not_going_to_finish
+            if (self.watch_sender and self.watch_sender_not_going_to_finish):
+                print("stopping")
+                self.Is = "stop"
+            else:
+                self.Is = "go"
         
         #add noise
         xs = np.random.normal(self.x, xy_deviation)
@@ -345,7 +364,7 @@ class Car:
 
 
 if __name__ == '__main__':
-    random.seed(1)
-    np.random.seed(1)
+    random.seed()
+    np.random.seed()
     s = Car()
     s.spin()

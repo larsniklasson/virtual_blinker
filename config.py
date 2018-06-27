@@ -4,7 +4,7 @@ GEN_CONFIG = {
     "wipe_plot_dir": True,
     "intersection": Intersection(),
     "save_directory": "../experiment_results/blue_accelerate_green_constant/",
-    "simulation_end_time": 10.0
+    "simulation_end_time": 20.0
 
     #plot,save,nr_cars done in sim.launch
 
@@ -43,7 +43,7 @@ SIM_CONFIG = {
     "discard_measurement_time": 0.15, #seconds
     "Es_threshold": 0.5,
     "risk_threshold": 0.8,
-    "save_id" : 0
+    "save_id" : 1
 
 }
 

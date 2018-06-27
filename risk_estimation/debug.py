@@ -16,8 +16,8 @@ deviations = xy_deviation, theta_deviation, speed_deviation
 
 total_nr_particles = SIM_CONFIG["total_nr_particles"]
 
-random.seed(1)
-np.random.seed(1)
+random.seed()
+np.random.seed()
 plotafter = 0
 
 with open("debug.txt") as f:
