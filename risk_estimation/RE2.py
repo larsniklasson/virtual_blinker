@@ -72,9 +72,9 @@ class RE2:
                 px, py = x+xd*0.8*cos(tt),y+yd*0.8*sin(tt)
 
                 if c.getDistance(*c.rotate(px,py,0)) > c.distance_to_crossing:
-                    ps = speed - sd*0.8
+                    ps = speed - sd*0.8-0.5
                 else:
-                    ps = speed + sd*0.8
+                    ps = speed + sd*0.8+0.5
 
                 
 
@@ -143,7 +143,7 @@ class RE2:
         for turn in self.turns:
             #es=go and is = stop
             e = self.expectationDensities[car, turn]
-            sum += e * self.intentionDensities[car][turn, "stop"]
+            #sum += e * self.intentionDensities[car][turn, "stop"]
 
             sum += (1-e) * self.intentionDensities[car][turn, "go"]
 

@@ -1,0 +1,6 @@
+<launch>
+
+<node name= "visualization" pkg= "virtual_blinker" type="visualization.py" output="screen" cwd="node"/>
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(find virtual_blinker)/config.rviz" />
+
+</launch>

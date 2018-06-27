@@ -10,22 +10,20 @@ import virtual_blinker.msg as cm
 import rospy
 from RE2 import *
 from config import *
+from utils.Intersection import *
 
 random.seed(1)
 np.random.seed(1)
+
+intersection = Intersection()
 
 rospy.init_node('debugger')
 
 try:
     vis = rospy.get_param('vis')
-    nr_cars = rospy.get_param('nr_cars')
 except:
-    vis=0
-    nr_cars=4
+    vis = 0
 
-publishers = [rospy.Publisher("true_car_state" + str(i), cm.CarState, queue_size=50) for i in range(nr_cars)]
-travelling_directions = ["south", "west", "north", "east"]
-re = RE2(travelling_directions)
 if vis: rospy.sleep(5)
 
 c = 0
@@ -34,8 +32,14 @@ with open("debug.txt") as f:
         c += 1
         if rospy.is_shutdown():
             break
-        t, ms,_ = eval(line[:-1])
 
+        t, ms = eval(line[:-1])
+
+        if c == 1:
+            nr_cars = len(ms)
+            travelling_directions = [intersection.getTravellingDirection(x, y, theta) for (x, y, theta, _) in ms]
+            re = RE2(travelling_directions)
+            publishers = [rospy.Publisher("true_car_state" + str(i), cm.CarState, queue_size=50) for i in range(nr_cars)]
 
 
         dev = [0.2, 0.2, 0.04, 0.1]

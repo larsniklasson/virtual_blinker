@@ -1,16 +1,15 @@
 <launch>
+<!--
 <arg name="vis" default="1"/>
 <group if="$(arg vis)">
     <node name= "visualization" pkg= "virtual_blinker" type="visualization.py" output="screen" cwd="node"/>
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find virtual_blinker)/config.rviz" />
-</group>
+</group> -->
 
 <arg name="nr_cars" default="4"/>
-<arg name="plot" default="0"/>
-<arg name="save" default="0"/>
-
 <param name="nr_cars" type="int" value="$(arg nr_cars)"/>
-<param name="plot" type="bool" value="$(arg plot)"/>
+
+<arg name="save" default="0"/>
 <param name="save" type="bool" value="$(arg save)"/>
 
 <node if="$(eval nr_cars >= 1)" name="car0" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
@@ -18,6 +17,13 @@
 <node if="$(eval nr_cars >= 3)" name="car2" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
 <node if="$(eval nr_cars >= 4)" name="car3" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
 
+<node if="$(eval nr_cars >= 5)" name="car4" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
 
+<node if="$(eval nr_cars >= 6)" name="car5" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
+<node if="$(eval nr_cars >= 7)" name="car6" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
+<node if="$(eval nr_cars >= 8)" name="car7" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
+<node if="$(eval nr_cars >= 9)" name="car8" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
+
+<node if="$(eval nr_cars >= 10)" name="car9" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
 
 </launch>

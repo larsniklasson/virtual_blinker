@@ -1,12 +1,8 @@
 from utils.Intersection import Intersection
 
 GEN_CONFIG = {
-    "wipe_plot_dir": True,
     "intersection": Intersection(),
-
     #plot,save,nr_cars done in sim.launch
-
-
 }
 
 def car(td, turn, sd, re):
@@ -16,24 +12,29 @@ def car(td, turn, sd, re):
             "use_riskestimation": re}
 
 CARS = {
-    0 : car("south", "straight", 20, True),
-    1 : car("west", "straight", 50, True),
-    2 : car("north", "left", 80, True),
-    3 : car("east", "left", 50, True)
+    0 : car("north", "straight", 0, True),
+    1 : car("west", "straight", 20, True),
+    2 : car("east", "left", 40, True),
+    3 : car("north", "left", 50, True),
+    4 : car("south", "straight", 60, True),
+    5 : car("east", "right", 0, True),
+    6 : car("north", "right", 90, True),
+    7 : car("west", "right", 100, True),
+    8 : car("north", "right", 0, True),
+    9 : car("east", "straight", 70, True)
 }
 
 SIM_CONFIG = {
     "xy_deviation" : 0.3,
     "theta_deviation" : 0.1,
     "speed_deviation": 0.2,
-    "slowdown": 1.5,
-    "rate": 30,
+    "slowdown": 1,
+    "rate": 20,
     "pid" : (0.4, 0.0, 0.05),
     "lookahead": 5,
     "carlength": 4,
 
-    "total_nr_particles": 2500,
-    "discard_measurement_time": 0.3, #seconds
+    "discard_measurement_time": 0.2, #seconds
     "Es_threshold": 0.5,
     "risk_threshold": 0.8,
     "save_id" : 1
@@ -41,17 +42,6 @@ SIM_CONFIG = {
 }
 
 RISK_CONFIG = {
-    "prediction_dev_coeff": 2,
-    "gap_model": {
-        "L": 1.0,
-        "x0": 6.1,
-        "k": 1,
-
-        "x0_2": 1.5,
-        "k2": 3
-    },
-    "Is_comply": 0.8,
-    "Ic_same": 0.8,
     "grant_threshold": 0.5
 
 

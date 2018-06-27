@@ -23,7 +23,13 @@ colors = [
     (60, 180, 75),
     (0, 130, 200),
     (245, 130, 48),
+    (145, 30, 180),
+    (230, 25, 75),
+    (60, 180, 75),
+    (0, 130, 200),
+    (245, 130, 48),
     (145, 30, 180)
+
 
 ]
 
@@ -37,7 +43,7 @@ class Visualizer:
         rospy.init_node('visualizer')
 
         
-        nr_cars = rospy.get_param('nr_cars')
+        nr_cars = 10
 
         self.markers = [CarMarker(colors[i]) for i in range(nr_cars)]
 

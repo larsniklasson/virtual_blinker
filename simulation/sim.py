@@ -11,15 +11,12 @@ from pid import *
 import random
 from geometry import *
 from utils.course import *
-from risk_estimation.driver import *
+from risk_estimation.RE2 import *
 
 from config import *
-
-from collections import OrderedDict
 from utils.Intersection import *
 #from maneuver_negotiation.maneuver_negotiator import *
 #rom maneuver_negotiation.cloud import *
-from threading import Thread, Lock
 
 SLOWDOWN = SIM_CONFIG["slowdown"]
 RATE = SIM_CONFIG["rate"]
@@ -30,8 +27,6 @@ theta_deviation = SIM_CONFIG["theta_deviation"]
 speed_deviation = SIM_CONFIG["speed_deviation"]
 
 deviations = xy_deviation, theta_deviation, speed_deviation
-
-total_nr_particles = SIM_CONFIG["total_nr_particles"]
 
 discard_measurement_time = SIM_CONFIG["discard_measurement_time"]
 Es_threshold = SIM_CONFIG["Es_threshold"]
@@ -48,10 +43,20 @@ class Car:
         #get params set in launch file
         name = rospy.get_name()
         self.id = int(name[-1])
+
+        if self.id == 0:
+            rospy.set_param("sync_time", rospy.get_rostime().secs + 4)
+        
+        while 1:
+            if rospy.has_param("sync_time"):
+                self.sync_time = rospy.get_param("sync_time")
+                break
+            else:
+                rospy.sleep(0.01)
+
         
         nr_cars = rospy.get_param('nr_cars')
         self.save = rospy.get_param('save') and save_id == self.id
-        self.plot = rospy.get_param('plot')
 
         if self.save:
             open('../risk_estimation/debug.txt', 'w').close()
@@ -95,28 +100,19 @@ class Car:
         self.pid = PID(*SIM_CONFIG["pid"])
 
         self.t = 0
+
+        #let publishers register
+        rospy.sleep(1)
         
-        #sleep to let rviz start up
-        rospy.sleep(1.5)
         self.path_pub.publish(cm.Path([cm.Position(x,y) for x,y in path], self.id))
 
         self.fm = True
 
-        self.last_es = [-1, -1, -1] #TODO maybe not useful anymore since much better particle filter
-
         #has maneuver negotation been initiated or not
         self.man_init = False
-
-
-
-        self.nr_particles_per_particle_filter = total_nr_particles / (nr_cars ** 2)
-
-        
         
 
     def stateCallback(self, msg):
-
-        print "callback", self.id
 
         if self.t - msg.t > 1/RATE * discard_measurement_time: # old af message, flush queue. 
             return 
@@ -131,58 +127,46 @@ class Car:
             actual_time = float(msg.t)/(RATE*SLOWDOWN)
         
             if self.save:
-                print "SAVING********"
                 with open('../risk_estimation/debug.txt', 'a') as f:
-                    f.write(str((actual_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
+                    f.write(str((actual_time, ms)) + "\n")
             
             
             if self.fm:
 
                 self.intersection = Intersection()
                 #run risk estimator
-                self.risk_estimator = RiskEstimator(self.nr_particles_per_particle_filter,
-                     ms, actual_time, deviations, self.plot)
+                td = [self.intersection.getTravellingDirection(x, y, theta) for (x, y, theta, _) in ms]
+                self.risk_estimator = RE2(td)
                 self.fm = False
-
-                self.risk_estimator.setKnownIc(self.id, self.course.turn)
-                self.risk_estimator.setKnownIs(self.id, self.Is)
-
 
                 #run maneuver negotiator
                 #self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,0,self.risk_estimator)
                 #self.maneuver_negotiator.initialize()
             
-            else:
-                pass
-                """    
-                self.risk_estimator.update_state(actual_time, ms)
-            
-                es_go = self.risk_estimator.getExpectation(self.id)  
-                print "Expectation to go: ", es_go, "id = ", self.id
-                #print self.risk_estimator.isManeuverOk(0, "left")
-                old_is = self.Is
+            else:    
 
-                #maintain 3 last es_go.
-                # if all 3 are greater than threshold then we go
-                self.last_es.pop(0)
-                self.last_es.append(es_go)
-                if self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta) or all([e > Es_threshold for e in self.last_es]) or self.last_es[-1] > 0.99:
+                dev = [0.2, 0.2, 0.04, 0.1]
+
+                ms = [(x+np.random.normal(0,dev[0]/5), \
+                y+np.random.normal(0,dev[1]/5), \
+                theta+np.random.normal(0,dev[2]/5), \
+                speed+np.random.normal(0,dev[3]/5)) for x,y,theta,speed in ms]
+                
+                self.risk_estimator.update_state(actual_time, ms, [dev]*len(ms))
+
+                es_go = self.risk_estimator.expectationDensities[self.id, self.course.turn]  
+                #print "Expectation to go: ", es_go, "id = ", self.id
+
+                if es_go > Es_threshold or self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta):
                     self.Is = "go"
-                elif all([e <= Es_threshold and e >= 0 for e in self.last_es]) or self.last_es[-1] < 0.01:
+                else:
                     self.Is = "stop"
                 
-                risk = max(self.risk_estimator.get_risk())
-                if risk > risk_threshold:
-                    self.Is = "stop"
+                #print self.risk_estimator.getRisk(2)
+                #risk = max(self.risk_estimator.get_risk())
+                #if risk > risk_threshold:
+                #    self.Is = "stop"
                 
-
-
-                if old_is != self.Is:
-                    self.risk_estimator.setKnownIs(self.id, self.Is)
-                """
-
-                
-        
 
     def update(self):
         
@@ -195,7 +179,7 @@ class Car:
         # scale lookahead w.r.t. speed. slower speed => smaller lookahead and vice versa
         p = getLookaheadPoint((self.x, self.y), self.theta, lookahead*(self.speed / (50/3.6))) #PID "tuned" for 50 km/h
         error, d = self.error_calc.calculateError(p)
-        if d == 0 :return #ran out of path
+        #if d == 0 :return #ran out of path
 
         steering_angle = self.pid.update(error)
         steering_angle = min(steering_angle, radians(40))#25
@@ -208,8 +192,6 @@ class Car:
         
         # follow speed profile
         targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
-        if self.id == 0:
-            targetspeed += 0
         if targetspeed < self.speed:
             targetacc = self.course.catchup_deacc
             self.speed += dt*targetacc/SLOWDOWN
@@ -252,15 +234,19 @@ class Car:
         now = rospy.get_rostime()
         s, ns = now.secs, now.nsecs
 
-        if s % 2 == 0:
-            target = s + 2
-        else:
-            target = s + 1
+        target = self.sync_time
+        
+        #if s % 2 == 0:
+        #    target = s + 2
+        #else:
+        #    target = s + 1
 
         ns = ns * 10**(-9)
         diff = target - (s + ns)
         print "diff", diff
         rospy.sleep(diff)
+        if self.id == 0:
+            rospy.delete_param("sync_time")
         self.pid.clear()
         self.last_time = rospy.get_time()
 
