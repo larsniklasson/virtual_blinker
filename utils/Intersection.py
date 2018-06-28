@@ -138,6 +138,32 @@ class Intersection:
                     ids.append(id)
             unsafe_agents[turn] = ids
 
-        return unsafe_agents
+        return 
+        
+    def doesCoursesIntersect(self, td1, turn1, td2, turn2):
+        if td1 == td2:
+            return False
 
+        relPos = self.getRelativePosition(td1, td2)
+        if relPos in ["leftof", "rightof"]:
+            
+            if relPos == "rightof":
+                tmp = turn1
+                turn1 = turn2
+                turn2 = tmp
+
+            if turn2 == "straight":
+                return True
+            elif turn2 == "right":
+                return False
+            elif turn2 == "left" and turn1 != "right":
+                return True
+            else:
+                return False
+        
+        if relPos == "opposing":
+            if turn1 == "left" or turn2 == "left":
+                return True
+            else:
+                return False
 

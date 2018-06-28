@@ -55,7 +55,7 @@ class Car:
                 rospy.sleep(0.01)
 
         
-        nr_cars = rospy.get_param('nr_cars')
+        self.nr_cars = rospy.get_param('nr_cars')
         self.save = rospy.get_param('save') and save_id == self.id
 
         if self.save:
@@ -68,14 +68,14 @@ class Car:
         use_riskestimation = cd["use_riskestimation"]
 
         #save all measurements from all cars. time as key. older entries are removed to avoid too large dicts
-        self.state_dicts = [{} for _ in range(nr_cars)]
+        self.state_dicts = [{} for _ in range(self.nr_cars)]
 
         self.course = Course(travelling_direction, turn)
         self.x, self.y, self.theta = self.course.getStartingPose(int(startdist))
 
         #the other vehicle's state topics
         if use_riskestimation:
-            state_sub_topics = ["car_state" + str(i) for i in range(nr_cars) if i != self.id]
+            state_sub_topics = ["car_state" + str(i) for i in range(self.nr_cars) if i != self.id]
 
             for s in state_sub_topics:
                 rospy.Subscriber(s, cm.CarState, self.stateCallback, queue_size=10)
@@ -113,13 +113,11 @@ class Car:
         
 
     def stateCallback(self, msg):
-
         if self.t - msg.t > 1/RATE * discard_measurement_time: # old af message, flush queue. 
             return 
 
         #save measurement
         self.state_dicts[msg.id][msg.t] = (msg.x, msg.y, msg.theta, msg.speed)
-
         #if we have all measurements for a certain time-stamp perform risk estimation
         if all([(msg.t in d) for d in self.state_dicts]):
             ms = [d[msg.t] for d in self.state_dicts]
@@ -153,19 +151,20 @@ class Car:
                 speed+np.random.normal(0,dev[3]/5)) for x,y,theta,speed in ms]
                 
                 self.risk_estimator.update_state(actual_time, ms, [dev]*len(ms))
+                
 
-                es_go = self.risk_estimator.expectationDensities[self.id, self.course.turn]  
-                #print "Expectation to go: ", es_go, "id = ", self.id
+                es_go = self.risk_estimator.expectationDensities[self.id, self.course.turn]
+                print es_go, self.id
 
                 if es_go > Es_threshold or self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta):
                     self.Is = "go"
                 else:
                     self.Is = "stop"
                 
-                #print self.risk_estimator.getRisk(2)
-                #risk = max(self.risk_estimator.get_risk())
-                #if risk > risk_threshold:
-                #    self.Is = "stop"
+                risk = max([self.risk_estimator.getRisk2(self.id, i) for i in range(self.nr_cars)])
+                
+                if risk > risk_threshold:
+                    self.Is = "stop"
                 
 
     def update(self):
@@ -245,16 +244,18 @@ class Car:
         diff = target - (s + ns)
         print "diff", diff
         rospy.sleep(diff)
-        if self.id == 0:
-            rospy.delete_param("sync_time")
         self.pid.clear()
         self.last_time = rospy.get_time()
 
         rate = rospy.Rate(RATE)
-    
+        first = True
         while not rospy.is_shutdown():
             rate.sleep()
             self.update()
+            if self.id == 0 and first:
+                rospy.delete_param("sync_time")
+                first = False
+        
 
 
 if __name__ == '__main__':
