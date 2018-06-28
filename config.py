@@ -13,15 +13,15 @@ def car(td, turn, sd, re):
 
 CARS = {
     0 : car("south", "straight", 65, True),
-    1 : car("north", "left", 90, False),
-    2 : car("north", "left", 00, True),
+    1 : car("south", "left", 20, False),
+    2 : car("south", "right", 45, True),
     3 : car("north", "left", 50, True),
-    4 : car("south", "straight", 60, True),
-    5 : car("east", "right", 0, True),
-    6 : car("north", "right", 90, True),
+    4 : car("north", "straight", 30, True),
+    5 : car("east", "right", 50, True),
+    6 : car("east", "left", 70, True),
     7 : car("west", "right", 100, True),
-    8 : car("north", "right", 0, True),
-    9 : car("east", "straight", 70, True)
+    8 : car("west", "left", 20, True),
+    9 : car("west", "straight", 70, True)
 }
 
 SIM_CONFIG = {
@@ -29,12 +29,12 @@ SIM_CONFIG = {
     "theta_deviation" : 0.1,
     "speed_deviation": 0.2,
     "slowdown": 1.5,
-    "rate": 20,
+    "rate": 10,
     "pid" : (0.4, 0.0, 0.05),
     "lookahead": 5,
     "carlength": 4,
 
-    "discard_measurement_time": 0.2, #seconds
+    "discard_measurement_time": 0.3, #seconds
     "Es_threshold": 0.5,
     "risk_threshold": 0.3,
     "save_id" : 1

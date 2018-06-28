@@ -109,7 +109,7 @@ class RE2:
             for egocar in range(self.nr_cars):
                 td_ego = self.travelling_directions[egocar]
                 for turn_ego in self.turns:
-                    x,y,theta,speed = ms[car]
+                    x,y,theta,speed = ms[egocar]
                     c = self.intersection.courses[td_ego, turn_ego]
                     if c.hasLeftIntersection(x,y,theta):
                         E[egocar, turn_ego] = 1.0
@@ -117,8 +117,10 @@ class RE2:
                     
                     min_es = 1.0
                     for othercar in range(self.nr_cars):
+                        
                         if egocar == othercar:
                             continue
+
                         td_other = self.travelling_directions[othercar]
 
                         if self.intersection.hasRightOfWay(td_ego, turn_ego, td_other):
@@ -129,6 +131,8 @@ class RE2:
                         for turn_other in self.turns:
                             mean_other, std_other = T[othercar, turn_other]
                             gap_mean, gap_std = mean_other - mean_ego, sqrt(std_ego**2 + std_other**2)
+                            
+
                             
                             self.G[egocar, turn_ego, othercar, turn_other] = gap_mean, gap_std
                             p_gap_enough = 1 - (normal_cdf(5, gap_mean, gap_std) - \
@@ -173,6 +177,38 @@ class RE2:
                                 pass
 
             return sum
+
+    def checkVehicleInFront(self, car):
+        with self.lock:
+            ego_td = self.travelling_directions[car]
+            ms_ego = self.latest_ms[car]
+            d_min = 999999999
+            for c in range(self.nr_cars):
+                if c == car:
+                    continue
+                if self.travelling_directions[c] == ego_td:
+                    
+                    for turn in self.turns:
+                        pic = self.intentionDensities[car][turn, "go"] + self.intentionDensities[car][turn, "stop"]
+                        pio = self.intentionDensities[c][turn, "go"] + self.intentionDensities[c][turn, "stop"]
+                        
+                        if pic * pio > 0.05:
+                            course = self.intersection.courses[ego_td, turn]
+                            d_ego = course.getDistance(*course.rotate(*ms_ego[:3]))
+                            other_ms = self.latest_ms[c]
+                            d_other = course.getDistance(*course.rotate(*other_ms[:3]))
+                            d = d_other - d_ego
+                            if d < d_min and d > 0:
+                                d_min = d
+                                speed = other_ms[-1]
+                
+            if d_min < 5 + 2 * ms_ego[-1]:
+                return speed
+            else:
+                return -1
+                            
+                        
+                    
 
 
     def getRisk(self, car):

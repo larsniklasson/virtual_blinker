@@ -65,7 +65,7 @@ class Car:
         travelling_direction = cd["travelling_direction"]
         turn = cd["turn"]
         startdist = cd["starting_distance"]
-        use_riskestimation = cd["use_riskestimation"]
+        self.use_riskestimation = cd["use_riskestimation"]
 
         #save all measurements from all cars. time as key. older entries are removed to avoid too large dicts
         self.state_dicts = [{} for _ in range(self.nr_cars)]
@@ -74,11 +74,10 @@ class Car:
         self.x, self.y, self.theta = self.course.getStartingPose(int(startdist))
 
         #the other vehicle's state topics
-        if use_riskestimation:
-            state_sub_topics = ["car_state" + str(i) for i in range(self.nr_cars) if i != self.id]
+        state_sub_topics = ["car_state" + str(i) for i in range(self.nr_cars) if i != self.id]
 
-            for s in state_sub_topics:
-                rospy.Subscriber(s, cm.CarState, self.stateCallback, queue_size=10)
+        for s in state_sub_topics:
+            rospy.Subscriber(s, cm.CarState, self.stateCallback, queue_size=10)
 
         #for noisy measurements
         self.state_pub = rospy.Publisher('car_state' + str(self.id), cm.CarState, queue_size=10)
@@ -89,7 +88,7 @@ class Car:
 
         
         self.Is = "go"
-        if not use_riskestimation: self.Is = "go"
+        if not self.use_riskestimation: self.Is = "go"
 
         self.speed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
 
@@ -154,18 +153,20 @@ class Car:
                 
 
                 es_go = self.risk_estimator.expectationDensities[self.id, self.course.turn]
-                print es_go, self.id
+                #print es_go, self.id
 
-                if es_go > Es_threshold or self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta):
-                    self.Is = "go"
-                else:
-                    self.Is = "stop"
+                if self.use_riskestimation:
+                    if es_go > Es_threshold or self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta):
+                        self.Is = "go"
+                    else:
+                        self.Is = "stop"
+                    
+                    risk = max([self.risk_estimator.getRisk2(self.id, i) for i in range(self.nr_cars)])
+                    if risk > risk_threshold:
+                        self.Is = "stop"
+                    
                 
-                risk = max([self.risk_estimator.getRisk2(self.id, i) for i in range(self.nr_cars)])
-                
-                if risk > risk_threshold:
-                    self.Is = "stop"
-                
+
 
     def update(self):
         
@@ -191,6 +192,15 @@ class Car:
         
         # follow speed profile
         targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
+
+        try:
+            fs = self.risk_estimator.checkVehicleInFront(self.id)
+            
+            if fs != -1:
+                targetspeed = min(targetspeed, fs)
+            
+        except:
+            pass
         if targetspeed < self.speed:
             targetacc = self.course.catchup_deacc
             self.speed += dt*targetacc/SLOWDOWN
