@@ -1,40 +1,57 @@
 from utils.Intersection import Intersection
+import numpy as np
+import time
+import random
+import numpy as np
 
 GEN_CONFIG = {
     "intersection": Intersection(),
     #plot,save,nr_cars done in sim.launch
 }
 
-def car(td, turn, sd, re):
+def car(td, turn, sd, re, spd):
     return {"travelling_direction": td, 
             "turn": turn, 
             "starting_distance": sd, 
-            "use_riskestimation": re}
-
+            "use_riskestimation": re,
+            "speedDev": spd}
 CARS = {
-    0 : car("south", "straight", 65, True),
-    1 : car("south", "left", 20, False),
-    2 : car("south", "right", 45, True),
-    3 : car("north", "left", 50, True),
-    4 : car("north", "straight", 30, True),
-    5 : car("east", "right", 50, True),
-    6 : car("east", "left", 70, True),
-    7 : car("west", "right", 100, True),
-    8 : car("west", "left", 20, True),
-    9 : car("west", "straight", 70, True)
+    0 : car("south", "straight", 70, True, 0),
+    1 : car("west", "right", 70, True, 0),
+    2 : car("north", "straight", 70, True, 0),
+    3 : car("east", "straight", 70, False, 0),
+    4 : car("south", "right", 50, True, 0),
+    5 : car("west", "right", 50, True, 0),
+    6 : car("north", "straight", 50, True, 0),
+    7 : car("east", "right", 50, True, 0),
+    8 : car("south", "left", 30, True, 0),
+    9 : car("north", "straight", 30, True, 0)
 }
 
+
+t = np.random.choice(["left", "right", "straight"], size=10, p = [0.2, 0.4, 0.4])
+r = (np.random.random(10) - 0.5) * 20
+s = (np.random.random(10) -0.5) * 6
+b = np.random.random(10) <= 0.5
+
+for k,v in CARS.iteritems():
+    v["turn"] = t[k]
+    v["starting_distance"] += r[k]
+    v["use_riskestimation"] = b[k]
+    v["speedDev"] = s[k]
+
+
 SIM_CONFIG = {
-    "xy_deviation" : 0.3,
-    "theta_deviation" : 0.1,
-    "speed_deviation": 0.2,
+    "x_deviation" : 0.2,
+    "y_deviation" : 0.2,
+    "theta_deviation" : 0.04,
+    "speed_deviation": 0.1,
     "slowdown": 1.5,
-    "rate": 10,
+    "rate": 25,
     "pid" : (0.4, 0.0, 0.05),
     "lookahead": 5,
     "carlength": 4,
-
-    "discard_measurement_time": 0.3, #seconds
+    "discard_measurement_time": 0.15, #seconds
     "Es_threshold": 0.5,
     "risk_threshold": 0.3,
     "save_id" : 1
@@ -43,6 +60,4 @@ SIM_CONFIG = {
 
 RISK_CONFIG = {
     "grant_threshold": 0.9
-
-
 }

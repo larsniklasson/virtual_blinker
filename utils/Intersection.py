@@ -167,3 +167,26 @@ class Intersection:
             else:
                 return False
 
+                   
+    def merge(self, td1, turn1, td2, turn2):
+        if td1 == td2:
+            return True
+        relPos = self.getRelativePosition(td1, td2)
+        if relPos in ["leftof", "rightof"]:
+
+            if relPos == "rightof":
+                tmp = turn1
+                turn1 = turn2
+                turn2 = tmp
+
+            if turn1 == "straight" and turn2 == "left" or \
+               turn1 == "right" and turn2 == "straight":
+                return True
+            else:
+                return False
+        elif relPos == "opposing":
+            if turn1 == "right" and turn2 == "left" or \
+                turn2 == "right" and turn1 == "left":
+                return True
+            else:
+                return False    

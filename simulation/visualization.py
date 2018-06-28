@@ -57,7 +57,7 @@ class Visualizer:
         for i in range(nr_cars):
 
             rospy.Subscriber('car_path' + str(i), cm.Path, self.pathCallback)
-            rospy.Subscriber('true_car_state' + str(i), cm.CarState, self.stateCallback)
+            rospy.Subscriber('true_car_state' + str(i), cm.CarStateTrue, self.stateCallback)
             self.marker_pubs.append(rospy.Publisher('rviz_car_marker' + str(i), Marker, queue_size=10))
             self.path_pubs.append(rospy.Publisher("rviz_car_path" + str(i), Path, queue_size=10))
 

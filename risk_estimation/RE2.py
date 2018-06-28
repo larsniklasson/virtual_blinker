@@ -97,8 +97,6 @@ class RE2:
 
                     s = abs(m-a)
 
-
-                    #print car, turn, m, s
                     T[car, turn] = m, s
             
 
@@ -132,14 +130,11 @@ class RE2:
                             mean_other, std_other = T[othercar, turn_other]
                             gap_mean, gap_std = mean_other - mean_ego, sqrt(std_ego**2 + std_other**2)
                             
-
-                            
                             self.G[egocar, turn_ego, othercar, turn_other] = gap_mean, gap_std
                             p_gap_enough = 1 - (normal_cdf(5, gap_mean, gap_std) - \
                                         normal_cdf(-1, gap_mean, gap_std))
                             
-                            e_sum += p_gap_enough * (self.intentionDensities[othercar][turn_other, "go"] + \
-                                                        self.intentionDensities[othercar][turn_other, "stop"])
+                            e_sum += p_gap_enough * self.intentionCarTurn(othercar, turn_other)
                         
                         if e_sum < min_es:
                             min_es = e_sum
@@ -168,66 +163,71 @@ class RE2:
                             try:
                                 gap_mean, gap_std = self.G[risk_car, risk_turn, ego_car, ego_turn]
                                 p_gap_not_enough = (normal_cdf(3, gap_mean, gap_std) - \
-                                        normal_cdf(0, gap_mean, gap_std))
+                                        normal_cdf(-1, gap_mean, gap_std))
                                 
                                 sum += (1-e) * self.intentionDensities[risk_car][risk_turn, "go"] * \
-                                    (self.intentionDensities[ego_car][ego_turn, "go"] + self.intentionDensities[ego_car][ego_turn, "stop"])\
+                                    self.intentionCarTurn(ego_car, ego_turn)\
                                     * p_gap_not_enough
                             except:
                                 pass
 
             return sum
 
-    def checkVehicleInFront(self, car):
+    def checkVehicleInFront(self, ego_car):
         with self.lock:
-            ego_td = self.travelling_directions[car]
-            ms_ego = self.latest_ms[car]
             d_min = 999999999
-            for c in range(self.nr_cars):
-                if c == car:
+            ego_ms = self.latest_ms[ego_car]
+            ego_td = self.travelling_directions[ego_car]
+            for ego_turn in self.turns:
+                ego_course = self.intersection.courses[ego_td, ego_turn]
+                ego_P = self.intentionCarTurn(ego_car, ego_turn)
+                if ego_P < 0.15:
                     continue
-                if self.travelling_directions[c] == ego_td:
-                    
-                    for turn in self.turns:
-                        pic = self.intentionDensities[car][turn, "go"] + self.intentionDensities[car][turn, "stop"]
-                        pio = self.intentionDensities[c][turn, "go"] + self.intentionDensities[c][turn, "stop"]
-                        
-                        if pic * pio > 0.05:
-                            course = self.intersection.courses[ego_td, turn]
-                            d_ego = course.getDistance(*course.rotate(*ms_ego[:3]))
-                            other_ms = self.latest_ms[c]
-                            d_other = course.getDistance(*course.rotate(*other_ms[:3]))
+
+                for other_car in range(self.nr_cars):
+                    if other_car == ego_car:
+                        continue
+                    other_ms = self.latest_ms[other_car]
+                    other_td = self.travelling_directions[other_car]
+                    for other_turn in self.turns:
+                        other_P = self.intentionCarTurn(other_car, other_turn)
+                        if other_P < 0.15:
+                            continue
+                        if ego_td == other_td and ego_turn == other_turn or ego_course.hasLeftIntersection(*ego_ms[:3]) and self.intersection.merge(ego_td, ego_turn, other_td, other_turn):
+                            
+                            d_ego = ego_course.getDistance(*ego_ms[:3], rotate=True)
+                            d_other = ego_course.getDistance(*other_ms[:3], rotate=True)
                             d = d_other - d_ego
                             if d < d_min and d > 0:
                                 d_min = d
                                 speed = other_ms[-1]
-                
-            if d_min < 5 + 2 * ms_ego[-1]:
+        
+            if d_min < 5 + 2 * ego_ms[-1]:
                 return speed
             else:
                 return -1
-                            
-                        
-                    
 
 
+    """
     def getRisk(self, car):
         with self.lock:
             sum = 0
             for turn in self.turns:
-                #es=go and is = stop
                 e = self.expectationDensities[car, turn]
                 #sum += e * self.intentionDensities[car][turn, "stop"]
-
                 sum += (1-e) * self.intentionDensities[car][turn, "go"]
 
             return sum
+    """
 
     def noConflict(self, car, turn):
         with self.lock:
             return self.expectationDensities[car, turn] > RISK_CONFIG["grant_threshold"]
         
         
+    def intentionCarTurn(self, car, turn):
+        a = self.intentionDensities[car]
+        return a[turn, "go"] + a[turn, "stop"]
 
 def getOpt(c, (x,y,theta,speed), Is):
     x,y,theta = c.rotate(x,y,theta)

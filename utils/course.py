@@ -148,7 +148,9 @@ class Course:
         else:
             return self.sp_go.getSpeed(d)
 
-    def getDistance(self, x, y, theta):
+    def getDistance(self, x, y, theta, rotate = False):
+        if rotate:
+            x,y,theta = self.rotate(x,y,theta)
 
         if self.turn == "straight" or y < self.curve_start[1]:
             return y - self.starting_point[1]

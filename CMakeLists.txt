@@ -47,6 +47,7 @@ find_package(catkin REQUIRED COMPONENTS
    CarState.msg
    Position.msg
    Path.msg
+   CarStateTrue.msg
  )
 
 ## Generate services in the 'srv' folder
