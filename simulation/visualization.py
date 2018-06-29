@@ -43,18 +43,19 @@ class Visualizer:
         rospy.init_node('visualizer')
 
         
-        nr_cars = 10
+        self.nr_cars = 10
 
-        self.markers = [CarMarker(colors[i]) for i in range(nr_cars)]
+        self.markers = [CarMarker(colors[i]) for i in range(self.nr_cars)]
 
         
         matrix = readImgToMatrix("map.png")
         _map = getOccupanceGrid(matrix)
         
+        rospy.Subscriber("wipe_map", String, self.wipeCallBack)
         
         self.marker_pubs = []
         self.path_pubs = []
-        for i in range(nr_cars):
+        for i in range(self.nr_cars):
 
             rospy.Subscriber('car_path' + str(i), cm.Path, self.pathCallback)
             rospy.Subscriber('true_car_state' + str(i), cm.CarStateTrue, self.stateCallback)
@@ -69,6 +70,24 @@ class Visualizer:
         
         map_pub.publish(_map)
 
+    def wipeCallBack(self, msg):
+        for i in range(self.nr_cars):
+            self.markers[i].setMarkerPosition(-100,-100)
+            self.marker_pubs[i].publish(self.markers[i].marker)
+            self.path_pubs[i].publish(self.getDummyPath())
+
+
+    def getDummyPoseStamped(self):
+        ps = PoseStamped()
+        ps.header.frame_id = HEADER_FRAME
+        ps.pose.position.z = 5000
+        return ps
+
+    def getDummyPath(self):
+        p = Path()
+        p.header.frame_id = HEADER_FRAME
+        p.poses.append(self.getDummyPoseStamped())
+        return p
     
     def stateCallback(self, msg):
         x = msg.x 
@@ -85,7 +104,7 @@ class Visualizer:
         
         theta = msg.theta
 
-        m = self.markers[msg.id-1]
+        m = self.markers[msg.id]
         
         #x,y is front of car. find centre of car
         xc = x- (m.length/2) *(math.cos(theta))
@@ -101,7 +120,7 @@ class Visualizer:
         
     def pathCallback(self, data):
         p = getPathMessage(data.path)
-        self.path_pubs[data.id-1].publish(p)
+        self.path_pubs[data.id].publish(p)
         
         
     

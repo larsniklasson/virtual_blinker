@@ -12,6 +12,7 @@ import random
 from geometry import *
 from utils.course import *
 from risk_estimation.RE2 import *
+from std_msgs.msg import String
 
 from config import *
 from utils.Intersection import *
@@ -47,6 +48,7 @@ class Car:
 
         if self.id == 0:
             rospy.set_param("sync_time", rospy.get_rostime().secs + 4)
+            self.wipe_p = rospy.Publisher("wipe_map", String, queue_size=10)
         
         while 1:
             if rospy.has_param("sync_time"):
@@ -57,11 +59,13 @@ class Car:
 
         
         self.nr_cars = rospy.get_param('nr_cars')
+        random_ = rospy.get_param('random')
         self.save = rospy.get_param('save') and save_id == self.id
 
         if self.save:
             open('../risk_estimation/debug.txt', 'w').close()
 
+        CARS = getCarDict(random_)
 
         cd = CARS[self.id]
         travelling_direction = cd["travelling_direction"]
@@ -102,9 +106,11 @@ class Car:
         self.pid = PID(*SIM_CONFIG["pid"])
 
         self.t = 0
-
+        rospy.sleep(0.1)
         #let publishers register
+        if self.id == 0: self.wipe_p.publish(String(""))
         rospy.sleep(1)
+
         
         self.path_pub.publish(cm.Path([cm.Position(x,y) for x,y in path], self.id))
 
@@ -119,16 +125,16 @@ class Car:
             return 
 
         #save measurement
-        self.state_dicts[msg.id][msg.t] = (msg.x, msg.y, msg.theta, msg.speed, msg.x_dev, msg.y_dev, msg.theta_dev, msg.speed_dev)
+        self.state_dicts[msg.id][msg.t] = (msg.x, msg.y, msg.theta, msg.speed, msg.x_dev, msg.y_dev, msg.theta_dev, msg.speed_dev, msg.blinker)
         #if we have all measurements for a certain time-stamp perform risk estimation
         if all([(msg.t in d) for d in self.state_dicts]):
-            ms, ds = zip(*[ (d[msg.t][:4], d[msg.t][4:]) for d in self.state_dicts])
+            ms, ds, bs = zip(*[ (d[msg.t][:4], d[msg.t][4:8], d[msg.t][8]) for d in self.state_dicts])
             
             actual_time = float(msg.t)/(RATE*SLOWDOWN)
         
             if self.save:
                 with open('../risk_estimation/debug.txt', 'a') as f:
-                    f.write(str((actual_time, ms, ds)) + "\n")
+                    f.write(str((actual_time, ms, ds, bs)) + "\n")
             
             
             if self.fm:
@@ -146,7 +152,7 @@ class Car:
             else:    
 
                 
-                self.risk_estimator.update_state(actual_time, ms, ds)
+                self.risk_estimator.update_state(actual_time, ms, ds, bs)
                 
                 es_go = self.risk_estimator.expectationDensities[self.id, self.course.turn]
                 #print es_go, self.id
@@ -233,15 +239,16 @@ class Car:
         ys = self.y + np.random.normal(0, y_deviation/5.0)
         ts = self.theta + np.random.normal(0, theta_deviation/5.0)
         ss = self.speed + np.random.normal(0, speed_deviation/5.0)
+        blinker = self.course.turn if self.use_riskestimation else ""
 
-        st = xs, ys, ts, ss, x_deviation, y_deviation, theta_deviation, speed_deviation
+        st = xs, ys, ts, ss, x_deviation, y_deviation, theta_deviation, speed_deviation, blinker
         #save current state. Also delete old one
         d = self.state_dicts[self.id]
         d[self.t] = st
         if self.t - 50 in d: del d[self.t - 50]
         
         #publish noisy and true state
-        self.state_pub.publish(cm.CarState(xs, ys, ts, ss, x_deviation, y_deviation, theta_deviation, speed_deviation, self.id, self.t))
+        self.state_pub.publish(cm.CarState(xs, ys, ts, ss, x_deviation, y_deviation, theta_deviation, speed_deviation, blinker, self.id, self.t))
         self.true_state_pub.publish(cm.CarStateTrue(self.x, self.y, self.theta, self.speed, self.id))
         
         
@@ -268,6 +275,7 @@ class Car:
             self.update()
             if self.id == 0 and first:
                 rospy.delete_param("sync_time")
+                rospy.delete_param("random")
                 first = False
         
 

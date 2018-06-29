@@ -36,7 +36,7 @@ class RE2:
                 
             self.intentionDensities[id] = II
     
-    def update_state(self, t, ms, deviations):
+    def update_state(self, t, ms, deviations, blinker):
         with self.lock:
             self.latest_ms = ms
             #intention
@@ -56,6 +56,10 @@ class RE2:
                         e = self.expectationDensities[car,turn]
                         ee = e if i == "go" else 1-e
                         L *= 0.4 + 1.2 * ee
+
+                        if blinker[car] == turn:
+                            L *= 5
+
                         D[turn,i] = L
                 
                 s = sum(D.values())
@@ -197,7 +201,8 @@ class RE2:
                         other_P = self.intentionCarTurn(other_car, other_turn)
                         if other_P < 0.15:
                             continue
-                        if ego_td == other_td and ego_turn == other_turn or ego_course.hasLeftIntersection(*ego_ms[:3]) and self.intersection.merge(ego_td, ego_turn, other_td, other_turn):
+                        ego_hasLeft = ego_course.hasLeftIntersection(*ego_ms[:3])
+                        if ego_td == other_td and (not ego_hasLeft) or ego_hasLeft and self.intersection.merge(ego_td, ego_turn, other_td, other_turn):
                             
                             d_ego = ego_course.getDistance(*ego_ms[:3], rotate=True)
                             d_other = ego_course.getDistance(*other_ms[:3], rotate=True)

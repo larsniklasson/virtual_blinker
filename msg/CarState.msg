@@ -6,5 +6,6 @@ float32 x_dev
 float32 y_dev
 float32 theta_dev
 float32 speed_dev
+string blinker
 int32 id
 int32 t
