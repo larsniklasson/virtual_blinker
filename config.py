@@ -16,10 +16,10 @@ def car(td, turn, sd, re, spd):
             "use_riskestimation": re,
             "speedDev": spd}
 CARS = {
-    0 : car("south", "straight", 70, True, 0),
+    0 : car("north", "left", 60, True, 0),
     1 : car("west", "right", 70, True, 0),
     2 : car("north", "straight", 70, True, 0),
-    3 : car("east", "straight", 70, False, 0),
+    3 : car("east", "straight", 70, True, 0),
     4 : car("south", "right", 50, True, 0),
     5 : car("west", "right", 50, True, 0),
     6 : car("north", "straight", 50, True, 0),
@@ -28,18 +28,18 @@ CARS = {
     9 : car("north", "straight", 30, True, 0)
 }
 
-
+"""
 t = np.random.choice(["left", "right", "straight"], size=10, p = [0.2, 0.4, 0.4])
 r = (np.random.random(10) - 0.5) * 20
 s = (np.random.random(10) -0.5) * 6
-b = np.random.random(10) <= 0.5
+b = np.random.random(10) <= 1.0
 
 for k,v in CARS.iteritems():
     v["turn"] = t[k]
     v["starting_distance"] += r[k]
     v["use_riskestimation"] = b[k]
     v["speedDev"] = s[k]
-
+"""
 
 SIM_CONFIG = {
     "x_deviation" : 0.2,
@@ -52,7 +52,7 @@ SIM_CONFIG = {
     "lookahead": 5,
     "carlength": 4,
     "discard_measurement_time": 0.15, #seconds
-    "Es_threshold": 0.5,
+    "Es_threshold": 0.9,
     "risk_threshold": 0.3,
     "save_id" : 1
 

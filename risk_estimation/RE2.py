@@ -127,6 +127,7 @@ class RE2:
                         e_sum = 0
                         mean_ego, std_ego = T[egocar, turn_ego]
                         for turn_other in self.turns:
+
                             mean_other, std_other = T[othercar, turn_other]
                             gap_mean, gap_std = mean_other - mean_ego, sqrt(std_ego**2 + std_other**2)
                             
@@ -134,8 +135,11 @@ class RE2:
                             p_gap_enough = 1 - (normal_cdf(5, gap_mean, gap_std) - \
                                         normal_cdf(-1, gap_mean, gap_std))
                             
+                            if not self.intersection.doesCoursesIntersect(td_ego, turn_ego, td_other, turn_other):
+                                p_gap_enough = 1
+                            
                             e_sum += p_gap_enough * self.intentionCarTurn(othercar, turn_other)
-                        
+                            
                         if e_sum < min_es:
                             min_es = e_sum
                     

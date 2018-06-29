@@ -99,7 +99,6 @@ class Intersection:
         rel_pos_opposing = self.relativePositions[travelling_direction, other_vehicle_td]
         if self.isOnPrioLane(travelling_direction):
             return self.prioTable[turn][rel_pos_opposing]
-
         else:
             return self.nonPrioTable[turn][rel_pos_opposing]
 
