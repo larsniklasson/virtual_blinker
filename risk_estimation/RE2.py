@@ -6,6 +6,9 @@ import scipy.stats as sp
 from threading import Lock
 from config import *
 
+ww = [None, 3.25, 11.75, pi*11.75/4.0, pi*11.75/2.0 - 3.25]
+turnproj = {"left": [1, 3, 4], "right": [1], "straight": [1, 2]}
+
 def normal_cdf(x, mu, sigma):
     q = math.erf((x-mu) / (sigma*math.sqrt(2.0)))
     return (1.0 + q) / 2.0
@@ -80,28 +83,30 @@ class RE2:
                     tt = c.rotate(*c.getPose(c.getDistance(*c.rotate(x,y,theta))), dir=-1)[2]
                     px, py = x+xd*0.8*cos(tt),y+yd*0.8*sin(tt)
 
-                    if c.getDistance(*c.rotate(px,py,0)) > c.distance_to_crossing:
-                        ps = speed - sd*0.8-0.5
-                    else:
-                        ps = speed + sd*0.8+0.5
-
                     
-
                     mx, my = x-xd*0.8*cos(tt),y-yd*0.8*sin(tt)
 
-                    if c.getDistance(*c.rotate(mx,my,0)) > c.distance_to_crossing:
-                        m_s = speed + sd*0.8+0.5
-                    else:
-                        m_s = speed - sd*0.8-0.5
+                    for i in turnproj[turn]:
+                                            
 
-                    a = c.getTimeToCrossing2(px, py,theta,ps, Is="go")
-                    b = c.getTimeToCrossing2(mx, my,theta,m_s, Is="go")
+                        if c.getDistance(*c.rotate(px,py,0)) > c.distance_to_crossing:
+                            ps = speed - sd*0.8-0.5
+                        else:
+                            ps = speed + sd*0.8+0.5
 
-                    m = (a+b)/2
+                        if c.getDistance(*c.rotate(mx,my,0)) > c.distance_to_crossing:
+                            m_s = speed + sd*0.8+0.5
+                        else:
+                            m_s = speed - sd*0.8-0.5
 
-                    s = abs(m-a)
+                        a = c.getTimeToCrossing2(px, py,theta,ps, Is="go", extra=ww[i])
+                        b = c.getTimeToCrossing2(mx, my,theta,m_s, Is="go", extra=ww[i])
 
-                    T[car, turn] = m, s
+                        m = (a+b)/2
+
+                        s = abs(m-a)
+
+                        T[car, turn, i] = m, s
             
 
             E = {}
@@ -129,19 +134,22 @@ class RE2:
                             continue
                         
                         e_sum = 0
-                        mean_ego, std_ego = T[egocar, turn_ego]
                         for turn_other in self.turns:
-
-                            mean_other, std_other = T[othercar, turn_other]
-                            gap_mean, gap_std = mean_other - mean_ego, sqrt(std_ego**2 + std_other**2)
-                            
-                            self.G[egocar, turn_ego, othercar, turn_other] = gap_mean, gap_std
-                            p_gap_enough = 1 - (normal_cdf(5, gap_mean, gap_std) - \
-                                        normal_cdf(-1, gap_mean, gap_std))
                             
                             if not self.intersection.doesCoursesIntersect(td_ego, turn_ego, td_other, turn_other):
                                 p_gap_enough = 1
-                            
+                            else:
+                                ii,jj = self.intersection.getIJ(td_ego, turn_ego, td_other, turn_other)
+
+                                mean_ego, std_ego = T[egocar, turn_ego, ii]
+
+                                mean_other, std_other = T[othercar, turn_other, jj]
+                                gap_mean, gap_std = mean_other - mean_ego, sqrt(std_ego**2 + std_other**2)
+                                
+                                self.G[egocar, turn_ego, othercar, turn_other] = gap_mean, gap_std
+                                p_gap_enough = 1 - (normal_cdf(3, gap_mean, gap_std) - \
+                                            normal_cdf(-1, gap_mean, gap_std))
+                                
                             e_sum += p_gap_enough * self.intentionCarTurn(othercar, turn_other)
                             
                         if e_sum < min_es:
@@ -150,6 +158,9 @@ class RE2:
                     E[egocar,turn_ego] = min_es
                     
             self.expectationDensities = E
+            print "GAP: ", self.G[5, "left", 4, "straight"]
+            print T[5, "left", 4]
+            print T[4, "straight", 1]
 
 
     def I_error(self, m, dev, td, turn, i):

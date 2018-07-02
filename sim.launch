@@ -10,7 +10,7 @@
 <param name="nr_cars" type="int" value="$(arg nr_cars)"/>
 
 <arg name="random" default="0"/>
-<param name="random" type="bool" value="$(arg random)"/>
+<param name="random" type="int" value="$(arg random)"/>
 
 <arg name="save" default="0"/>
 <param name="save" type="bool" value="$(arg save)"/>

@@ -210,15 +210,15 @@ class Course:
             else:
                 return self.sp_go.getTimeToCrossing(d, speed)
 
-    def getTimeToCrossing2(self, x, y, theta, speed, Is):
+    def getTimeToCrossing2(self, x, y, theta, speed, Is, extra=0):
         x,y,theta = self.rotate(x,y,theta)
 
         #get distance and lookup time to crossing
         d = self.getDistance(x,y,theta)
         if Is == "stop":
-            return self.sp_stop.getTimeToCrossing2(d, speed)
+            return self.sp_stop.getTimeToCrossing2(d, speed, extra=extra)
         else:
-            return self.sp_go.getTimeToCrossing2(d, speed)
+            return self.sp_go.getTimeToCrossing2(d, speed, extra=extra)
 
     
     def predictNextState(self, x, y, theta, speed, t, Is, deviations, pdc):

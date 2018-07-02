@@ -103,6 +103,52 @@ class Intersection:
         else:
             return self.nonPrioTable[turn][rel_pos_opposing]
 
+
+    def getIJ(self, ego_td, ego_turn, other_td, other_turn):
+        relPos = self.getRelativePosition(ego_td, other_td)
+        ret = None
+        flag = False
+        if relPos in ["leftof", "rightof"]:
+            if relPos == "rightof":
+                tmp = ego_turn
+                ego_turn = other_turn
+                other_turn = tmp
+                flag = True
+
+            if ego_turn == "left":
+                if other_turn == "left":
+                    ret = 3,3
+                elif other_turn == "straight":
+                    ret = 1, 2
+            elif ego_turn == "straight":
+                if other_turn == "left":
+                    ret = 2, 4
+                elif other_turn == "straight":
+                    ret = 1, 2
+            elif ego_turn == "right":
+                if other_turn == "straight":
+                    ret = 1, 2
+        
+        if relPos == "opposing":
+            if ego_turn == "left":
+                if other_turn in ["right", "straight"]:
+                    ret = 4, 1
+                elif other_turn == "left":
+                    ret = 3,3
+            elif ego_turn == "right":
+                if other_turn == "left":
+                    ret = 1, 4
+            elif ego_turn == "straight":
+                if other_turn == "left":
+                    ret = 1,4
+
+        if not ret:
+            raise Exception('this shouldnt happen, IJ')
+
+        if flag:
+            ret = (ret[1], ret[0])
+        
+        return ret
     
     def getTravellingDirection(self, x, y, theta):
         if theta > math.pi:

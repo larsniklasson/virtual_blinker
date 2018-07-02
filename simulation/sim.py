@@ -60,6 +60,8 @@ class Car:
         
         self.nr_cars = rospy.get_param('nr_cars')
         random_ = rospy.get_param('random')
+        np.random.seed(random_)
+        random.seed(random_)
         self.save = rospy.get_param('save') and save_id == self.id
 
         if self.save:
@@ -167,9 +169,10 @@ class Car:
                 
                 if risk > risk_threshold:
                     self.emergency_break = True
+                    print "Emergency break activated on car ", self.id
                 else:
                     self.emergency_break = False
-                
+
                 
                 
 

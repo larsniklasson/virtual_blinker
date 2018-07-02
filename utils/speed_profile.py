@@ -121,23 +121,21 @@ class SpeedProfile:
                 return r.solveInverseIntegral(distance, x) + self.getTimeToCrossingFollowProfile(x)
             
 
-    def getTimeToCrossing2(self, distance, speed):
+    def getTimeToCrossing2(self, distance, speed, extra=0):
+        
+        dd = self.distance_at_crossing + extra
         ideal_speed = self.getSpeed(distance)
         diff = speed - ideal_speed
         diff = max(-10/3.6, diff)
 
         if distance <= self.distance_at_crossing:
-            fl = [(d, f.addDiff(diff)) for d, f in self.getFsCrossing(distance, limit=self.distance_at_crossing)]
-            return self.getTimeToCrossingFollowProfile(distance, fl)
+            fl = [(d, f.addDiff(diff)) for d, f in self.getFsCrossing(distance, limit=dd)]
+            return self.getTimeToCrossingFollowProfile(distance, fl, limit=dd)
         else:
-            fl = [(d, f.addDiff(diff)) for d, f in self.getFsCrossing(self.distance_at_crossing, limit=distance)]
-            return -self.getTimeToCrossingFollowProfile(self.distance_at_crossing, fl, distance)
+            fl = [(d, f.addDiff(diff)) for d, f in self.getFsCrossing(dd, limit=distance)]
+            return -self.getTimeToCrossingFollowProfile(dd, fl, distance)
 
 
-        
-
-
-        
 
     def getTimeToCrossingFollowProfile(self, distance, function_list=None, limit=None):
         if not limit:
