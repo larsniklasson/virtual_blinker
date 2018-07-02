@@ -291,6 +291,12 @@ class Course:
 
         #lookup current distance and then predict the distance (and speed) after t sec
         d = self.getDistance(x,y,theta)
+
+        if Is=="stop" and d > self.distance_to_crossing:
+            x,y,theta = self.rotate(3.25, -7.5, pi/2, dir=-1)
+            return x,y,theta, 0
+
+
         if Is == "stop":
             newd, newspeed = self.sp_stop.predict(d, speed, t)
         else:

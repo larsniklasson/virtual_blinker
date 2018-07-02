@@ -325,7 +325,8 @@ class Car:
         if self.t - 50 in d: del d[self.t - 50]
 
         #publish noisy and true state
-        self.state_pub.publish(cm.CarState(xs, ys, ts, ss, self.id, self.t))
+        if self.id == 1 or self.t < 50:
+            self.state_pub.publish(cm.CarState(xs, ys, ts, ss, self.id, self.t))
         self.true_state_pub.publish(cm.CarState(self.x, self.y, self.theta, self.speed, self.id, self.t))
 
         # print actual_time
