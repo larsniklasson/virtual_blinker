@@ -136,6 +136,7 @@ class Car:
         self.watch_sender_Tman_upperbound  = None
         self.watch_sender_not_going_to_finish = False
 
+        self.last_all_ms = rospy.get_time()
 
 
         self.nr_particles_per_particle_filter = total_nr_particles / (nr_cars ** 2)
@@ -156,6 +157,8 @@ class Car:
             ms = [d[msg.t] for d in self.state_dicts]
             
             actual_time = float(msg.t)/(RATE*SLOWDOWN)
+
+            self.last_all_ms = rospy.get_time()
         
             if self.save and save_id == self.id:
                 self.f.write(str((actual_time, ms, (self.id, self.course.turn, self.Is))) + "\n")
@@ -262,6 +265,9 @@ class Car:
         self.y += v * sin(self.theta)
         self.theta += v * tan(steering_angle) / carlength
         
+        if rospy.get_time() - self.last_all_ms > 1:
+            self.Is = "stop"
+
         # follow speed profile
         targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
         if self.id == 1 and self.watch_sender:
