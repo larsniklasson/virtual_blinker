@@ -294,7 +294,7 @@ class Course:
 
         if Is=="stop" and d > self.distance_to_crossing:
             x,y,theta = self.rotate(3.25, -7.5, pi/2, dir=-1)
-            return x,y,theta, 0
+            return (x,y,theta, 0), (0.01, 0.01, 0.01, 0.01)
 
 
         if Is == "stop":
