@@ -196,20 +196,7 @@ class Course:
         else:
             return d >= self.distance_to_crossing + self.radius*pi/2-2.5
     
-    def getTimeToCrossing(self, x, y, theta, speed, Is):
-        x,y,theta = self.rotate(x,y,theta)
-
-        #get distance and lookup time to crossing
-        d = self.getDistance(x,y,theta)
-        diff = d - self.distance_to_crossing
-        if diff >= 0:
-            return -diff/speed
-        else:
-            if Is == "stop":
-                return self.sp_stop.getTimeToCrossing(d, speed)
-            else:
-                return self.sp_go.getTimeToCrossing(d, speed)
-
+    
     def getTimeToCrossing2(self, x, y, theta, speed, Is, extra=0):
         x,y,theta = self.rotate(x,y,theta)
 

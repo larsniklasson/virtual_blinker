@@ -48,7 +48,7 @@ def generateRandom():
     t = np.random.choice(["left", "right", "straight"], size=10, p = [0.4, 0.4, 0.2])
     #r = (np.random.random(10) - 0.5) * 20
     s = (np.random.random(10) -0.5) * 6
-    b = np.random.random(10) <= 1.0
+    b = np.random.random(10) <= 0.8
 
     for k,v in CARS_RANDOM.iteritems():
         if v["travelling_direction"] in ["south", "west"] and t[k] == "left":

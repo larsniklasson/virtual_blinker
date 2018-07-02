@@ -158,9 +158,6 @@ class RE2:
                     E[egocar,turn_ego] = min_es
                     
             self.expectationDensities = E
-            print "GAP: ", self.G[5, "left", 4, "straight"]
-            print T[5, "left", 4]
-            print T[4, "straight", 1]
 
 
     def I_error(self, m, dev, td, turn, i):
@@ -182,7 +179,7 @@ class RE2:
                             try:
                                 gap_mean, gap_std = self.G[risk_car, risk_turn, ego_car, ego_turn]
                                 p_gap_not_enough = (normal_cdf(3, gap_mean, gap_std) - \
-                                        normal_cdf(-1, gap_mean, gap_std))
+                                        normal_cdf(-0.5, gap_mean, gap_std))
                                 
                                 sum += (1-e) * self.intentionDensities[risk_car][risk_turn, "go"] * \
                                     self.intentionCarTurn(ego_car, ego_turn)\

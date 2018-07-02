@@ -93,14 +93,13 @@ class SpeedProfile:
 
 
     #get predicted time to reach crossing
-    def getTimeToCrossing(self, distance, speed):
+    def getTimeToCrossing(self, distance, speed, function_list, limit):
 
-        function_list = self.getFsCrossing(distance)
         ideal_speed = function_list[0][1].getValue(distance)
 
         if abs(speed - ideal_speed) < 0.1:
             #alread matching profile
-            return self.getTimeToCrossingFollowProfile(distance, function_list)
+            return self.getTimeToCrossingFollowProfile(distance, function_list, limit)
 
         elif speed > ideal_speed:
             #slow down 
@@ -113,12 +112,12 @@ class SpeedProfile:
 
         for f_limit, f in function_list:
             x = f.solveRoot(r) #intersection_point
-            if x > self.distance_at_crossing:
+            if x > limit:
                 #intersection point happened after crossing. means we just follow r until the crossing and get time until it reaches
-                return r.solveInverseIntegral(distance,self.distance_at_crossing)
+                return r.solveInverseIntegral(distance,limit)
             if x < f_limit:
                 #intersection happened before function limit, get the time it took and then follow the profile
-                return r.solveInverseIntegral(distance, x) + self.getTimeToCrossingFollowProfile(x)
+                return r.solveInverseIntegral(distance, x) + self.getTimeToCrossingFollowProfile(x, function_list, limit)
             
 
     def getTimeToCrossing2(self, distance, speed, extra=0):
@@ -126,11 +125,17 @@ class SpeedProfile:
         dd = self.distance_at_crossing + extra
         ideal_speed = self.getSpeed(distance)
         diff = speed - ideal_speed
-        diff = max(-10/3.6, diff)
+
+        dist_to_crossing = abs(distance - self.distance_at_crossing) 
+        c = dist_to_crossing/float(self.distance_at_crossing)
+
+        f = min(-10*0.2, -10*c)
+
+        diff = max(f/3.6, diff)
 
         if distance <= self.distance_at_crossing:
             fl = [(d, f.addDiff(diff)) for d, f in self.getFsCrossing(distance, limit=dd)]
-            return self.getTimeToCrossingFollowProfile(distance, fl, limit=dd)
+            return self.getTimeToCrossing(distance, speed, fl, limit=dd)
         else:
             fl = [(d, f.addDiff(diff)) for d, f in self.getFsCrossing(dd, limit=distance)]
             return -self.getTimeToCrossingFollowProfile(dd, fl, distance)

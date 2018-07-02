@@ -165,7 +165,7 @@ class Car:
                     else:
                         self.Is = "stop"
                     
-                risk = max([self.risk_estimator.getRisk2(self.id, i) for i in range(self.nr_cars)])
+                risk = max([self.risk_estimator.getRisk2(self.id, i) for i in range(self.nr_cars) if i != self.id])
                 
                 if risk > risk_threshold:
                     self.emergency_break = True
