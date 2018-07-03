@@ -4,7 +4,10 @@ GEN_CONFIG = {
     "wipe_plot_dir": True,
     "intersection": Intersection(),
     "save_directory": "../experiment_results/blue_accelerate_green_constant/",
-    "simulation_end_time": 20.0
+    "simulation_end_time": 20.0,
+    "break_communication": False,
+    "communication_break_time" : 20,
+    "communication_breaking_cars" : [0,1]
 
     #plot,save,nr_cars done in sim.launch
 

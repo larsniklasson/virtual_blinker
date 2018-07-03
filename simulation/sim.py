@@ -325,8 +325,11 @@ class Car:
         if self.t - 50 in d: del d[self.t - 50]
 
         #publish noisy and true state
-        if 1 or self.id == 1 or self.t < 50:
+        if (GEN_CONFIG["break_communication"] and self.id in GEN_CONFIG["communication_breaking_cars"] and self.t > GEN_CONFIG["communication_break_time"]):
+            pass
+        else:
             self.state_pub.publish(cm.CarState(xs, ys, ts, ss, self.id, self.t))
+    
         self.true_state_pub.publish(cm.CarState(self.x, self.y, self.theta, self.speed, self.id, self.t))
 
         # print actual_time
