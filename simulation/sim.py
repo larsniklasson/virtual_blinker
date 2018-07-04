@@ -127,16 +127,16 @@ class Car:
             return 
 
         #save measurement
-        self.state_dicts[msg.id][msg.t] = (msg.x, msg.y, msg.theta, msg.speed, msg.x_dev, msg.y_dev, msg.theta_dev, msg.speed_dev, msg.blinker)
+        self.state_dicts[msg.id][msg.t] = (msg.x, msg.y, msg.theta, msg.speed, msg.x_dev, msg.y_dev, msg.theta_dev, msg.speed_dev, msg.blinker, msg.emergency_break)
         #if we have all measurements for a certain time-stamp perform risk estimation
         if all([(msg.t in d) for d in self.state_dicts]):
-            ms, ds, bs = zip(*[ (d[msg.t][:4], d[msg.t][4:8], d[msg.t][8]) for d in self.state_dicts])
+            ms, ds, bs, eb = zip(*[ (d[msg.t][:4], d[msg.t][4:8], d[msg.t][8], d[msg.t][9]) for d in self.state_dicts])
             
             actual_time = float(msg.t)/(RATE*SLOWDOWN)
         
             if self.save:
                 with open('../risk_estimation/debug.txt', 'a') as f:
-                    f.write(str((actual_time, ms, ds, bs)) + "\n")
+                    f.write(str((actual_time, ms, ds, bs, eb)) + "\n")
             
             
             if self.fm:
@@ -154,7 +154,7 @@ class Car:
             else:    
 
                 
-                self.risk_estimator.update_state(actual_time, ms, ds, bs)
+                self.risk_estimator.update_state(actual_time, ms, ds, bs, eb)
                 
                 es_go = self.risk_estimator.expectationDensities[self.id, self.course.turn]
                 #print es_go, self.id
@@ -165,13 +165,14 @@ class Car:
                     else:
                         self.Is = "stop"
                     
-                risk = max([self.risk_estimator.getRisk2(self.id, i) for i in range(self.nr_cars) if i != self.id])
-                
-                if risk > risk_threshold:
-                    self.emergency_break = True
-                    print "Emergency break activated on car ", self.id
-                else:
-                    self.emergency_break = False
+                    risk = max([self.risk_estimator.getRisk2(self.id, i) for i in range(self.nr_cars) if i != self.id])
+                    
+                    if risk > risk_threshold:
+                        self.emergency_break = True
+                        print "Emergency break activated on car ", self.id
+                    else:
+                        self.emergency_break = False
+
 
                 
                 
@@ -244,14 +245,14 @@ class Car:
         ss = self.speed + np.random.normal(0, speed_deviation/5.0)
         blinker = self.course.turn if self.use_riskestimation else ""
 
-        st = xs, ys, ts, ss, x_deviation, y_deviation, theta_deviation, speed_deviation, blinker
+        st = xs, ys, ts, ss, x_deviation, y_deviation, theta_deviation, speed_deviation, blinker, self.emergency_break
         #save current state. Also delete old one
         d = self.state_dicts[self.id]
         d[self.t] = st
         if self.t - 50 in d: del d[self.t - 50]
         
         #publish noisy and true state
-        self.state_pub.publish(cm.CarState(xs, ys, ts, ss, x_deviation, y_deviation, theta_deviation, speed_deviation, blinker, self.id, self.t))
+        self.state_pub.publish(cm.CarState(xs, ys, ts, ss, x_deviation, y_deviation, theta_deviation, speed_deviation, blinker, self.emergency_break, self.id, self.t))
         self.true_state_pub.publish(cm.CarStateTrue(self.x, self.y, self.theta, self.speed, self.id))
         
         

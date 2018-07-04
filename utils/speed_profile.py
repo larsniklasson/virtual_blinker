@@ -133,12 +133,12 @@ class SpeedProfile:
 
         diff = max(f/3.6, diff)
 
-        if distance <= self.distance_at_crossing:
+        if distance <= dd:
             fl = [(d, f.addDiff(diff)) for d, f in self.getFsCrossing(distance, limit=dd)]
             return self.getTimeToCrossing(distance, speed, fl, limit=dd)
         else:
             fl = [(d, f.addDiff(diff)) for d, f in self.getFsCrossing(dd, limit=distance)]
-            return -self.getTimeToCrossingFollowProfile(dd, fl, distance)
+            return -self.getTimeToCrossingFollowProfile(dd, fl, limit=distance)
 
 
 

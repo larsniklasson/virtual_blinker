@@ -20,6 +20,7 @@ class RE2:
         self.nr_cars = len(td)
         self.intersection = Intersection()
 
+        self.eb = [False]*self.nr_cars
         self.intentionDensities = {}  
         self.expectationDensities = {}
         self.turns = self.intersection.turns
@@ -39,8 +40,9 @@ class RE2:
                 
             self.intentionDensities[id] = II
     
-    def update_state(self, t, ms, deviations, blinker):
+    def update_state(self, t, ms, deviations, blinker, eb):
         with self.lock:
+            self.eb = eb
             self.latest_ms = ms
             #intention
             for car in range(self.nr_cars):
@@ -71,7 +73,7 @@ class RE2:
             
                 self.intentionDensities[car] = D
             
-            T = {}
+            self.T = {}
 
             for car in range(self.nr_cars):
                 trav_dir = self.travelling_directions[car]
@@ -106,7 +108,7 @@ class RE2:
 
                         s = abs(m-a)
 
-                        T[car, turn, i] = m, s
+                        self.T[car, turn, i] = m, s
             
 
             E = {}
@@ -141,9 +143,9 @@ class RE2:
                             else:
                                 ii,jj = self.intersection.getIJ(td_ego, turn_ego, td_other, turn_other)
 
-                                mean_ego, std_ego = T[egocar, turn_ego, ii]
+                                mean_ego, std_ego = self.T[egocar, turn_ego, ii]
 
-                                mean_other, std_other = T[othercar, turn_other, jj]
+                                mean_other, std_other = self.T[othercar, turn_other, jj]
                                 gap_mean, gap_std = mean_other - mean_ego, sqrt(std_ego**2 + std_other**2)
                                 
                                 self.G[egocar, turn_ego, othercar, turn_other] = gap_mean, gap_std
@@ -174,11 +176,22 @@ class RE2:
             for ego_turn in self.turns:
                 for risk_turn in self.turns:
                     if self.intersection.doesCoursesIntersect(td_ego, ego_turn, td_risk, risk_turn):
+                        eb = self.eb[risk_car]
+                        if eb:
+                            ii,jj = self.intersection.getIJ(td_risk, risk_turn, td_ego, ego_turn)
+
+                            tti_risk,_ = self.T[risk_car, risk_turn, ii]
+                            tti_ego,_ = self.T[ego_car, ego_turn, jj]
+                            
+                            if tti_risk > -1 and tti_risk < 1 and tti_ego < 2 and tti_ego > -1:
+                                sum += self.intentionCarTurn(risk_car, risk_turn) * self.intentionCarTurn(ego_car, ego_turn)
+
+
                         e = self.expectationDensities[risk_car, risk_turn]
                         if not self.intersection.hasRightOfWay(td_risk, risk_turn, td_ego):
                             try:
                                 gap_mean, gap_std = self.G[risk_car, risk_turn, ego_car, ego_turn]
-                                p_gap_not_enough = (normal_cdf(3, gap_mean, gap_std) - \
+                                p_gap_not_enough = (normal_cdf(2, gap_mean, gap_std) - \
                                         normal_cdf(-0.5, gap_mean, gap_std))
                                 
                                 sum += (1-e) * self.intentionDensities[risk_car][risk_turn, "go"] * \
@@ -220,7 +233,7 @@ class RE2:
                                 speed = other_ms[-1]
         
             if d_min < 5 + 2 * ego_ms[-1]:
-                return speed
+                return speed #TODO return lower speed if closer
             else:
                 return -1
 

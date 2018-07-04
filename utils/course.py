@@ -182,6 +182,7 @@ class Course:
     def hasReachedPointOfNoReturn(self, x, y, theta):
         x, y, theta = self.rotate(x, y, theta)
         d = self.getDistance(x,y,theta)
+
         return d > self.distance_to_crossing+1
 
     def hasPassedRequestLine(self, x, y):
