@@ -694,6 +694,11 @@ class ManeuverNegotiator:
     #different, 
     #car_id = int(agent_port) - communication_config.NETWORK_OPTIONS['port-start']
 
+    #this is to simulate breaking of connection after certain time, this is to be done by 
+    #network simulater in later stages
+    tim = self.clock()
+    if (GEN_CONFIG["break_communication"] and self.aID in GEN_CONFIG["communication_breaking_cars"] and tim > GEN_CONFIG["communication_break_time"]):
+      return 
     if self.communication_details == 0:
       car_id = agent_id
       target_car_ip = maneuver_negotiator_config.UDP_COMMUNICATION_OPTIONS[car_id][0]
