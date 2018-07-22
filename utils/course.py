@@ -61,11 +61,11 @@ class Course:
 
             #acceleration used when given speed doesn't match that profile - then we assume the vehicle will conform to the model
             # It will speed up/slow down until it matches profile again. These accelerations are used to calculate this part
-            self.catchup_acc = 6#6
+            self.match_profile_acceleration = 6#6
             self.match_profile_deacceleration = -6#-6
 
             #get 2 speed profiles, one for intention=go and one for intention=stop
-            self.sp_go, self.sp_stop = createVProfiles(self.fastspeed, self.slowspeed, self.distance_to_crossing, self.slowdown_acc, self.speedup_acc, self.catchup_acc, self.match_profile_deacceleration)
+            self.sp_go, self.sp_stop = createVProfiles(self.fastspeed, self.slowspeed, self.distance_to_crossing, self.slowdown_acc, self.speedup_acc, self.match_profile_acceleration, self.match_profile_deacceleration)
 
             #spline these points to get smooth 90 degree curve
             curve = [(3.25, -7.6),(3.25, -7.55),(3.25, -7.5),(-7.5, 3.25),(-7.55, 3.25),(-7.6, 3.25)]
@@ -84,10 +84,10 @@ class Course:
             self.slowspeed = 20/3.6
             self.slowdown_acc = -6
             self.speedup_acc = 4
-            self.catchup_acc = 5
+            self.match_profile_acceleration = 5
             self.match_profile_deacceleration = -7
 
-            self.sp_go, self.sp_stop = createVProfiles(self.fastspeed, self.slowspeed, self.distance_to_crossing, self.slowdown_acc, self.speedup_acc, self.catchup_acc, self.match_profile_deacceleration)
+            self.sp_go, self.sp_stop = createVProfiles(self.fastspeed, self.slowspeed, self.distance_to_crossing, self.slowdown_acc, self.speedup_acc, self.match_profile_acceleration, self.match_profile_deacceleration)
 
 
             curve = [(3.25, -7.6),(3.25, -7.55),(3.25, -7.5),(7.5, -3.25),(7.55, -3.25),(7.6, -3.25)]
@@ -100,10 +100,10 @@ class Course:
 
             #same as b in diagram
             self.slowdown_acc = -6
-            self.catchup_acc = 8
+            self.match_profile_acceleration = 8
             self.match_profile_deacceleration = -9
 
-            self.sp_go, self.sp_stop = createFlatProfiles(self.fastspeed, self.distance_to_crossing, self.slowdown_acc, self.catchup_acc, self.match_profile_deacceleration)
+            self.sp_go, self.sp_stop = createFlatProfiles(self.fastspeed, self.distance_to_crossing, self.slowdown_acc, self.match_profile_acceleration, self.match_profile_deacceleration)
 
             self.path = [self.starting_point, self.end_point]
 

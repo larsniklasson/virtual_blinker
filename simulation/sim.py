@@ -78,7 +78,7 @@ class CarSim:
         self.state_publisher = rospy.Publisher('car_state' + str(self.id), msg.CarState, queue_size=10)
         
         #for rviz
-        self.true_pose_publisher = rospy.Publisher('true_pose_state' + str(self.id), msg.TruePose, queue_size=10)
+        self.true_pose_publisher = rospy.Publisher('true_pose' + str(self.id), msg.TruePose, queue_size=10)
         self.path_publisher = rospy.Publisher('car_path' + str(self.id), msg.Path, queue_size=10)
 
         
@@ -94,11 +94,11 @@ class CarSim:
         self.pid = PID(*config.pid)
 
         self.t = 0
-        rospy.sleep(1) #let publishers register
 
+        rospy.sleep(0.1) #let publishers register
         if self.id == 0: self.wipe_p.publish(String("")) # for cleaning up paths/cars on the map
+        rospy.sleep(1) #make sure map is wiped before publishing new paths
         self.path_publisher.publish(msg.Path([msg.Position(x,y) for x,y in path], self.id))
-
         self.is_riskestimator_initialized = False
 
         #has vehicle entered try maneuever state or not
@@ -252,21 +252,20 @@ class CarSim:
         carstate_msg = msg.CarState(
             x_filtered, y_filtered, t_filtered, s_filtered, 
             x_dev_filtered, y_dev_filtered, t_dev_filtered, s_dev_filtered, 
-            blinker, self.emergency_break)
+            blinker, self.emergency_break, self.id, self.t)
         #save current state. Also delete old one
         d = self.car_state_dictionaries[self.id]
-        d[self.t] = st
+        d[self.t] = carstate_msg
         if self.t - 50 in d: del d[self.t - 50]
         
         #publish noisy and true state
-        self.state_publisher.publish(msg.CarState(xs, ys, ts, ss, x_deviation, y_deviation, theta_deviation, speed_deviation, blinker, self.emergency_break, self.id, self.t))
+        self.state_publisher.publish(carstate_msg)
         self.true_pose_publisher.publish(msg.TruePose(self.x, self.y, self.theta, self.speed, self.id))
         
         
 
     def spin(self):
         #-----sync-----
-        #---sleep until next even second, slight chance that this won't sync
         now = rospy.get_rostime()
         s, ns = now.secs, now.nsecs
 
@@ -279,7 +278,7 @@ class CarSim:
         self.pid.clear()
         self.last_time = rospy.get_time()
 
-        rate = rospy.Rate(RATE)
+        rate = rospy.Rate(config.rate)
         first = True
         while not rospy.is_shutdown():
             rate.sleep()

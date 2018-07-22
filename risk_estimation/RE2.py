@@ -3,6 +3,7 @@ sys.path.append("..")
 from math import *
 from threading import Lock
 import config
+import numpy as np
 
 ww = [None, 3.25, 11.75, pi*11.75/4.0, pi*11.75/2.0 - 3.25]
 turnproj = {"left": [1, 3, 4], "right": [1], "straight": [1, 2]}
@@ -256,7 +257,7 @@ class RE2:
 
     def noConflict(self, car, turn):
         with self.lock:
-            return self.expectationDensities[car, turn] > RISK_CONFIG["grant_threshold"]
+            return self.expectationDensities[car, turn] > config.grant_threshold
         
         
     def intentionCarTurn(self, car, turn):

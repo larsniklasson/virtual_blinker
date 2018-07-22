@@ -53,8 +53,9 @@ def generateRandom():
     }
 
     turns = np.random.choice(["left", "right", "straight"], size=10, p = [0.4, 0.4, 0.2])
-    is_good_behaving_bools = np.random.random(10) <= 0.8
     speed_deviations = (np.random.random(10) -0.5) * 6
+    is_good_behaving_bools = np.random.random(10) <= 0.8
+    print is_good_behaving_bools
 
     for id, car in CARS_DICT_RANDOM.iteritems():
 
