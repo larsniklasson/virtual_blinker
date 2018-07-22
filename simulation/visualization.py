@@ -30,7 +30,6 @@ colors = [
     (245, 130, 48),
     (145, 30, 180)
 
-
 ]
 
 HEADER_FRAME = "virtualblinker"
@@ -58,7 +57,7 @@ class Visualizer:
         for i in range(self.nr_cars):
 
             rospy.Subscriber('car_path' + str(i), cm.Path, self.pathCallback)
-            rospy.Subscriber('true_car_state' + str(i), cm.CarStateTrue, self.stateCallback)
+            rospy.Subscriber('true_pose' + str(i), cm.TruePose, self.truePoseCallback)
             self.marker_pubs.append(rospy.Publisher('rviz_car_marker' + str(i), Marker, queue_size=10))
             self.path_pubs.append(rospy.Publisher("rviz_car_path" + str(i), Path, queue_size=10))
 
@@ -89,7 +88,7 @@ class Visualizer:
         p.poses.append(self.getDummyPoseStamped())
         return p
     
-    def stateCallback(self, msg):
+    def truePoseCallback(self, msg):
         x = msg.x 
         y = msg.y 
         

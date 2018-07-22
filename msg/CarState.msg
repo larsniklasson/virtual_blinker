@@ -2,10 +2,10 @@ float32 x
 float32 y
 float32 theta
 float32 speed
-float32 x_dev
-float32 y_dev
-float32 theta_dev
-float32 speed_dev
+float32 x_deviation
+float32 y_deviation
+float32 theta_deviation
+float32 speed_deviation
 string blinker
 bool emergency_break
 int32 id

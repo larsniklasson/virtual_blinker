@@ -4,86 +4,95 @@ import time
 import random
 import numpy as np
 
-GEN_CONFIG = {
-    "intersection": Intersection(),
-    #plot,save,nr_cars done in sim.launch
+class Car:
+    def __init__(self, travelling_direction, turn, 
+                 starting_distance, is_good_behaving, speed_deviation):
+        
+        #the (original) direction the vehicle is (was) travelling
+        self.travelling_direction = travelling_direction
+
+        self.turn = turn
+        self.starting_distance = starting_distance
+
+        # follows expectation, uses emergency break and sends blinker
+        self.is_good_behaving = is_good_behaving
+        
+        # constant deviation from speed profile.
+        self.speed_deviation = speed_deviation
+
+
+#Non-random
+CAR_DICT = {
+    0 : Car("south", "straight", 60, True, 0),
+    1 : Car("east", "straight", 70, False, 0),
+    2 : Car("north", "right", 70, True, 0),
+    3 : Car("south", "left", 70, True, 0),
+    4 : Car("west", "right", 50, True, 0),
+    5 : Car("east", "right", 50, True, 0),
+    6 : Car("north", "straight", 50, True, 0),
+    7 : Car("south", "right", 50, True, 0),
+    8 : Car("west", "left", 30, True, 0),
+    9 : Car("east", "straight", 30, True, 0)
 }
 
-def car(td, turn, sd, re, spd):
-    return {"travelling_direction": td, 
-            "turn": turn, 
-            "starting_distance": sd, 
-            "use_riskestimation": re,
-            "speedDev": spd}
-
-
-CARS = {
-    0 : car("north", "left", 70, True, 0),
-    1 : car("west", "right", 70, True, 0),
-    2 : car("north", "right", 70, True, 0),
-    3 : car("south", "left", 70, True, 0),
-    4 : car("west", "right", 50, True, 0),
-    5 : car("east", "right", 50, True, 0),
-    6 : car("north", "straight", 50, True, 0),
-    7 : car("south", "right", 50, True, 0),
-    8 : car("west", "left", 30, True, 0),
-    9 : car("east", "straight", 30, True, 0)
-}
-
-CARS_RANDOM = {
-    0 : car("west", "straight", 70, True, 0),
-    1 : car("east", "left", 70, True, 0),
-    2 : car("north", "right", 70, True, 0),
-    3 : car("south", "left", 70, True, 0),
-    4 : car("west", "right", 50, True, 0),
-    5 : car("east", "right", 50, True, 0),
-    6 : car("north", "straight", 50, True, 0),
-    7 : car("south", "right", 50, True, 0),
-    8 : car("west", "left", 30, True, 0),
-    9 : car("east", "straight", 30, True, 0)
-}
-
+#generate a semi-random car dict using the seed given in launch file
+#travelling direction and starting distance fixed
 def generateRandom():
 
-    t = np.random.choice(["left", "right", "straight"], size=10, p = [0.4, 0.4, 0.2])
-    #r = (np.random.random(10) - 0.5) * 20
-    s = (np.random.random(10) -0.5) * 6
-    b = np.random.random(10) <= 0.8
-    print b
+    CARS_DICT_RANDOM = {
+        0 : Car("west", None, 70, None, None),
+        1 : Car("east", None, 70, True, None),
+        2 : Car("north", None, 70, True, None),
+        3 : Car("south", None, 70, True, None),
+        4 : Car("west", None, 50, True, None),
+        5 : Car("east", None, 50, True, None),
+        6 : Car("north", None, 50, True, None),
+        7 : Car("south", None, 50, True, None),
+        8 : Car("west", None, 30, True, None),
+        9 : Car("east", None, 30, True, None)
+    }
 
-    for k,v in CARS_RANDOM.iteritems():
-        if v["travelling_direction"] in ["south", "west"] and t[k] == "left":
-            t[k] = np.random.choice(["right", "straight"])
-        v["turn"] = t[k]
-        #v["starting_distance"] += r[k]
-        v["use_riskestimation"] = b[k]
-        v["speedDev"] = s[k]
+    turns = np.random.choice(["left", "right", "straight"], size=10, p = [0.4, 0.4, 0.2])
+    is_good_behaving_bools = np.random.random(10) <= 0.8
+    speed_deviations = (np.random.random(10) -0.5) * 6
 
-def getCarDict(random):
-    if random > 0:
-        generateRandom()
-        return CARS_RANDOM
+    for id, car in CARS_DICT_RANDOM.iteritems():
+
+        #avoid deadlocks
+        if car.travelling_direction in ["south", "west"] and turns[id] == "left":
+            turns[id] = np.random.choice(["right", "straight"])
+
+        car.turn = turns[id]
+        car.is_good_behaving = is_good_behaving_bools[id]
+        car.speed_deviation = speed_deviations[id]
+
+    #each car will use the same seed so this dict will be the same for every car
+    return CARS_DICT_RANDOM
+
+def getCarDict(is_random):
+    if is_random:
+        return generateRandom()
     else:
-        return CARS
+        return CAR_DICT
     
 
-SIM_CONFIG = {
-    "x_deviation" : 0.2,
-    "y_deviation" : 0.2,
-    "theta_deviation" : 0.04,
-    "speed_deviation": 0.1,
-    "slowdown": 1.0,
-    "rate": 15,
-    "pid" : (0.4, 0.0, 0.05),
-    "lookahead": 5,
-    "carlength": 4,
-    "discard_measurement_time": 0.15, #seconds
-    "Es_threshold": 0.8,
-    "risk_threshold": 0.3,
-    "save_id" : 1
+intersection = Intersection()
 
-}
+x_deviation = 0.2
+y_deviation = 0.2
+theta_deviation = 0.04
+speed_deviation = 0.1
 
-RISK_CONFIG = {
-    "grant_threshold": 0.9
-}
+slowdown = 1.0
+rate = 15 #iterations per second for simulation => rate = msgs sent per second
+discard_measurement_time = 0.15
+
+pid = 0.4, 0.0, 0.05
+lookahead = 5
+carlength = 4
+
+Es_threshold = 0.8   #determines if well behaved vehicles go or stop
+risk_threshold = 0.3 #Break if higher
+grant_threshold = 0.9 #grant if P(Es=go) is greater than threshold
+
+save_id = 1 #for debugging

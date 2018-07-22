@@ -1,24 +1,23 @@
 import sys
 sys.path.append("..")
-from utils.Intersection import *
 from math import *
-import scipy.stats as sp
 from threading import Lock
-from config import *
+import config
 
 ww = [None, 3.25, 11.75, pi*11.75/4.0, pi*11.75/2.0 - 3.25]
 turnproj = {"left": [1, 3, 4], "right": [1], "straight": [1, 2]}
 
 def normal_cdf(x, mu, sigma):
-    q = math.erf((x-mu) / (sigma*math.sqrt(2.0)))
+    q = erf((x - mu) / (sigma * sqrt(2.0)))
     return (1.0 + q) / 2.0
 
 class RE2:
-    def __init__(self, td):
+    def __init__(self, initial_poses):
+        
         self.lock = Lock()
-        self.travelling_directions = td
-        self.nr_cars = len(td)
-        self.intersection = Intersection()
+        self.nr_cars = len(initial_poses)
+        self.intersection = config.intersection
+        self.travelling_directions = [self.intersection.getTravellingDirection(x,y,theta) for x,y,theta,_ in initial_poses]
 
         self.eb = [False]*self.nr_cars
         self.intentionDensities = {}  
@@ -39,6 +38,8 @@ class RE2:
                 self.expectationDensities[id, Ic] = default_E_dens
                 
             self.intentionDensities[id] = II
+
+        self.latest_ms = initial_poses
     
     def update_state(self, t, ms, deviations, blinker, eb):
         with self.lock:
@@ -53,7 +54,7 @@ class RE2:
                         
                         list = self.Ldict[car,turn,i]
                         list.append(thisL)
-                        if len(list) > 3:
+                        if len(list) > 1:
                             del list[0]
                         
                         L = sum([w*l for w,l in zip(list, range(1,len(list)+1))])
@@ -91,12 +92,12 @@ class RE2:
                     for i in turnproj[turn]:
                                             
 
-                        if c.getDistance(*c.rotate(px,py,0)) > c.distance_to_crossing:
+                        if c.getDistance(*c.rotate(px,py,0)) > c.distance_to_crossing + ww[i]:
                             ps = speed - sd*0.8-0.5
                         else:
                             ps = speed + sd*0.8+0.5
 
-                        if c.getDistance(*c.rotate(mx,my,0)) > c.distance_to_crossing:
+                        if c.getDistance(*c.rotate(mx,my,0)) > c.distance_to_crossing + ww[i]:
                             m_s = speed + sd*0.8+0.5
                         else:
                             m_s = speed - sd*0.8-0.5
@@ -168,7 +169,10 @@ class RE2:
         return np.sum(er2(np.array(m), np.array(dev), np.array(opt),np.array([125,125,125,1])))
 
 
-    def getRisk2(self, ego_car, risk_car):
+    def getExpectation(self, id, turn):
+        return self.expectationDensities[id, turn]
+
+    def getRisk(self, ego_car, risk_car):
         with self.lock:
             td_ego = self.travelling_directions[ego_car]
             td_risk = self.travelling_directions[risk_car]
@@ -202,7 +206,7 @@ class RE2:
 
             return sum
 
-    def checkVehicleInFront(self, ego_car):
+    def recommendSpeedIfVehicleInFront(self, ego_car):
         with self.lock:
             d_min = 999999999
             ego_ms = self.latest_ms[ego_car]
