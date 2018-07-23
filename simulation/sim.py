@@ -15,7 +15,6 @@ from risk_estimation.RE2 import *
 from std_msgs.msg import String
 
 import config
-from utils.Intersection import *
 #from maneuver_negotiation.maneuver_negotiator import *
 #rom maneuver_negotiation.cloud import *
 
@@ -28,10 +27,11 @@ class CarSim:
         name = rospy.get_name()
         self.id = int(name[-1])
 
-        #sync stuff
+        #sync and wipe map stuff
         if self.id == 0:
+            #car with id=0 sets the sync time and also wipes the map
             rospy.set_param("sync_time", rospy.get_rostime().secs + 4)
-            self.wipe_p = rospy.Publisher("wipe_map", String, queue_size=10)
+            self.wipe_publisher = rospy.Publisher("wipe_map", String, queue_size=10)
         
         while 1:
             if rospy.has_param("sync_time"):
@@ -66,7 +66,7 @@ class CarSim:
         self.speed_deviation = this_car.speed_deviation
 
         self.course = Course(travelling_direction, turn)
-        self.x, self.y, self.theta = self.course.getStartingPose(starting_distance)
+        self.x, self.y, self.theta = self.course.getPose(starting_distance)
 
         #the other vehicle's state topics to subscribe to
         state_sub_topics = ["car_state" + str(i) for i in range(self.nr_cars) if i != self.id]
@@ -96,7 +96,7 @@ class CarSim:
         self.t = 0
 
         rospy.sleep(0.1) #let publishers register
-        if self.id == 0: self.wipe_p.publish(String("")) # for cleaning up paths/cars on the map
+        if self.id == 0: self.wipe_publisher.publish(String("")) # for cleaning up paths/cars on the map
         rospy.sleep(1) #make sure map is wiped before publishing new paths
         self.path_publisher.publish(msg.Path([msg.Position(x,y) for x,y in path], self.id))
         self.is_riskestimator_initialized = False
@@ -274,6 +274,7 @@ class CarSim:
         ns = ns * 10**(-9)
         diff = target - (s + ns)
         print "diff", diff
+        #sleep until sync time
         rospy.sleep(diff)
         self.pid.clear()
         self.last_time = rospy.get_time()

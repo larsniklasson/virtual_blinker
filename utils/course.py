@@ -3,7 +3,7 @@ from spline import *
 from speed_profile import *
 
 #Course has a path and a speedmodel, and can use those to get time to crossing and to predict the next state after time t
-#3 different speed models/paths are made (start from north) and then rotated to get 3*4=12 in total
+#6 different speed models/paths are made (start from north) and then rotated to get 6*4=24 in total
 
 #V-profile:
 # s1 -------            --------------
@@ -13,7 +13,7 @@ from speed_profile import *
 #              \   /
 # s2            ---
 #                \
-# 0 --------------|---
+# 0 --------------|---------------------
 #                  d
 
 
@@ -40,7 +40,7 @@ class Course:
         #s1 in diagram
         self.fastspeed = 50/3.6 #50 km/h
 
-        self.distance_to_crossing = 125-7.5
+        self.distance_at_crossing = 125-7.5
 
         if self.turn == "left":
             
@@ -61,11 +61,15 @@ class Course:
 
             #acceleration used when given speed doesn't match that profile - then we assume the vehicle will conform to the model
             # It will speed up/slow down until it matches profile again. These accelerations are used to calculate this part
+            # Also used in sim.py to match the speed profile.
             self.match_profile_acceleration = 6#6
             self.match_profile_deacceleration = -6#-6
 
             #get 2 speed profiles, one for intention=go and one for intention=stop
-            self.sp_go, self.sp_stop = createVProfiles(self.fastspeed, self.slowspeed, self.distance_to_crossing, self.slowdown_acc, self.speedup_acc, self.match_profile_acceleration, self.match_profile_deacceleration)
+            self.sp_go, self.sp_stop = createVProfiles(
+                    self.fastspeed, self.slowspeed, self.distance_at_crossing, 
+                    self.slowdown_acc, self.speedup_acc, 
+                    self.match_profile_acceleration, self.match_profile_deacceleration)
 
             #spline these points to get smooth 90 degree curve
             curve = [(3.25, -7.6),(3.25, -7.55),(3.25, -7.5),(-7.5, 3.25),(-7.55, 3.25),(-7.6, 3.25)]
@@ -81,13 +85,17 @@ class Course:
             self.radius = abs(self.curve_start[0] - self.curve_end[0])
             self.circle_mid = self.curve_start[0]+self.radius, self.curve_end[1]-self.radius
 
+            #this stuff should be learned, this is just placeholder profiles that I came up with
             self.slowspeed = 20/3.6
             self.slowdown_acc = -6
             self.speedup_acc = 4
             self.match_profile_acceleration = 5
             self.match_profile_deacceleration = -7
 
-            self.sp_go, self.sp_stop = createVProfiles(self.fastspeed, self.slowspeed, self.distance_to_crossing, self.slowdown_acc, self.speedup_acc, self.match_profile_acceleration, self.match_profile_deacceleration)
+            self.sp_go, self.sp_stop = createVProfiles(
+                    self.fastspeed, self.slowspeed, self.distance_at_crossing, 
+                    self.slowdown_acc, self.speedup_acc, 
+                    self.match_profile_acceleration, self.match_profile_deacceleration)
 
 
             curve = [(3.25, -7.6),(3.25, -7.55),(3.25, -7.5),(7.5, -3.25),(7.55, -3.25),(7.6, -3.25)]
@@ -103,10 +111,14 @@ class Course:
             self.match_profile_acceleration = 8
             self.match_profile_deacceleration = -9
 
-            self.sp_go, self.sp_stop = createFlatProfiles(self.fastspeed, self.distance_to_crossing, self.slowdown_acc, self.match_profile_acceleration, self.match_profile_deacceleration)
+            self.sp_go, self.sp_stop = createFlatProfiles(
+                    self.fastspeed, self.distance_at_crossing, 
+                    self.slowdown_acc, self.match_profile_acceleration, 
+                    self.match_profile_deacceleration)
 
             self.path = [self.starting_point, self.end_point]
 
+        
         self.path = map(lambda (x,y) : self.rotate(x,y,0,dir=-1)[0:2], self.path)
 
 
@@ -138,26 +150,28 @@ class Course:
         
     
     def getSpeed(self, x, y, theta, Is):
-        
-        x,y,theta = self.rotate(x,y, theta)
 
         #get distance travelled and lookup speed
-        d = self.getDistance(x,y, theta)
+        d = self.getDistance(x, y, theta)
         if Is == "stop":
             return self.sp_stop.getSpeed(d)
         else:
             return self.sp_go.getSpeed(d)
 
-    def getDistance(self, x, y, theta, rotate = False):
-        if rotate:
-            x,y,theta = self.rotate(x,y,theta)
+    def getDistance(self, x, y, theta):
+        x,y,theta = self.rotate(x,y,theta)
 
+        #if we haven't reached intersection or turn=straight, 
+        # then distance is just how far we have travelled in y-direction
         if self.turn == "straight" or y < self.curve_start[1]:
             return y - self.starting_point[1]
 
 
-        if (self.turn == "left" and x > self.curve_end[0]) or (self.turn =="right" and x < self.curve_end[0]):
+        #if we still haven't exit the curve
+        if (self.turn == "left" and x > self.curve_end[0]) or \
+                (self.turn =="right" and x < self.curve_end[0]):
             
+            # find closest point on curve from x,y
             cx, cy = self.circle_mid
 
             vx = x - cx
@@ -166,6 +180,7 @@ class Course:
             ax = cx + vx/magv * self.radius
             ay = cy + vy/magv * self.radius
 
+            #angle made with start circle mid, start of intersection and closest point
             t = asin((ay - cy)/self.radius)
 
             if self.turn == "left":
@@ -173,131 +188,86 @@ class Course:
             elif self.turn == "right":
                 theta = pi/2 - t
             
-            return  self.curve_start[1] - self.starting_point[1] + self.radius*t
+            return self.curve_start[1] - self.starting_point[1] + self.radius*t
         else:
-            #vehicle has exited the curve
-
-            return  self.curve_start[1] - self.starting_point[1] + pi*self.radius/2 + abs(x - self.curve_end[0])
+            #vehicle has exited the curv
+            return self.curve_start[1] - self.starting_point[1] + \
+                   pi * self.radius/2 + abs(x - self.curve_end[0])
 
     def hasReachedPointOfNoReturn(self, x, y, theta):
-        x, y, theta = self.rotate(x, y, theta)
-        d = self.getDistance(x,y,theta)
-
-        return d > self.distance_to_crossing+1
-
+        d = self.getDistance(x, y, theta)
+        
+        #sometimes vehicles go slightly over the line when they stop
+        return d > self.distance_at_crossing + 1 
+    
     def hasPassedRequestLine(self, x, y):
-        _,y,_ = self.rotate(x,y,0)
+        _, y, _ = self.rotate(x,y,0)
         return y > self.request_line
 
     def hasLeftIntersection(self, x, y, theta):
-        x,y,theta = self.rotate(x,y,theta)
         d = self.getDistance(x, y, theta)
-        if self.turn == "straight":
-            return d >= self.distance_to_crossing + 7.5*2-2.5
-        else:
-            return d >= self.distance_to_crossing + self.radius*pi/2-2.5
-    
-    
-    def getTimeToCrossing2(self, x, y, theta, speed, Is, extra=0):
-        x,y,theta = self.rotate(x,y,theta)
 
+        #subtract 1.5m to make traffic faster. When they are 1.5 from end of intersection 
+        # they don't interfere anymore so they have effectively left the intersection
+        if self.turn == "straight":
+            return d >= self.distance_at_crossing + 7.5 * 2 - 1.5
+        else:
+            return d >= self.distance_at_crossing + self.radius * pi/2 - 1.5
+    
+    
+    #project forward the vehicle to the intersection. Return normal distribution
+    # extra argument is the extra distance to project forward, to get to the intersection
+    # of courses, not just the edge of the intersection
+    def getTimeToCrossing(self, x, y, theta, speed, Is, extra=0):
         #get distance and lookup time to crossing
-        d = self.getDistance(x,y,theta)
+        d = self.getDistance(x, y, theta)
         if Is == "stop":
             return self.sp_stop.getTimeToCrossing2(d, speed, extra=extra)
         else:
             return self.sp_go.getTimeToCrossing2(d, speed, extra=extra)
 
     
-    def predictNextState(self, x, y, theta, speed, t, Is, deviations, pdc):
-        min_speed_dev = deviations[-1] / pdc
-
-        x,y,theta = self.rotate(x,y,theta)
-
-        #lookup current distance and then predict the distance (and speed) after t sec
-        d = self.getDistance(x,y,theta)
-        if Is == "stop":
-            newd, newspeed = self.sp_stop.predict(d, speed, t)
-        else:
-            newd, newspeed = self.sp_go.predict(d, speed, t)
-
-        xnew, ynew,thetanew = self.getPose(newd)
-
-        xc = (x + cos(theta)*speed*t, y + sin(theta)*speed*t, theta, speed)
-        
-        if Is == "stop":
-            diff = speed - newspeed
-            if diff > 0:
-                speed_avg = newspeed - diff/2.0
-                speed_dev = max(diff/2.0, min_speed_dev)
-            else:
-                lower = speed
-                upper = min(newspeed, min(speed + 10*t, newspeed)*0.9 + newspeed * 0.1)
-
-                speed_avg = (upper + lower) / 2.0
-                speed_dev = max((upper - lower) / 2.0, min_speed_dev)
-                
-        else:
-            diff = speed - newspeed
-            if diff > 0:
-                upper = speed
-                lower = max(max(speed - 10*t, newspeed) * 0.9 + newspeed*0.1, newspeed)
-            else:
-                lower = speed
-                upper = min(min(speed + 10*t, newspeed) * 0.9 + newspeed*0.1, newspeed)
-        
-            speed_avg = (upper + lower) / 2.0
-            speed_dev = max((upper - lower) / 2.0, min_speed_dev)
-        
-        x_avg = xnew#(xnew + xc[0])/2.0
-        y_avg = ynew#(ynew + xc[1])/2.0
-        theta_avg = thetanew#(thetanew + xc[2])/2.0
-
-        x_dev = max(deviations[0] / pdc, abs(xnew - xc[0]))
-        y_dev = max(deviations[0] / pdc, abs(ynew - xc[1]))
-        theta_dev = max(deviations[1]/pdc, abs(thetanew - xc[2]))
+    # Not used at the moment. maybe add this if we want to add kalman filter
+    def predictNextState(self, x, y, theta, speed, t, Is, deviations):
+        pass
 
 
-
-        rx, ry, rt = self.rotate(x_avg, y_avg, theta_avg, dir = -1)
-        return (rx, ry, rt, speed_avg), (x_dev, y_dev, theta_dev, speed_dev)
-    
-    def getStartingPose(self, d):
-        return self.rotate(*self.getPose(d), dir=-1)
-
-
-    #get ideal pose after a certain distance
+    #get ideal pose (x,y,theta) after a certain distance
     def getPose(self, d):
 
         if self.turn == "straight":
-            return self.starting_point[0], self.starting_point[1] + d, pi/2
+            return_pose = self.starting_point[0], self.starting_point[1] + d, pi/2
 
-        #length of section 1,2. i.e. that part before the curve and the curve itself.
-        section1 = self.curve_start[1] - self.starting_point[1]
-        section2 = self.radius*2*pi/4
-        if d <= section1:
-            return (self.starting_point[0], self.starting_point[1] + d, pi/2)
-        elif d < section1+section2:
-            #in the curve
-            #trigonometry
-            d2 = d - section1
-            v = d2/self.radius
-            a,b = self.circle_mid
-
-            if self.turn == "left":
-                theta = pi/2+v
-                ang = v
-            elif self.turn == "right":
-                theta = pi/2-v
-                ang = pi-v
-            
-            x = a + self.radius*cos(ang)
-            y = b + self.radius*sin(ang)
-
-            return (x,y,theta)
         else:
-            d2 = d - section1 - section2
-            if self.turn == "left":
-                return self.curve_end[0] - d2, self.curve_end[1], pi
+            #length of section 1,2. i.e. that part before the curve and the curve itself.
+            section1 = self.curve_start[1] - self.starting_point[1]
+            section2 = self.radius*2*pi/4
+            if d <= section1:
+                return_pose = self.starting_point[0], self.starting_point[1] + d, pi/2
+            elif d < section1+section2:
+                #in the curve
+                #trigonometry
+                d2 = d - section1
+                v = d2 / self.radius
+                a, b = self.circle_mid
+
+                if self.turn == "left":
+                    theta = pi/2 + v
+                    ang = v
+                elif self.turn == "right":
+                    theta = pi/2 - v
+                    ang = pi - v
+                
+                x = a + self.radius * cos(ang)
+                y = b + self.radius * sin(ang)
+
+                return_pose = (x, y, theta)
             else:
-                return self.curve_end[0] + d2, self.curve_end[1], 0
+                d2 = d - section1 - section2
+                if self.turn == "left":
+                    return_pose = self.curve_end[0] - d2, self.curve_end[1], pi
+                else:
+                    return_pose = self.curve_end[0] + d2, self.curve_end[1], 0
+        
+        return self.rotate(*return_pose, dir=-1)
+

@@ -12,6 +12,9 @@ from RE2 import *
 from config import *
 from utils.Intersection import *
 
+
+
+#--------NOTE: THIS FILE NOT UPDATED--------------
 random.seed(1)
 np.random.seed(1)
 

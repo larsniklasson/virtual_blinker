@@ -84,7 +84,7 @@ class RE2:
                 for turn in self.turns:
                     c = self.intersection.courses[trav_dir,turn]
                     
-                    tt = c.rotate(*c.getPose(c.getDistance(*c.rotate(x,y,theta))), dir=-1)[2]
+                    tt = c.getPose(c.getDistance(x,y,theta))[2]
                     px, py = x+xd*0.8*cos(tt),y+yd*0.8*sin(tt)
 
                     
@@ -103,8 +103,8 @@ class RE2:
                         else:
                             m_s = speed - sd*0.8-0.5
 
-                        a = c.getTimeToCrossing2(px, py,theta,ps, Is="go", extra=ww[i])
-                        b = c.getTimeToCrossing2(mx, my,theta,m_s, Is="go", extra=ww[i])
+                        a = c.getTimeToCrossing(px, py,theta,ps, Is="go", extra=ww[i])
+                        b = c.getTimeToCrossing(mx, my,theta,m_s, Is="go", extra=ww[i])
 
                         m = (a+b)/2
 
@@ -166,7 +166,7 @@ class RE2:
 
     def I_error(self, m, dev, td, turn, i):
         c = self.intersection.courses[td, turn]
-        opt = getOpt(c, m, i)
+        opt = getOptimalPose(c, m, i)
         return np.sum(er2(np.array(m), np.array(dev), np.array(opt),np.array([125,125,125,1])))
 
 
@@ -264,16 +264,19 @@ class RE2:
         a = self.intentionDensities[car]
         return a[turn, "go"] + a[turn, "stop"]
 
-def getOpt(c, (x,y,theta,speed), Is):
-    x,y,theta = c.rotate(x,y,theta)
+#including speed.
+def getOptimalPose(c, (x,y,theta,speed), Is):
+
     d = c.getDistance(x,y,theta)
-    if d > c.distance_to_crossing and Is=="stop":
-        px,py,ptheta = (3.25, -7.5, pi/2)
+    if d > c.distance_at_crossing and Is=="stop":
+        # put the optimal stop position to start of intersection
+        # if vehicle has entered intersection
+        opt_x, opt_y, opt_theta = c.getPose(c.distance_at_crossing)
     else:
-        px, py, ptheta = c.getPose(d)
-    ps = c.sp_go.getSpeed(d) if Is=="go" else c.sp_stop.getSpeed(d)
-    px,py,ptheta = c.rotate(px, py, ptheta, dir = -1)
-    return (px, py, ptheta, ps)
+        opt_x, opt_y, opt_theta = c.getPose(d)
+    
+    opt_s = c.sp_go.getSpeed(d) if Is=="go" else c.sp_stop.getSpeed(d)
+    return (opt_x, opt_y, opt_theta, opt_s)
 
 
 def er2(m,dev,d,w):

@@ -4,8 +4,6 @@ import sys
 sys.path.append("..")
 from utils.course import *
 
-from threading import Thread, Lock
-
 class Intersection:
 
     def __init__(self):
@@ -13,9 +11,6 @@ class Intersection:
         self.turns = ("left", "straight", "right")
         self.travelling_directions = ("north", "east", "south", "west")
         self.laneWidth = 7.5
-
-        #mutex used when changing priorities of the intersection
-        self.mutex = Lock()
 
         #dict of course-instances to lookup
         self.courses = {}
@@ -54,17 +49,7 @@ class Intersection:
         #unless changed by a maneuver negotiation protocol
         self.priority_directions = ["south","north"]
 
-        self.relativePositions = {}
-        for td1 in self.travelling_directions:
-            for td2 in self.travelling_directions:
-                if td1 != td2:
-                    rp = self.getRelativePosition(td1, td2)
-                    self.relativePositions[td1, td2] = rp
 
-
-
-    #south-north is prio lane TODO store this some other place
-    # TODO this will change when priority changes. so it should not be fixed
     def isOnPrioLane(self, travelling_direction):
         return travelling_direction in self.priority_directions
 
@@ -89,19 +74,18 @@ class Intersection:
         elif diff == -1:
             return "rightof"
 
-    def hasRightOfWay(self, travelling_direction, turn, other_vehicle_td):
-        #this case is unintresting for now
-        if travelling_direction == other_vehicle_td:
+    def hasRightOfWay(self, ego_td, ego_turn, other_vehicle_td):
+        #this case is uninteresting for now
+        if ego_td == other_vehicle_td:
             return True 
 
         #calculate relative position and lookup if ego-vehicle has priority
-        #rel_pos_opposing = self.getRelativePosition(travelling_direction, other_vehicle_td)
-        rel_pos_opposing = self.relativePositions[travelling_direction, other_vehicle_td]
-
-        if self.isOnPrioLane(travelling_direction):
-            return self.prioTable[turn][rel_pos_opposing]
+        rel_pos = self.getRelativePosition(ego_td, other_vehicle_td)
+        
+        if self.isOnPrioLane(ego_td):
+            return self.prioTable[ego_turn][rel_pos]
         else:
-            return self.nonPrioTable[turn][rel_pos_opposing]
+            return self.nonPrioTable[ego_turn][rel_pos]
 
 
     def getIJ(self, ego_td, ego_turn, other_td, other_turn):
@@ -170,22 +154,6 @@ class Intersection:
         else:
             return None
 
-    ## Return agents that the selected agent hasn't got right-of-way to 
-    def getUnsafeAgents(self, agent_pose, agent_poses):
-
-        unsafe_agents = {}
-        agent_direction = self.getTravellingDirection(agent_pose[0], agent_pose[1], agent_pose[2])
-
-        # Check if any of the other agents have priority over the selected agents for the 3 possible turns
-        for turn in self.turns:
-            ids = []
-            for id, pose in agent_poses:
-                if not self.hasRightOfWay(agent_direction, turn, self.getTravellingDirection(pose[0], pose[1], pose[2])):
-                    ids.append(id)
-            unsafe_agents[turn] = ids
-
-        return 
-        
     def doesCoursesIntersect(self, td1, turn1, td2, turn2):
         if td1 == td2:
             return False
@@ -236,3 +204,22 @@ class Intersection:
                 return True
             else:
                 return False    
+
+    """
+    ## Return agents that the selected agent hasn't got right-of-way to 
+    def getUnsafeAgents(self, agent_pose, agent_poses):
+
+        unsafe_agents = {}
+        agent_direction = self.getTravellingDirection(agent_pose[0], agent_pose[1], agent_pose[2])
+
+        # Check if any of the other agents have priority over the selected agents for the 3 possible turns
+        for turn in self.turns:
+            ids = []
+            for id, pose in agent_poses:
+                if not self.hasRightOfWay(agent_direction, turn, self.getTravellingDirection(pose[0], pose[1], pose[2])):
+                    ids.append(id)
+            unsafe_agents[turn] = ids
+
+        return 
+    """
+        
