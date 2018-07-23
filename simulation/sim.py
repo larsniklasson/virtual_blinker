@@ -84,7 +84,7 @@ class CarSim:
         
         self.Is = "stop" if self.is_good_behaving else "go"
         self.emergency_break = False
-        self.speed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
+        self.speed = self.course.getSpeed(self.x, self.y, self.Is)
 
 
         path = self.course.getPath()
@@ -194,7 +194,7 @@ class CarSim:
         self.theta += v * tan(steering_angle) / config.carlength
         
         # follow speed profile
-        targetspeed = self.course.getSpeed(self.x, self.y, self.theta, self.Is)
+        targetspeed = self.course.getSpeed(self.x, self.y, self.Is)
         if self.Is == "go":
             targetspeed += self.speed_deviation
 

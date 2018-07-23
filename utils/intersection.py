@@ -7,6 +7,17 @@ from utils.course import *
 class Intersection:
 
     def __init__(self):
+
+        #how long you should project into the intersection to intersect with
+        # other courses. The left turn can intersect with other courses on (roughly) three different
+        # places
+        self.extra_distances = [3.25, 11.75, pi*11.75/4.0, pi*11.75/2.0 - 3.25]
+        
+        #refer to indices in array above
+        self.turn_extras = {"left": [0, 2, 3], 
+                            "right": [0], 
+                            "straight": [0, 1]}
+
         
         self.turns = ("left", "straight", "right")
         self.travelling_directions = ("north", "east", "south", "west")
@@ -87,49 +98,50 @@ class Intersection:
         else:
             return self.nonPrioTable[ego_turn][rel_pos]
 
-
-    def getIJ(self, ego_td, ego_turn, other_td, other_turn):
+    # for 2 courses, returns distance from edge of intersection to the intersection point
+    # distance is approximate to not have too many cases
+    def getExtras(self, ego_td, ego_turn, other_td, other_turn):
         relPos = self.getRelativePosition(ego_td, other_td)
         ret = None
-        flag = False
+        flip = False
+
         if relPos in ["leftof", "rightof"]:
+
+            # cases are symmetrical
             if relPos == "rightof":
                 tmp = ego_turn
                 ego_turn = other_turn
                 other_turn = tmp
-                flag = True
+                flip = True
 
             if ego_turn == "left":
                 if other_turn == "left":
-                    ret = 3,3
+                    ret = 2, 2
                 elif other_turn == "straight":
-                    ret = 1, 2
+                    ret = 0, 1
             elif ego_turn == "straight":
                 if other_turn == "left":
-                    ret = 2, 4
+                    ret = 1, 3
                 elif other_turn == "straight":
-                    ret = 1, 2
+                    ret = 0, 1
             elif ego_turn == "right":
                 if other_turn == "straight":
-                    ret = 1, 2
+                    ret = 0, 1
         
         if relPos == "opposing":
             if ego_turn == "left":
                 if other_turn in ["right", "straight"]:
-                    ret = 4, 1
+                    ret = 3, 0
                 elif other_turn == "left":
-                    ret = 3,3
+                    ret = 2, 2
             elif ego_turn == "right":
                 if other_turn == "left":
-                    ret = 1, 4
+                    ret = 0, 3
             elif ego_turn == "straight":
                 if other_turn == "left":
-                    ret = 1,4
+                    ret = 0, 3
 
-        if not ret:
-            raise Exception('this shouldnt happen, IJ')
-
-        if flag:
+        if flip:
             ret = (ret[1], ret[0])
         
         return ret
@@ -154,6 +166,7 @@ class Intersection:
         else:
             return None
 
+    #given two courses, do they intersect?
     def doesCoursesIntersect(self, td1, turn1, td2, turn2):
         if td1 == td2:
             return False
@@ -166,23 +179,13 @@ class Intersection:
                 turn1 = turn2
                 turn2 = tmp
 
-            if turn2 == "straight":
-                return True
-            elif turn2 == "right":
-                return False
-            elif turn2 == "left" and turn1 != "right":
-                return True
-            else:
-                return False
-        
+            return turn2 == "straight" or turn2 == "left" and turn1 != "right"
+
         if relPos == "opposing":
-            if turn1 == "left" or turn2 == "left":
-                return True
-            else:
-                return False
+            return turn1 == "left" or turn2 == "left"
 
                    
-    def merge(self, td1, turn1, td2, turn2):
+    def doesCoursesOverlap(self, td1, turn1, td2, turn2):
         if td1 == td2:
             return True
         relPos = self.getRelativePosition(td1, td2)
@@ -193,17 +196,12 @@ class Intersection:
                 turn1 = turn2
                 turn2 = tmp
 
-            if turn1 == "straight" and turn2 == "left" or \
-               turn1 == "right" and turn2 == "straight":
-                return True
-            else:
-                return False
+            return turn1 == "straight" and turn2 == "left" or \
+               turn1 == "right" and turn2 == "straight"
+
         elif relPos == "opposing":
-            if turn1 == "right" and turn2 == "left" or \
-                turn2 == "right" and turn1 == "left":
-                return True
-            else:
-                return False    
+            return turn1 == "right" and turn2 == "left" or \
+                turn2 == "right" and turn1 == "left"
 
     """
     ## Return agents that the selected agent hasn't got right-of-way to 

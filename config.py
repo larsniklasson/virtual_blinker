@@ -97,3 +97,11 @@ risk_threshold = 0.3 #Break if higher
 grant_threshold = 0.9 #grant if P(Es=go) is greater than threshold
 
 save_id = 1 #for debugging
+
+gap_lower_limit = -1
+gap_upper_limit = 3
+
+risk_gap_lower_limit = -0.5
+risk_gap_upper_limit = 2
+
+error_weights = [125, 125, 125, 1]

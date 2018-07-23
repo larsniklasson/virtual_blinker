@@ -149,17 +149,17 @@ class Course:
         return x0, y0, theta0
         
     
-    def getSpeed(self, x, y, theta, Is):
+    def getSpeed(self, x, y, Is):
 
         #get distance travelled and lookup speed
-        d = self.getDistance(x, y, theta)
+        d = self.getDistance(x, y)
         if Is == "stop":
             return self.sp_stop.getSpeed(d)
         else:
             return self.sp_go.getSpeed(d)
 
-    def getDistance(self, x, y, theta):
-        x,y,theta = self.rotate(x,y,theta)
+    def getDistance(self, x, y):
+        x,y,_ = self.rotate(x,y,0)
 
         #if we haven't reached intersection or turn=straight, 
         # then distance is just how far we have travelled in y-direction
@@ -182,11 +182,6 @@ class Course:
 
             #angle made with start circle mid, start of intersection and closest point
             t = asin((ay - cy)/self.radius)
-
-            if self.turn == "left":
-                theta = t + pi/2
-            elif self.turn == "right":
-                theta = pi/2 - t
             
             return self.curve_start[1] - self.starting_point[1] + self.radius*t
         else:
@@ -195,7 +190,7 @@ class Course:
                    pi * self.radius/2 + abs(x - self.curve_end[0])
 
     def hasReachedPointOfNoReturn(self, x, y, theta):
-        d = self.getDistance(x, y, theta)
+        d = self.getDistance(x, y)
         
         #sometimes vehicles go slightly over the line when they stop
         return d > self.distance_at_crossing + 1 
@@ -204,8 +199,8 @@ class Course:
         _, y, _ = self.rotate(x,y,0)
         return y > self.request_line
 
-    def hasLeftIntersection(self, x, y, theta):
-        d = self.getDistance(x, y, theta)
+    def hasLeftIntersection(self, x, y):
+        d = self.getDistance(x, y)
 
         #subtract 1.5m to make traffic faster. When they are 1.5 from end of intersection 
         # they don't interfere anymore so they have effectively left the intersection
@@ -218,13 +213,13 @@ class Course:
     #project forward the vehicle to the intersection. Return normal distribution
     # extra argument is the extra distance to project forward, to get to the intersection
     # of courses, not just the edge of the intersection
-    def getTimeToCrossing(self, x, y, theta, speed, Is, extra=0):
+    def getTimeToCrossing(self, x, y, speed, Is, extra=0):
         #get distance and lookup time to crossing
-        d = self.getDistance(x, y, theta)
+        d = self.getDistance(x, y)
         if Is == "stop":
-            return self.sp_stop.getTimeToCrossing2(d, speed, extra=extra)
+            return self.sp_stop.getTimeToCrossing(d, speed, extra=extra)
         else:
-            return self.sp_go.getTimeToCrossing2(d, speed, extra=extra)
+            return self.sp_go.getTimeToCrossing(d, speed, extra=extra)
 
     
     # Not used at the moment. maybe add this if we want to add kalman filter
