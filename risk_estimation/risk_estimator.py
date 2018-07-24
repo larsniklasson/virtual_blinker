@@ -11,7 +11,7 @@ def normal_cdf(x, mu, sigma):
     q = erf((x - mu) / (sigma * sqrt(2.0)))
     return (1.0 + q) / 2.0
 
-class RE2:
+class RiskEstimator:
     def __init__(self, initial_poses):
         
         self.lock = Lock()
@@ -58,8 +58,6 @@ class RE2:
                         LB = 5 if blinkers[car] == Ic else 1
 
                         L = LPose * LE * LB
-
-                        #L *= self.intention_densities[car][Ic,Is] #prior
 
                         D[Ic,Is] = L
                 

@@ -11,7 +11,7 @@ from pid import *
 import random
 from geometry import *
 from utils.course import *
-from risk_estimation.RE2 import *
+from risk_estimation.risk_estimator import *
 from std_msgs.msg import String
 
 import config
@@ -143,7 +143,7 @@ class CarSim:
             
             if not self.is_riskestimator_initialized:
 
-                self.risk_estimator = RE2(poses)
+                self.risk_estimator = RiskEstimator(poses)
                 self.is_riskestimator_initialized = True
 
                 #run maneuver negotiator
