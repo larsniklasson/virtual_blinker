@@ -23,8 +23,8 @@ class Car:
 
 #Non-random
 CAR_DICT = {
-    0 : Car("east", "straight", 70, True, 0),
-    1 : Car("west", "right", 70, True, 0),
+    0 : Car("west", "straight", 70, True, 0),
+    1 : Car("east", "left", 70, True, 0),
     2 : Car("south", "straight", 70, True, 0),
     3 : Car("north", "left", 70, True, 0),
     4 : Car("west", "right", 50, True, 0),

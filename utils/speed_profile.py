@@ -202,7 +202,7 @@ class RootFunction:
     
     #integrate 1/x
     def solveInverseIntegral(self, low, upp):
-        
+
         l = 2*(sqrt(self.a*low+self.b) - \
                       self.c*log(sqrt(self.a*low+self.b)+self.c))/self.a
 

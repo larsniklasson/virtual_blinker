@@ -20,7 +20,7 @@ class RiskEstimator:
         self.travelling_directions = [self.intersection.getTravellingDirection(x,y,theta) 
                                       for x,y,theta,_ in initial_poses]
         
-        self.grant_list = []
+        self.grant_list = [0,4]
         self.queue = []
 
         self.emergency_breaks = [False] * self.nr_cars
@@ -133,6 +133,9 @@ class RiskEstimator:
                             bwd_s = speed + s_dev*0.8 + 0.5
                         else:
                             bwd_s = speed - s_dev*0.8 - 0.5
+
+                        fwd_s = max(fwd_s, 0.01)
+                        bwd_s = max(bwd_s, 0.01)
 
                         #sampling from x,y and speed with 0.8 * std deviation in "forward/backward" direction, 
                         # the resulting times to crossing is about 1 std deviation
@@ -251,7 +254,7 @@ class RiskEstimator:
                         egoInGL = ego_car in self.grant_list and ego_car not in self.queue
                         riskInGL = risk_car in self.grant_list and risk_car not in self.queue
                         riskROW = self.intersection.hasRightOfWay(td_risk, risk_turn, td_ego)
-
+                        
                         flag = False
                         if riskInGL:
                             if egoInGL and not riskROW:
@@ -259,7 +262,7 @@ class RiskEstimator:
                         else:
                             if egoInGL or not riskROW:
                                 flag = True
-                        
+
                         #TODO simplify maybe
 
                         
@@ -274,6 +277,7 @@ class RiskEstimator:
                                 e = self.expectation_densities[risk_car, risk_turn]
                                 sum += (1-e) * self.intention_densities[risk_car][risk_turn, "go"] * \
                                     self.intentionCarTurn(ego_car, ego_turn) * p_gap_not_enough
+
                             except:
                                 #happens i believe for keyerror in gap_dict. Not sure when that
                                 # happens though. I know it means no risk at least
@@ -314,7 +318,7 @@ class RiskEstimator:
 
             ego_speed = ego_pose[-1]
             if d_min < 5 + 2 * ego_speed:
-                return speed - 1
+                return max(0, speed - 1)
             else:
                 return -1
 

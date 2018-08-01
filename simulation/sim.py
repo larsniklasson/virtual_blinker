@@ -259,10 +259,11 @@ class CarSim:
         d[self.t] = carstate_msg
         if self.t - 50 in d: del d[self.t - 50]
         
+        
+        
         #publish noisy and true state
         self.state_publisher.publish(carstate_msg)
         self.true_pose_publisher.publish(msg.TruePose(self.x, self.y, self.theta, self.speed, self.id))
-        
         
 
     def spin(self):
