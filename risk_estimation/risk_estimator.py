@@ -19,6 +19,9 @@ class RiskEstimator:
         self.intersection = config.intersection
         self.travelling_directions = [self.intersection.getTravellingDirection(x,y,theta) 
                                       for x,y,theta,_ in initial_poses]
+        
+        self.grant_list = []
+        self.queue = []
 
         self.emergency_breaks = [False] * self.nr_cars
         self.intention_densities = {}  
@@ -39,11 +42,38 @@ class RiskEstimator:
             self.intention_densities[id] = II
 
         self.latest_poses = initial_poses
+
+    def addVehicleToGrantList(self, id):
+        with self.lock:
+            self.grant_list.append(id)
+    def removeVehicleFromGrantList(self, id):
+        with self.lock:
+            self.grant_list.remove(id)
     
     def update_state(self, t, poses, deviations, blinkers, emergency_breaks):
         with self.lock:
             self.emergency_breaks = emergency_breaks
             self.latest_poses = poses
+
+            
+            self.queue = []
+            for td in self.intersection.travelling_directions:
+                c = self.intersection.courses[td, "straight"]
+                inds = [i for i in range(len(poses)) if self.travelling_directions[i] == td]
+                ds = []
+                for i in inds:
+                    x,y,_,_ = poses[i]
+                    d = c.getDistance(x,y)
+
+                    if d < c.distance_at_crossing+1:
+                        ds.append((i,d))
+
+                ds.sort(key=lambda x: x[1])
+                for i,_ in ds[:-1]:
+                    self.queue.append(i)
+
+            
+
             #------intention----------------
             for car in range(self.nr_cars):
                 D = {}
@@ -139,8 +169,16 @@ class RiskEstimator:
 
                         td_other = self.travelling_directions[othercar]
 
-                        if self.intersection.hasRightOfWay(td_ego, turn_ego, td_other):
-                            continue
+                        ego_granted = egocar in self.grant_list and egocar not in self.queue
+                        ego_row = self.intersection.hasRightOfWay(td_ego, turn_ego, td_other)
+                        other_granted = othercar in self.grant_list and othercar not in self.queue                        
+                        if other_granted and ego_granted:
+                            if ego_row:
+                                continue
+                        
+                        if not other_granted:
+                            if ego_row or ego_granted:
+                                continue
                         
                         e_sum = 0
                         for turn_other in self.turns:
@@ -168,7 +206,6 @@ class RiskEstimator:
                     E[egocar,turn_ego] = min_es
                     
             self.expectation_densities = E
-
 
     def expected_error(self, mu_arr, dev_arr, td, turn, i):
         
@@ -211,8 +248,22 @@ class RiskEstimator:
                             if tti_risk > -1 and tti_risk < 1 and tti_ego < 2 and tti_ego > -1:
                                 sum += self.intentionCarTurn(risk_car, risk_turn) * self.intentionCarTurn(ego_car, ego_turn)
 
+                        egoInGL = ego_car in self.grant_list and ego_car not in self.queue
+                        riskInGL = risk_car in self.grant_list and risk_car not in self.queue
+                        riskROW = self.intersection.hasRightOfWay(td_risk, risk_turn, td_ego)
 
-                        if not self.intersection.hasRightOfWay(td_risk, risk_turn, td_ego):
+                        flag = False
+                        if riskInGL:
+                            if egoInGL and not riskROW:
+                                flag = True
+                        else:
+                            if egoInGL or not riskROW:
+                                flag = True
+                        
+                        #TODO simplify maybe
+
+                        
+                        if flag:
                             try:
                                 #the gap size for triggering EB is a little smaller than for expectation. 
                                 # (dont trigger when not absolutely needed). Maybe this is not so smart, 

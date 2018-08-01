@@ -41,7 +41,7 @@ with open("debug.txt") as f:
         if c == 1:
             nr_cars = len(ms)
             travelling_directions = [intersection.getTravellingDirection(x, y, theta) for (x, y, theta, _) in ms]
-            re = RE2(travelling_directions)
+            re = RiskEstimator(travelling_directions)
             publishers = [rospy.Publisher("true_car_state" + str(i), cm.CarStateTrue, queue_size=50) for i in range(nr_cars)]
 
 

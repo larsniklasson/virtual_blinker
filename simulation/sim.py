@@ -162,7 +162,8 @@ class CarSim:
                         self.Is = "stop"
                     
                     #maximum risk out of all the other cars
-                    risk = max([self.risk_estimator.getRisk(self.id, i) for i in range(self.nr_cars) if i != self.id])
+                    rl = [self.risk_estimator.getRisk(self.id, i) for i in range(self.nr_cars) if i != self.id]
+                    risk = max(rl)
                     
                     if risk > config.risk_threshold:
                         self.emergency_break = True
