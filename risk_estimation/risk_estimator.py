@@ -12,36 +12,33 @@ def normal_cdf(x, mu, sigma):
     return (1.0 + q) / 2.0
 
 class RiskEstimator:
-    def __init__(self, initial_poses):
+    def __init__(self, id):
+
+        self.id = id
         
+        self.car_ids = []
         self.lock = Lock()
-        self.nr_cars = len(initial_poses)
         self.intersection = config.intersection
-        self.travelling_directions = [self.intersection.getTravellingDirection(x,y,theta) 
-                                      for x,y,theta,_ in initial_poses]
         
-        self.grant_list = [0,4]
+        self.travelling_directions = {}
+        
+        self.grant_list = []
         self.queue = []
 
-        self.emergency_breaks = [False] * self.nr_cars
         self.intention_densities = {}  
         self.expectation_densities = {}
         self.turns = self.intersection.turns
 
-        default_I_dens = 1.0/(len(self.turns)*2)
-        default_E_dens = 0.5
+        self.forward_projection_dict = {}
 
+        self.default_I_dens = 1.0/(len(self.turns)*2)
+        self.default_E_dens = 0.5
 
-        for id in range(self.nr_cars):
-            II = {}
-            for Ic in self.turns:
-                for Is in ["go", "stop"]:
-                    II[Ic,Is] = default_I_dens
-                self.expectation_densities[id, Ic] = default_E_dens
-                
-            self.intention_densities[id] = II
+        self.latest_poses = {}
+        self.latest_deviations = {}
+        self.latest_blinkers = {}
+        self.latest_emergency_breaks = {}
 
-        self.latest_poses = initial_poses
 
     def addVehicleToGrantList(self, id):
         with self.lock:
@@ -50,19 +47,36 @@ class RiskEstimator:
         with self.lock:
             self.grant_list.remove(id)
     
+    def removeVehicle(self, id):
+        with self.lock:
+            self.car_ids.remove(id)
+
+    
     def update_state(self, t, poses, deviations, blinkers, emergency_breaks):
         with self.lock:
-            self.emergency_breaks = emergency_breaks
-            self.latest_poses = poses
+            for k in poses.keys():
+                if k not in self.car_ids:
+                    self.car_ids.append(k)
+                    x, y, theta, _ = poses[k]
+                    self.travelling_directions[k] = self.intersection.getTravellingDirection(x, y, theta)
+                    for Ic in self.turns:
+                        self.expectation_densities[k, Ic] = self.default_E_dens
+                    
 
-            
+                self.latest_poses[k] = poses[k]
+                self.latest_deviations[k] = deviations[k]
+                self.latest_blinkers[k] = blinkers[k]
+                self.latest_emergency_breaks[k] = emergency_breaks[k]
+
+
+            #TODO not sure how this behaves with comm-fail
             self.queue = []
             for td in self.intersection.travelling_directions:
                 c = self.intersection.courses[td, "straight"]
-                inds = [i for i in range(len(poses)) if self.travelling_directions[i] == td]
+                inds = [i for i in self.car_ids if self.travelling_directions[i] == td]
                 ds = []
                 for i in inds:
-                    x,y,_,_ = poses[i]
+                    x,y,_,_ = self.latest_poses[i]
                     d = c.getDistance(x,y)
 
                     if d < c.distance_at_crossing+1:
@@ -75,17 +89,18 @@ class RiskEstimator:
             
 
             #------intention----------------
-            for car in range(self.nr_cars):
+            for car in self.car_ids:
                 D = {}
                 for Ic in self.turns:
                     for Is in ["go", "stop"]:
-                        LPose = 1.0/self.expected_error(poses[car], deviations[car], self.travelling_directions[car], Ic, Is)
+                        LPose = 1.0/self.expected_error(self.latest_poses[car], self.latest_deviations[car], 
+                                                        self.travelling_directions[car], Ic, Is)
                         
                         e = self.expectation_densities[car,Ic]
                         ee = e if Is == "go" else 1-e
                         LE = 1 + 3 * ee
 
-                        LB = 5 if blinkers[car] == Ic else 1
+                        LB = 5 if self.latest_blinkers[car] == Ic else 1
 
                         L = LPose * LE * LB
 
@@ -99,9 +114,9 @@ class RiskEstimator:
             
 
             #------------project forward------------------
-            self.forward_projection_dict = {}
+            
 
-            for car in range(self.nr_cars):
+            for car in poses.keys():
                 td = self.travelling_directions[car]
                 x, y, theta, speed = poses[car]
                 x_dev, y_dev, _, s_dev = deviations[car]
@@ -146,26 +161,25 @@ class RiskEstimator:
 
                         sigma = abs(mu-negSigma_time)
 
-                        self.forward_projection_dict[car, Ic, i] = mu, sigma
+                        self.forward_projection_dict[car, Ic, i] = t, mu, sigma
             
             
-            #this will become new expectation_densities
-            E = {}
+            #-----compute expectation----
 
             self.gap_dict = {}
 
-            for egocar in range(self.nr_cars):
+            for egocar in self.car_ids:
                 td_ego = self.travelling_directions[egocar]
                 for turn_ego in self.turns:
-                    x,y,theta,speed = poses[egocar]
+                    x,y,theta,speed = self.latest_poses[egocar]
                     c = self.intersection.courses[td_ego, turn_ego]
                     if c.hasLeftIntersection(x,y):
-                        E[egocar, turn_ego] = 1.0
+                        self.expectation_densities[egocar, turn_ego] = 1.0
                         continue
                     
                     #1.0 => Es = go
                     min_es = 1.0
-                    for othercar in range(self.nr_cars):
+                    for othercar in self.car_ids:
                         
                         if egocar == othercar:
                             continue
@@ -192,10 +206,10 @@ class RiskEstimator:
                             else:
                                 ego_extradist_indice, other_extradist_indice = self.intersection.getExtras(td_ego, turn_ego, td_other, turn_other)
 
-                                mean_ego, std_ego = self.forward_projection_dict[egocar, turn_ego, ego_extradist_indice]
+                                t_ego, mean_ego, std_ego = self.forward_projection_dict[egocar, turn_ego, ego_extradist_indice]
 
-                                mean_other, std_other = self.forward_projection_dict[othercar, turn_other, other_extradist_indice]
-                                gap_mean, gap_std = mean_other - mean_ego, sqrt(std_ego**2 + std_other**2)
+                                t_other, mean_other, std_other = self.forward_projection_dict[othercar, turn_other, other_extradist_indice]
+                                gap_mean, gap_std = t_other + mean_other - (t_ego + mean_ego), sqrt(std_ego**2 + std_other**2)
                                 
                                 self.gap_dict[egocar, turn_ego, othercar, turn_other] = gap_mean, gap_std
                                 probability_gap_enough = 1 - (normal_cdf(config.gap_upper_limit, gap_mean, gap_std) - \
@@ -206,9 +220,9 @@ class RiskEstimator:
                         if e_sum < min_es:
                             min_es = e_sum
                     
-                    E[egocar,turn_ego] = min_es
+                    self.expectation_densities[egocar,turn_ego] = min_es
                     
-            self.expectation_densities = E
+            
 
     def expected_error(self, mu_arr, dev_arr, td, turn, i):
         
@@ -228,6 +242,8 @@ class RiskEstimator:
     
     def getRisk(self, ego_car, risk_car):
         with self.lock:
+            if ego_car not in self.car_ids or risk_car not in self.car_ids:
+                return 0
             td_ego = self.travelling_directions[ego_car]
             td_risk = self.travelling_directions[risk_car]
             sum = 0
@@ -237,15 +253,15 @@ class RiskEstimator:
                         
                         
 
-                        if self.emergency_breaks[risk_car]:
+                        if self.latest_emergency_breaks[risk_car]:
                             #if risk car is emergency breaking and both vehicles are close to intersection
                             #point, then add some risk. This can, for example, happen if the risk car triggers the EB (for some
                             # other car) in the middle of the intersection 
                             risk_extradist_indice, ego_extradist_indice = \
                                 self.intersection.getExtras(td_risk, risk_turn, td_ego, ego_turn)
 
-                            tti_risk, _ = self.forward_projection_dict[risk_car, risk_turn, risk_extradist_indice]
-                            tti_ego, _ = self.forward_projection_dict[ego_car, ego_turn, ego_extradist_indice]
+                            _, tti_risk, _ = self.forward_projection_dict[risk_car, risk_turn, risk_extradist_indice]
+                            _, tti_ego, _ = self.forward_projection_dict[ego_car, ego_turn, ego_extradist_indice]
                             
                             #TODO don't ignore deviations here. although this happens so rarely
                             if tti_risk > -1 and tti_risk < 1 and tti_ego < 2 and tti_ego > -1:
@@ -285,9 +301,13 @@ class RiskEstimator:
 
             return sum
 
+    #TODO make this work for comm failure
     #some crazy stuff to get speed of vehicle in front 
     def recommendSpeedIfVehicleInFront(self, ego_car):
         with self.lock:
+            if ego_car not in self.car_ids:
+                return -1
+
             d_min = 999999999
             ego_pose = self.latest_poses[ego_car]
             ego_td = self.travelling_directions[ego_car]
@@ -297,7 +317,7 @@ class RiskEstimator:
                 if ego_P < 0.15:
                     continue
 
-                for other_car in range(self.nr_cars):
+                for other_car in self.car_ids:
                     if other_car == ego_car:
                         continue
                     other_pose = self.latest_poses[other_car]

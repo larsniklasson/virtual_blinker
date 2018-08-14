@@ -14,6 +14,8 @@ from utils.course import *
 from risk_estimation.risk_estimator import *
 from std_msgs.msg import String
 
+
+
 import config
 #from maneuver_negotiation.maneuver_negotiator import *
 #rom maneuver_negotiation.cloud import *
@@ -69,7 +71,7 @@ class CarSim:
         self.x, self.y, self.theta = self.course.getPose(starting_distance)
 
         #the other vehicle's state topics to subscribe to
-        state_sub_topics = ["car_state" + str(i) for i in range(self.nr_cars) if i != self.id]
+        state_sub_topics = ["car_state" + str(i) for i in range(self.nr_cars)]
 
         for s in state_sub_topics:
             rospy.Subscriber(s, msg.CarState, self.stateCallback, queue_size=10)
@@ -99,81 +101,91 @@ class CarSim:
         if self.id == 0: self.wipe_publisher.publish(String("")) # for cleaning up paths/cars on the map
         rospy.sleep(1) #make sure map is wiped before publishing new paths
         self.path_publisher.publish(msg.Path([msg.Position(x,y) for x,y in path], self.id))
-        self.is_riskestimator_initialized = False
 
         #has vehicle entered try maneuever state or not
         self.has_initiated_trymaneuever = False
-        
+
+
+        self.risk_estimator = RiskEstimator(self.id)
+
         
 
+
     def stateCallback(self, msg):
+
+        #after t > 10 car nr 0 gets no msgs other than its own
+        #if self.t > 10 and self.id == 0 and msg.id != 0:
+        #    return
+
+        #drop 50% of msgs (except for own msg)
+        #if msg.id != self.id and random.random() > 0.5:
+        #    return
+
         if self.t - msg.t > 1/config.rate * config.discard_measurement_time: # old af message, flush queue. 
             return 
 
-        #save measurement in dictionary
-        self.car_state_dictionaries[msg.id][msg.t] = msg
+        self.latest_msg[msg.id] = rospy.get_time()
+        d = self.car_state_dictionaries[msg.id]
+        d[msg.t] = msg
+
+        if msg.t - 50 in d: del d[msg.t - 50]
+
+        listenToThese = []
+        for i in range(self.nr_cars):
+            if rospy.get_time() - self.latest_msg[i] <= 0.1:
+                listenToThese.append(i)
+        
+        have_all = True
+        for c in listenToThese:
+            if not msg.t in self.car_state_dictionaries[c]:
+                have_all = False
+                break
+
         
         #if we have measurements from all cars for a certain time-stamp then perform risk estimation
-        if all([(msg.t in d) for d in self.car_state_dictionaries]):
-            
-            poses = [] #i:th entry in this list is the pose for vehicle i at time msg.t
-            deviations = []
-            blinkers = []
-            emergency_breaks = []
+        if have_all:
+            poses = {}
+            deviations = {}
+            blinkers = {}
+            emergency_breaks = {}
 
-            for d in self.car_state_dictionaries:
-                entry = d[msg.t]
+            for c in listenToThese:
+                entry = self.car_state_dictionaries[c][msg.t]
+
                 p = (entry.x, entry.y, entry.theta, entry.speed)
                 dev = (entry.x_deviation, entry.y_deviation,
                               entry.theta_deviation, entry.speed_deviation)
                 
-                poses.append(p)
-                deviations.append(dev)
-                blinkers.append(entry.blinker)
-                emergency_breaks.append(entry.emergency_break)
-
+                poses[c] = p
+                deviations[c] = dev
+                blinkers[c] = entry.blinker
+                emergency_breaks[c] = entry.emergency_break
 
             actual_time = float(msg.t)/(config.rate * config.slowdown)
         
-            if self.save:
-                with open('../risk_estimation/debug.txt', 'a') as f:
-                    f.write(str((actual_time, poses, 
-                                 deviations, blinkers, emergency_breaks)) + "\n")
+            self.risk_estimator.update_state(actual_time, poses, deviations, blinkers, emergency_breaks)
             
-            
-            if not self.is_riskestimator_initialized:
 
-                self.risk_estimator = RiskEstimator(poses)
-                self.is_riskestimator_initialized = True
-
-                #run maneuver negotiator
-                #self.maneuver_negotiator = ManeuverNegotiator(self.id,self.intersection,0,self.risk_estimator)
-                #self.maneuver_negotiator.initialize()
-            
-            else:
-                self.risk_estimator.update_state(actual_time, poses, deviations, blinkers, emergency_breaks)
+            if self.is_good_behaving:
+                Es_go = self.risk_estimator.getExpectation(self.id, self.course.turn)
+                if Es_go > config.Es_threshold or self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta):
+                    self.Is = "go"
+                else:
+                    self.Is = "stop"
                 
-
-                if self.is_good_behaving:
-                    Es_go = self.risk_estimator.getExpectation(self.id, self.course.turn)
-                    if Es_go > config.Es_threshold or self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta):
-                        self.Is = "go"
-                    else:
-                        self.Is = "stop"
-                    
-                    #maximum risk out of all the other cars
-                    rl = [self.risk_estimator.getRisk(self.id, i) for i in range(self.nr_cars) if i != self.id]
-                    risk = max(rl)
-                    
-                    if risk > config.risk_threshold:
-                        self.emergency_break = True
-                        print "Emergency break activated on car ", self.id
-                    else:
-                        self.emergency_break = False
+                #maximum risk out of all the other cars
+                rl = [self.risk_estimator.getRisk(self.id, i) for i in range(self.nr_cars) if i != self.id]
+                risk = max(rl)
+                
+                if risk > config.risk_threshold:
+                    self.emergency_break = True
+                    print "Emergency break activated on car ", self.id
+                else:
+                    self.emergency_break = False
 
 
     def update(self):
-        
+
         now = rospy.get_time()
         dt = now - self.last_time
         self.last_time = now
@@ -200,11 +212,10 @@ class CarSim:
             targetspeed += self.speed_deviation
 
         #adapt speed to vehicle in front
-        if self.is_riskestimator_initialized:
-            recommended_speed = self.risk_estimator.recommendSpeedIfVehicleInFront(self.id)
-            # -1 = no recommendation
-            if recommended_speed != -1: 
-                targetspeed = min(targetspeed, recommended_speed)
+        recommended_speed = self.risk_estimator.recommendSpeedIfVehicleInFront(self.id)
+        # -1 = no recommendation
+        if recommended_speed != -1: 
+            targetspeed = min(targetspeed, recommended_speed)
             
         if self.emergency_break:
             targetspeed = 0
@@ -254,10 +265,7 @@ class CarSim:
             x_filtered, y_filtered, t_filtered, s_filtered, 
             x_dev_filtered, y_dev_filtered, t_dev_filtered, s_dev_filtered, 
             blinker, self.emergency_break, self.id, self.t)
-        #save current state. Also delete old one
-        d = self.car_state_dictionaries[self.id]
-        d[self.t] = carstate_msg
-        if self.t - 50 in d: del d[self.t - 50]
+        
         
         
         
@@ -280,6 +288,7 @@ class CarSim:
         rospy.sleep(diff)
         self.pid.clear()
         self.last_time = rospy.get_time()
+        self.latest_msg = [rospy.get_time()]*self.nr_cars
 
         rate = rospy.Rate(config.rate)
         first = True
