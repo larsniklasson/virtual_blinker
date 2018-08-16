@@ -10,3 +10,4 @@ string blinker
 bool emergency_break
 int32 id
 int32 t
+bool end

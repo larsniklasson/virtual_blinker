@@ -27,7 +27,7 @@ class CarSim:
         
         rospy.init_node('car', anonymous=False)
         name = rospy.get_name()
-        self.id = int(name[-1])
+        self.id = int(name[-2:])
 
         #sync and wipe map stuff
         if self.id == 0:
@@ -76,7 +76,8 @@ class CarSim:
         for s in state_sub_topics:
             rospy.Subscriber(s, msg.CarState, self.stateCallback, queue_size=10)
 
-        
+        rospy.Subscriber("priochange", String, self.prioChange, queue_size=10)
+
         self.state_publisher = rospy.Publisher('car_state' + str(self.id), msg.CarState, queue_size=10)
         
         #for rviz
@@ -89,10 +90,10 @@ class CarSim:
         self.speed = self.course.getSpeed(self.x, self.y, self.Is)
 
 
-        path = self.course.getPath()
+        self.path = self.course.getPath()
 
         #for following the path
-        self.error_calc = ErrorCalc(path) #calculates how far away we are from ideal path
+        self.error_calc = ErrorCalc(self.path) #calculates how far away we are from ideal path
         self.pid = PID(*config.pid)
 
         self.t = 0
@@ -100,7 +101,7 @@ class CarSim:
         rospy.sleep(0.1) #let publishers register
         if self.id == 0: self.wipe_publisher.publish(String("")) # for cleaning up paths/cars on the map
         rospy.sleep(1) #make sure map is wiped before publishing new paths
-        self.path_publisher.publish(msg.Path([msg.Position(x,y) for x,y in path], self.id))
+        self.path_publisher.publish(msg.Path([msg.Position(x,y) for x,y in self.path], self.id))
 
         #has vehicle entered try maneuever state or not
         self.has_initiated_trymaneuever = False
@@ -109,7 +110,8 @@ class CarSim:
         self.risk_estimator = RiskEstimator(self.id)
 
         
-
+    def prioChange(self, msg):
+        self.risk_estimator.switchPrio()
 
     def stateCallback(self, msg):
 
@@ -143,11 +145,12 @@ class CarSim:
 
         
         #if we have measurements from all cars for a certain time-stamp then perform risk estimation
-        if have_all:
+        if have_all and self.id in listenToThese:
             poses = {}
             deviations = {}
             blinkers = {}
             emergency_breaks = {}
+            end_list = []
 
             for c in listenToThese:
                 entry = self.car_state_dictionaries[c][msg.t]
@@ -160,10 +163,12 @@ class CarSim:
                 deviations[c] = dev
                 blinkers[c] = entry.blinker
                 emergency_breaks[c] = entry.emergency_break
+                if entry.end:
+                    end_list.append(c)
 
             actual_time = float(msg.t)/(config.rate * config.slowdown)
         
-            self.risk_estimator.update_state(actual_time, poses, deviations, blinkers, emergency_breaks)
+            self.risk_estimator.update_state(actual_time, poses, deviations, blinkers, emergency_breaks, end_list)
             
 
             if self.is_good_behaving:
@@ -186,6 +191,7 @@ class CarSim:
 
     def update(self):
 
+
         now = rospy.get_time()
         dt = now - self.last_time
         self.last_time = now
@@ -194,8 +200,8 @@ class CarSim:
         
         # scale lookahead w.r.t. speed. slower speed => smaller lookahead and vice versa
         lookahead_distance = config.lookahead * min(1, self.speed / (50/3.6)) #PID "tuned" for 50 km/h
-        p = getLookaheadPoint((self.x, self.y), self.theta, lookahead_distance) 
-        error, _ = self.error_calc.calculateError(p)
+        p = getLookaheadPoint((self.x, self.y), self.theta, lookahead_distance)
+        error, segmentsLeft = self.error_calc.calculateError(p)
         
         steering_angle = self.pid.update(error)
         steering_angle = min(steering_angle, radians(40))
@@ -213,6 +219,7 @@ class CarSim:
 
         #adapt speed to vehicle in front
         recommended_speed = self.risk_estimator.recommendSpeedIfVehicleInFront(self.id)
+        
         # -1 = no recommendation
         if recommended_speed != -1: 
             targetspeed = min(targetspeed, recommended_speed)
@@ -264,7 +271,7 @@ class CarSim:
         carstate_msg = msg.CarState(
             x_filtered, y_filtered, t_filtered, s_filtered, 
             x_dev_filtered, y_dev_filtered, t_dev_filtered, s_dev_filtered, 
-            blinker, self.emergency_break, self.id, self.t)
+            blinker, self.emergency_break, self.id, self.t, segmentsLeft == 0)
         
         
         
@@ -272,6 +279,26 @@ class CarSim:
         #publish noisy and true state
         self.state_publisher.publish(carstate_msg)
         self.true_pose_publisher.publish(msg.TruePose(self.x, self.y, self.theta, self.speed, self.id))
+        
+        if segmentsLeft == 0:
+            
+            #td = np.random.choice(["north", "south", "west", "east"])
+            #turn = np.random.choice(["left", "straight", "right"])
+            #self.course = Course(td, turn)
+
+            self.x, self.y, self.theta = self.course.getPose(20)
+            self.speed = self.course.getSpeed(self.x, self.y, self.Is)
+            self.path = self.course.getPath()
+            self.error_calc = ErrorCalc(self.path) #calculates how far away we are from ideal path
+            self.pid = PID(*config.pid)
+
+            self.has_initiated_trymaneuever = False
+            self.path_publisher.publish(msg.Path([msg.Position(x,y) for x,y in self.path], self.id))
+
+
+
+            #self.risk_estimator = RiskEstimator(self.id)
+        
         
 
     def spin(self):

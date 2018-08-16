@@ -4,6 +4,7 @@ from math import *
 from threading import Lock
 import config
 import numpy as np
+from threading import Timer
 
 #cdf function of normal distribution
 #much faster than scipy version
@@ -22,6 +23,7 @@ class RiskEstimator:
         
         self.travelling_directions = {}
         
+        self.extra_prio = {i:0 for i in range(30)}
         self.grant_list = []
         self.queue = []
 
@@ -39,6 +41,8 @@ class RiskEstimator:
         self.latest_blinkers = {}
         self.latest_emergency_breaks = {}
 
+        self.LR = False
+
 
     def addVehicleToGrantList(self, id):
         with self.lock:
@@ -48,13 +52,16 @@ class RiskEstimator:
             self.grant_list.remove(id)
     
     def removeVehicle(self, id):
-        with self.lock:
+        if id in self.car_ids:
             self.car_ids.remove(id)
 
     
-    def update_state(self, t, poses, deviations, blinkers, emergency_breaks):
+    def update_state(self, t, poses, deviations, blinkers, emergency_breaks, end_list):
         with self.lock:
+
             for k in poses.keys():
+                if k in end_list:
+                    continue
                 if k not in self.car_ids:
                     self.car_ids.append(k)
                     x, y, theta, _ = poses[k]
@@ -67,6 +74,9 @@ class RiskEstimator:
                 self.latest_deviations[k] = deviations[k]
                 self.latest_blinkers[k] = blinkers[k]
                 self.latest_emergency_breaks[k] = emergency_breaks[k]
+
+            for c in end_list:
+                self.removeVehicle(c)
 
 
             #TODO not sure how this behaves with comm-fail
@@ -187,7 +197,9 @@ class RiskEstimator:
                         td_other = self.travelling_directions[othercar]
 
                         ego_granted = egocar in self.grant_list and egocar not in self.queue
-                        ego_row = self.intersection.hasRightOfWay(td_ego, turn_ego, td_other)
+                        ego_prio = self.extra_prio[egocar]
+                        other_prio = self.extra_prio[othercar]
+                        ego_row = ego_prio > other_prio or (ego_prio == other_prio and self.intersection.hasRightOfWay(td_ego, turn_ego, td_other))
                         other_granted = othercar in self.grant_list and othercar not in self.queue                        
                         if other_granted and ego_granted:
                             if ego_row:
@@ -269,7 +281,9 @@ class RiskEstimator:
 
                         egoInGL = ego_car in self.grant_list and ego_car not in self.queue
                         riskInGL = risk_car in self.grant_list and risk_car not in self.queue
-                        riskROW = self.intersection.hasRightOfWay(td_risk, risk_turn, td_ego)
+                        risk_prio = self.extra_prio[risk_car]
+                        ego_prio = self.extra_prio[ego_car]
+                        riskROW = risk_prio > ego_prio or (risk_prio == ego_prio and self.intersection.hasRightOfWay(td_risk, risk_turn, td_ego))
                         
                         flag = False
                         if riskInGL:
@@ -337,7 +351,7 @@ class RiskEstimator:
                                 speed = other_pose[-1]
 
             ego_speed = ego_pose[-1]
-            if d_min < 5 + 2 * ego_speed:
+            if d_min < 8 + 2 * ego_speed:
                 return max(0, speed - 1)
             else:
                 return -1
@@ -354,6 +368,82 @@ class RiskEstimator:
 
             return sum
     """
+
+    def switchBack(self):
+        tempList = []
+        newd = {i:0 for i in range(30)}
+
+        for k, v in self.latest_poses.iteritems():
+            td = self.travelling_directions[k]
+            
+            if td in ["east", "west"]:
+                c = self.intersection.courses[td, "straight"]
+            
+
+                dist = c.getDistance(v[0], v[1])
+                if dist >= c.distance_at_crossing and dist <= c.distance_at_crossing + 15:
+                    newd[k] = 2
+                    tempList.append(k)
+                else:
+                    diff = c.distance_at_crossing - dist
+                    speed = v[3]
+                    d = (-speed**2)/(2*-5)
+                    if diff < d:
+                        newd[k] = 2
+                        tempList.append(k)
+                    
+            
+        
+        self.extra_prio = newd
+        self.LR = False
+
+        Timer(5.0, self.removeFromPrio, args=(tempList,)).start()
+
+    def switchPrio(self):
+        if self.LR:
+            self.switchBack()
+        else:
+            self.switchToLeftRight()
+
+
+    def switchToLeftRight(self):
+
+
+        tempList = []
+        newd = {i:0 for i in range(30)}
+        for k, v in self.latest_poses.iteritems():
+            td = self.travelling_directions[k]
+            
+            if td not in ["east", "west"]:
+                c = self.intersection.courses[td, "straight"]
+            
+
+                dist = c.getDistance(v[0], v[1])
+                if dist >= c.distance_at_crossing and dist <= c.distance_at_crossing + 15:
+                    newd[k] = 2
+                    tempList.append(k)
+                else:
+                    diff = c.distance_at_crossing - dist
+                    speed = v[3]
+                    d = (-speed**2)/(2*-5)
+                    if diff < d:
+                        newd[k] = 2
+                        tempList.append(k)
+                    
+            
+            if td in ["east", "west"]:
+                newd[k] = 1
+        
+        self.extra_prio = newd
+
+        self.LR = True
+
+        Timer(5.0, self.removeFromPrio, args=(tempList,)).start()
+
+        
+    def removeFromPrio(self, l):
+        for k in l:
+            self.extra_prio[k] = 0
 
     def noConflict(self, car, turn):
         with self.lock:
