@@ -89,8 +89,8 @@ def getCarDict(is_random):
 
 intersection = Intersection()
 
-x_deviation = 0.2
-y_deviation = 0.2
+x_deviation = 0.0000001#0.2
+y_deviation = 0.0000001#0.2
 theta_deviation = 0.04
 speed_deviation = 0.1
 

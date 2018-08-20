@@ -5,6 +5,7 @@ from threading import Lock
 import config
 import numpy as np
 from threading import Timer
+import random
 
 #cdf function of normal distribution
 #much faster than scipy version
@@ -43,6 +44,10 @@ class RiskEstimator:
 
         self.LR = False
 
+        self.timeStill = {i:0 for i in range(30)}
+
+        self.last_t = None
+
 
     def addVehicleToGrantList(self, id):
         with self.lock:
@@ -59,24 +64,57 @@ class RiskEstimator:
     def update_state(self, t, poses, deviations, blinkers, emergency_breaks, end_list):
         with self.lock:
 
+            if self.last_t == None:
+                self.last_t = t
+
             for k in poses.keys():
                 if k in end_list:
                     continue
+
+
                 if k not in self.car_ids:
                     self.car_ids.append(k)
                     x, y, theta, _ = poses[k]
                     self.travelling_directions[k] = self.intersection.getTravellingDirection(x, y, theta)
                     for Ic in self.turns:
                         self.expectation_densities[k, Ic] = self.default_E_dens
-                    
+                
+                if k in self.latest_poses:
+                    p1x,p1y,_,_ = poses[k]
+                    p2x,p2y,_,_ = self.latest_poses[k]
+                    dist = sqrt((p1x-p2x)**2 + (p1y-p2y)**2)
+                    if dist < 0.001:
+                        self.timeStill[k] += t - self.last_t
+
+                if self.timeStill[k] > 5:
+                    self.extra_prio[k] = self.timeStill[k] + k*0.01
+                        
+                td = self.travelling_directions[k]
+                c = self.intersection.courses[td, "straight"]
+
+            
+
+                dist = c.getDistance(poses[k][0], poses[k][1])
+                if dist >= c.distance_at_crossing+1:
+                    self.extra_prio[k] = 100
+                else:
+                    diff = c.distance_at_crossing+1 - dist
+                    speed = poses[k][3]
+                    d = (-speed**2)/(2*-10)
+                    if diff < d:
+                        self.extra_prio[k] = 100
 
                 self.latest_poses[k] = poses[k]
                 self.latest_deviations[k] = deviations[k]
                 self.latest_blinkers[k] = blinkers[k]
                 self.latest_emergency_breaks[k] = emergency_breaks[k]
+            
+            self.last_t = t
 
             for c in end_list:
                 self.removeVehicle(c)
+                self.extra_prio[c] = 0
+                self.timeStill[c] = 0
 
 
             #TODO not sure how this behaves with comm-fail
