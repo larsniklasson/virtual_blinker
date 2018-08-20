@@ -63,6 +63,7 @@ class RiskEstimator:
     
     def update_state(self, t, poses, deviations, blinkers, emergency_breaks, end_list):
         with self.lock:
+            print len(poses)
 
             if self.last_t == None:
                 self.last_t = t
@@ -88,6 +89,8 @@ class RiskEstimator:
 
                 if self.timeStill[k] > 5:
                     self.extra_prio[k] = self.timeStill[k] + k*0.01
+                
+                
                         
                 td = self.travelling_directions[k]
                 c = self.intersection.courses[td, "straight"]
@@ -95,7 +98,8 @@ class RiskEstimator:
             
 
                 dist = c.getDistance(poses[k][0], poses[k][1])
-                if dist >= c.distance_at_crossing+1:
+                if k == 3:print dist
+                if dist >= c.distance_at_crossing+0.02:
                     self.extra_prio[k] = 100
                 else:
                     diff = c.distance_at_crossing+1 - dist
@@ -110,6 +114,11 @@ class RiskEstimator:
                 self.latest_emergency_breaks[k] = emergency_breaks[k]
             
             self.last_t = t
+
+            print "extra prio", self.id
+            for key,val in self.extra_prio.iteritems():
+                if val != 0:
+                    print key,val, self.id
 
             for c in end_list:
                 self.removeVehicle(c)
