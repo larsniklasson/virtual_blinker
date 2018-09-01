@@ -23,11 +23,11 @@ class Car:
 
 #Non-random
 CAR_DICT = {
-    0 : Car("west", "left", 70, True, 0),
-    1 : Car("east", "straight", 70, True, 0),
-    2 : Car("south", "straight", 70, True, 0),
-    3 : Car("north", "left", 70, True, 0),
-    4 : Car("west", "right", 50, True, 0),
+    0 : Car("south", "right", 50, True, 0),
+    1 : Car("east", "right", 50, True, 0),
+    2 : Car("north", "straight", 30, True, 0),
+    3 : Car("north", "straight", 10, True, 0),
+    4 : Car("north", "straight", 20, True, 0),
     5 : Car("east", "right", 50, True, 0),
     6 : Car("north", "straight", 50, True, 0),
     7 : Car("south", "right", 50, True, 0),
@@ -99,9 +99,11 @@ grant_threshold = 0.9 #grant if P(Es=go) is greater than threshold
 save_id = 1 #for debugging
 
 gap_lower_limit = -1.5
-gap_upper_limit = 4
+gap_upper_limit = 3
 
 risk_gap_lower_limit = -1#-0.5
 risk_gap_upper_limit = 2
 
 error_weights = [125, 125, 125, 1]
+
+max_transmission_delay = 0.2

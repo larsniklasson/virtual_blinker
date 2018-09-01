@@ -203,21 +203,21 @@ class Intersection:
             return turn1 == "right" and turn2 == "left" or \
                 turn2 == "right" and turn1 == "left"
 
-    """
-    ## Return agents that the selected agent hasn't got right-of-way to 
-    def getUnsafeAgents(self, agent_pose, agent_poses):
 
-        unsafe_agents = {}
-        agent_direction = self.getTravellingDirection(agent_pose[0], agent_pose[1], agent_pose[2])
+    def hasVehicleLeftIntersection(self, td, x, y):
+        isNorth = y > 7.5
+        isSouth = y < -7.5
+        isEast = x > 7.5
+        isWest = x < -7.5
 
-        # Check if any of the other agents have priority over the selected agents for the 3 possible turns
-        for turn in self.turns:
-            ids = []
-            for id, pose in agent_poses:
-                if not self.hasRightOfWay(agent_direction, turn, self.getTravellingDirection(pose[0], pose[1], pose[2])):
-                    ids.append(id)
-            unsafe_agents[turn] = ids
-
-        return 
-    """
+        if td == "north":
+            return isNorth or isEast or isWest
         
+        if td == "south":
+            return isSouth or isEast or isWest
+
+        if td == "west":
+            return isNorth or isSouth or isWest
+
+        if td == "east":
+            return isNorth or isSouth or isEast

@@ -13,6 +13,8 @@ from geometry import *
 from utils.course import *
 from risk_estimation.risk_estimator import *
 from std_msgs.msg import String
+from maneuver_negotiation.maneuver_negotiator import *
+from threading import Thread
 
 
 
@@ -32,7 +34,7 @@ class CarSim:
         #sync and wipe map stuff
         if self.id == 0:
             #car with id=0 sets the sync time and also wipes the map
-            rospy.set_param("sync_time", rospy.get_rostime().secs + 4)
+            rospy.set_param("sync_time", int(time.time()) + 4)
             self.wipe_publisher = rospy.Publisher("wipe_map", String, queue_size=10)
         
         while 1:
@@ -60,6 +62,20 @@ class CarSim:
         
         CAR_DICT = config.getCarDict(random_seed)
 
+        initial_tds = []
+        initial_poses = []
+        for i in range(self.nr_cars):
+            c = CAR_DICT[i]
+            td = c.travelling_direction
+            st_d = c.starting_distance
+            course = config.intersection.courses[td, "straight"]
+            x,y,theta = course.getPose(st_d)
+            speed = course.getSpeed(x, y, "stop")
+            initial_poses.append((x,y,theta,speed))
+            initial_tds.append(td)
+        
+
+
         this_car = CAR_DICT[self.id]
         travelling_direction = this_car.travelling_direction
         turn = this_car.turn
@@ -70,11 +86,18 @@ class CarSim:
         self.course = Course(travelling_direction, turn)
         self.x, self.y, self.theta = self.course.getPose(starting_distance)
 
+        self.risk_estimator = RiskEstimator(self.id, self.course.turn, initial_poses, initial_tds)
+        self.maneuver_negotiator = ManueverNegotiator(self.risk_estimator, self.id, self.course.turn, self.nr_cars)
+
         #the other vehicle's state topics to subscribe to
         state_sub_topics = ["car_state" + str(i) for i in range(self.nr_cars)]
 
         for s in state_sub_topics:
             rospy.Subscriber(s, msg.CarState, self.stateCallback, queue_size=10)
+
+
+        rospy.Subscriber("man_neg" + str(self.id), msg.ManNeg, self.maneuver_negotiator.messageCallback, queue_size=10)
+        
 
         
         self.state_publisher = rospy.Publisher('car_state' + str(self.id), msg.CarState, queue_size=10)
@@ -104,12 +127,8 @@ class CarSim:
 
         #has vehicle entered try maneuever state or not
         self.has_initiated_trymaneuever = False
-
-
-        self.risk_estimator = RiskEstimator(self.id)
-
-        
-
+        self.has_sent_release = False
+        self.laser_raptors = False
 
     def stateCallback(self, msg):
 
@@ -124,7 +143,7 @@ class CarSim:
         if self.t - msg.t > 1/config.rate * config.discard_measurement_time: # old af message, flush queue. 
             return 
 
-        self.latest_msg[msg.id] = rospy.get_time()
+        self.latest_msg[msg.id] = time.time()
         d = self.car_state_dictionaries[msg.id]
         d[msg.t] = msg
 
@@ -132,7 +151,7 @@ class CarSim:
 
         listenToThese = []
         for i in range(self.nr_cars):
-            if rospy.get_time() - self.latest_msg[i] <= 0.1:
+            if time.time() - self.latest_msg[i] <= 0.1:
                 listenToThese.append(i)
         
         have_all = True
@@ -167,11 +186,16 @@ class CarSim:
             
 
             if self.is_good_behaving:
+                
+                """
                 Es_go = self.risk_estimator.getExpectation(self.id, self.course.turn)
+                
+                
                 if Es_go > config.Es_threshold or self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta):
                     self.Is = "go"
                 else:
                     self.Is = "stop"
+                """
                 
                 #maximum risk out of all the other cars
                 rl = [self.risk_estimator.getRisk(self.id, i) for i in range(self.nr_cars) if i != self.id]
@@ -186,7 +210,7 @@ class CarSim:
 
     def update(self):
 
-        now = rospy.get_time()
+        now = time.time()
         dt = now - self.last_time
         self.last_time = now
         
@@ -206,10 +230,22 @@ class CarSim:
         self.y += v * sin(self.theta)
         self.theta += v * tan(steering_angle) / config.carlength
         
+        if not self.has_initiated_trymaneuever:
+            self.Is = "stop"
+
+        if self.maneuver_negotiator.granted:
+            self.Is = "go"
+
+        if self.risk_estimator.grant_list != []:
+            self.Is = "stop"
+
         # follow speed profile
         targetspeed = self.course.getSpeed(self.x, self.y, self.Is)
         if self.Is == "go":
             targetspeed += self.speed_deviation
+
+        #if self.id == 0 and self.course.getDistance(self.x, self.y) > self.course.distance_at_crossing+2 and self.t < 200:
+        #    targetspeed = 0
 
         #adapt speed to vehicle in front
         recommended_speed = self.risk_estimator.recommendSpeedIfVehicleInFront(self.id)
@@ -231,14 +267,18 @@ class CarSim:
             self.speed += dt*targetacceleration / config.slowdown
             self.speed = min(self.speed, targetspeed)
         
-        """
+        if self.speed < 0.1:
+            self.laser_raptors = True
+        
         #start trymaneuever
-        if not self.man_init and self.course.hasPassedRequestLine(self.x, self.y):
-            print("initiating trymaneuver")
-            self.man_init = True
-            thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=())
-            thread1.start()
-        """    
+        if not self.has_initiated_trymaneuever and self.course.hasPassedRequestLine(self.x, self.y):
+            print "initiating trymaneuver ", self.id
+            self.has_initiated_trymaneuever = True
+            self.maneuver_negotiator.tryManeuver()
+            #thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=())
+            #thread1.start()
+
+
 
         #----Fake filtering----
         #noisy measurement
@@ -259,14 +299,12 @@ class CarSim:
         s_dev_filtered = abs(s_noise - self.speed)
 
 
-        blinker = self.course.turn if self.is_good_behaving else ""
+        blinker = ""#self.course.turn if self.is_good_behaving else ""
 
         carstate_msg = msg.CarState(
             x_filtered, y_filtered, t_filtered, s_filtered, 
             x_dev_filtered, y_dev_filtered, t_dev_filtered, s_dev_filtered, 
             blinker, self.emergency_break, self.id, self.t)
-        
-        
         
         
         #publish noisy and true state
@@ -276,19 +314,15 @@ class CarSim:
 
     def spin(self):
         #-----sync-----
-        now = rospy.get_rostime()
-        s, ns = now.secs, now.nsecs
-
+        now = time.time()
         target = self.sync_time
-
-        ns = ns * 10**(-9)
-        diff = target - (s + ns)
+        diff = target - now
         print "diff", diff
         #sleep until sync time
         rospy.sleep(diff)
         self.pid.clear()
-        self.last_time = rospy.get_time()
-        self.latest_msg = [rospy.get_time()]*self.nr_cars
+        self.last_time = time.time()
+        self.latest_msg = [time.time()]*self.nr_cars
 
         rate = rospy.Rate(config.rate)
         first = True
