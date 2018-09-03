@@ -87,10 +87,10 @@ class Course:
 
             #this stuff should be learned, this is just placeholder profiles that I came up with
             self.slowspeed = 20/3.6
-            self.slowdown_acc = -6
-            self.speedup_acc = 4
-            self.match_profile_acceleration = 5
-            self.match_profile_deacceleration = -7
+            self.slowdown_acc = -5
+            self.speedup_acc = 5
+            self.match_profile_acceleration = 6
+            self.match_profile_deacceleration = -6
 
             self.sp_go, self.sp_stop = createVProfiles(
                     self.fastspeed, self.slowspeed, self.distance_at_crossing, 

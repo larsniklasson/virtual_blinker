@@ -199,6 +199,7 @@ class CarSim:
                 
                 #maximum risk out of all the other cars
                 rl = [self.risk_estimator.getRisk(self.id, i) for i in range(self.nr_cars) if i != self.id]
+                
                 risk = max(rl)
                 
                 if risk > config.risk_threshold:
@@ -206,6 +207,8 @@ class CarSim:
                     print "Emergency break activated on car ", self.id
                 else:
                     self.emergency_break = False
+                
+                
 
 
     def update(self):
@@ -233,7 +236,7 @@ class CarSim:
         if not self.has_initiated_trymaneuever:
             self.Is = "stop"
 
-        if self.maneuver_negotiator.granted:
+        if self.maneuver_negotiator.granted or not self.is_good_behaving:
             self.Is = "go"
 
         if self.risk_estimator.grant_list != []:
@@ -271,7 +274,7 @@ class CarSim:
             self.laser_raptors = True
         
         #start trymaneuever
-        if not self.has_initiated_trymaneuever and self.course.hasPassedRequestLine(self.x, self.y):
+        if not self.has_initiated_trymaneuever and self.course.hasPassedRequestLine(self.x, self.y) and self.is_good_behaving:
             print "initiating trymaneuver ", self.id
             self.has_initiated_trymaneuever = True
             self.maneuver_negotiator.tryManeuver()
@@ -299,12 +302,12 @@ class CarSim:
         s_dev_filtered = abs(s_noise - self.speed)
 
 
-        blinker = ""#self.course.turn if self.is_good_behaving else ""
-
+        blinker = self.course.turn if self.is_good_behaving else ""
+        eb_msg = self.emergency_break
         carstate_msg = msg.CarState(
             x_filtered, y_filtered, t_filtered, s_filtered, 
             x_dev_filtered, y_dev_filtered, t_dev_filtered, s_dev_filtered, 
-            blinker, self.emergency_break, self.id, self.t)
+            blinker, eb_msg, self.id, self.t)
         
         
         #publish noisy and true state

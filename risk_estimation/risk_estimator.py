@@ -241,19 +241,17 @@ class RiskEstimator:
             
 
     def expected_error(self, mu_arr, dev_arr, td, turn, i):
-        
         x,y,_,_ = mu_arr
-
         c = self.intersection.courses[td, turn]
+
         opt = getOptimalPose(c, x, y, i)
 
-        mu_arr = np.array(mu_arr)
-        dev_arr = np.array(dev_arr)
-        opt = np.array(opt)
-        weights = np.array(config.error_weights)
+        d= abs(opt[-1] - mu_arr[-1])
+        d1 = abs(opt[0] - mu_arr[0])
+        d2 = abs(opt[1] - mu_arr[1])
+        d3 = abs(opt[2] - mu_arr[2])
 
-        exp_err_array = expected_error_one_variable(mu_arr, dev_arr, opt, weights)
-        return np.sum(exp_err_array)
+        return 2.0**d + 2**dev_arr[-1] + 4.0**d1 + 4.0**dev_arr[0] + 4.0**d2 + 4.0**dev_arr[1] + (2**16)**d3 + (2**16)**dev_arr[2]
 
     
     def getRisk(self, ego_car, risk_car):
@@ -406,8 +404,9 @@ def getOptimalPose(c, x, y, Is):
     else:
         opt_x, opt_y, opt_theta = c.getPose(d)
     
+    
     opt_s = c.sp_go.getSpeed(d) if Is=="go" else c.sp_stop.getSpeed(d)
-    return (opt_x, opt_y, opt_theta, opt_s)
+    return [opt_x, opt_y, opt_theta, opt_s]
 
 #expected error of some pose variable
 def expected_error_one_variable(mu, sigma, optvalue, weight):

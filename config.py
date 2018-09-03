@@ -23,8 +23,8 @@ class Car:
 
 #Non-random
 CAR_DICT = {
-    0 : Car("south", "right", 50, True, 0),
-    1 : Car("east", "right", 50, True, 0),
+    0 : Car("north", "straight", 60, True, 0),
+    1 : Car("east", "left", 50, False, 0),
     2 : Car("north", "straight", 30, True, 0),
     3 : Car("north", "straight", 10, True, 0),
     4 : Car("north", "straight", 20, True, 0),
@@ -54,14 +54,9 @@ def generateRandom():
 
     turns = np.random.choice(["left", "right", "straight"], size=10, p = [0.4, 0.4, 0.2])
     speed_deviations = (np.random.random(10) -0.5) * 6
-    is_good_behaving_bools = np.random.random(10) <= 0.8
-    print is_good_behaving_bools
+    is_good_behaving_bools = np.random.random(10) <= 0.5
 
     for id, car in CARS_DICT_RANDOM.iteritems():
-
-        #avoid deadlocks
-        if car.travelling_direction in ["south", "west"] and turns[id] == "left":
-            turns[id] = np.random.choice(["right", "straight"])
 
         car.turn = turns[id]
         car.is_good_behaving = is_good_behaving_bools[id]
@@ -104,6 +99,5 @@ gap_upper_limit = 3
 risk_gap_lower_limit = -1#-0.5
 risk_gap_upper_limit = 2
 
-error_weights = [125, 125, 125, 1]
 
 max_transmission_delay = 0.2
