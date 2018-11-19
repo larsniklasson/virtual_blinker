@@ -16,6 +16,9 @@ from std_msgs.msg import String
 from maneuver_negotiation.maneuver_negotiator import *
 from threading import Thread
 
+import datetime
+
+import os
 
 
 import config
@@ -46,13 +49,25 @@ class CarSim:
 
         
         #get ros-params
-        self.nr_cars = rospy.get_param('nr_cars')
-        self.save = rospy.get_param('save') and config.save_id == self.id
-        random_seed = rospy.get_param('random') #if this is 0 the non-random car dict will be used
-
-        if self.save:
-            open('../risk_estimation/debug.txt', 'w').close()
+        self.nr_cars = 2
+        variation = rospy.get_param('variation')
+        starting_dist = rospy.get_param('starting_dist')
+        deviation = rospy.get_param('deviation')
+        self.test_var = rospy.get_param('test_var')
         
+        random_seed = rospy.get_param('seed')
+
+        now = datetime.datetime.now()
+        
+        self.testdir = "../testing/" + str(self.test_var) + "_" + str(variation) + "_" + str(starting_dist) \
+         + "_" + str(deviation) + "_" + str(random_seed) + "_" + str(now.hour) + ":" + str(now.minute)
+
+        if self.id == 0:
+            if not os.path.exists(self.testdir): 
+                os.mkdir(self.testdir)
+
+
+
         np.random.seed(random_seed)
         random.seed(random_seed)
 
@@ -60,7 +75,7 @@ class CarSim:
         # older entries are removed to avoid too large dicts
         self.car_state_dictionaries = [{} for _ in range(self.nr_cars)]
         
-        CAR_DICT = config.getCarDict(random_seed)
+        CAR_DICT = config.getCarDict(self.test_var, variation, starting_dist, deviation)
 
         initial_tds = []
         initial_poses = []
@@ -80,15 +95,19 @@ class CarSim:
         travelling_direction = this_car.travelling_direction
         turn = this_car.turn
         starting_distance = this_car.starting_distance
-        self.is_good_behaving = this_car.is_good_behaving
-        self.speed_deviation = this_car.speed_deviation
+
+        self.use_eb = this_car.use_eb
+        self.use_mn = this_car.use_mn
+        self.lose_com = this_car.lose_com
+        self.speed_dev = this_car.speed_dev
+        self.noisy = this_car.noisy
 
         self.course = Course(travelling_direction, turn)
         self.x, self.y, self.theta = self.course.getPose(starting_distance)
-        self.x += 5
 
         self.risk_estimator = RiskEstimator(self.id, self.course.turn, initial_poses, initial_tds)
-        self.maneuver_negotiator = ManueverNegotiator(self.risk_estimator, self.id, self.course.turn, self.nr_cars)
+        
+        if self.use_mn: self.maneuver_negotiator = ManueverNegotiator(self.risk_estimator, self.id, self.course.turn, self.nr_cars, self)
 
         #the other vehicle's state topics to subscribe to
         state_sub_topics = ["car_state" + str(i) for i in range(self.nr_cars)]
@@ -97,7 +116,7 @@ class CarSim:
             rospy.Subscriber(s, msg.CarState, self.stateCallback, queue_size=10)
 
 
-        rospy.Subscriber("man_neg" + str(self.id), msg.ManNeg, self.maneuver_negotiator.messageCallback, queue_size=10)
+        if self.use_mn: rospy.Subscriber("man_neg" + str(self.id), msg.ManNeg, self.maneuver_negotiator.messageCallback, queue_size=10)
         
 
         
@@ -108,7 +127,7 @@ class CarSim:
         self.path_publisher = rospy.Publisher('car_path' + str(self.id), msg.Path, queue_size=10)
 
         
-        self.Is = "stop" if self.is_good_behaving else "go"
+        self.Is = "stop" if self.use_mn else "go"
         self.emergency_break = False
         self.speed = self.course.getSpeed(self.x, self.y, self.Is)
 
@@ -128,10 +147,25 @@ class CarSim:
 
         #has vehicle entered try maneuever state or not
         self.has_initiated_trymaneuever = False
-        self.has_sent_release = False
-        self.laser_raptors = False
+
+        self.has_triggered_eb = False
+        
+        self.has_stopped = False
+
+        self.end = False
+
+        self.eb_time = -1
+
+
+        self.f = open(self.testdir + "/" + str(self.id) + ".txt", "w")
+
+        self.stop_time = -1
+
 
     def stateCallback(self, msg):
+
+        if self.lose_com and self.course.hasPassedRequestLine(self.x, self.y) and msg.id != self.id and self.t < 10*config.rate:
+            return
 
         #after t > 10 car nr 0 gets no msgs other than its own
         #if self.t > 10 and self.id == 0 and msg.id != 0:
@@ -141,20 +175,22 @@ class CarSim:
         #if msg.id != self.id and random.random() > 0.5:
         #    return
 
-        if self.t - msg.t > 1/config.rate * config.discard_measurement_time: # old af message, flush queue. 
-            return 
+        #if self.t - msg.t > 1/config.rate * config.discard_measurement_time: # old af message, flush queue. 
+        #    return 
 
-        self.latest_msg[msg.id] = time.time()
+        #self.latest_msg[msg.id] = time.time()
+        
+
         d = self.car_state_dictionaries[msg.id]
         d[msg.t] = msg
 
         if msg.t - 50 in d: del d[msg.t - 50]
 
-        listenToThese = []
-        for i in range(self.nr_cars):
-            if time.time() - self.latest_msg[i] <= 0.1:
-                listenToThese.append(i)
-        
+        if self.lose_com and self.course.hasPassedRequestLine(self.x, self.y) and self.t < 10*config.rate:
+            listenToThese = [self.id]
+        else:
+            listenToThese = [0,1]
+
         have_all = True
         for c in listenToThese:
             if not msg.t in self.car_state_dictionaries[c]:
@@ -166,8 +202,6 @@ class CarSim:
         if have_all:
             poses = {}
             deviations = {}
-            blinkers = {}
-            emergency_breaks = {}
 
             for c in listenToThese:
                 entry = self.car_state_dictionaries[c][msg.t]
@@ -178,39 +212,25 @@ class CarSim:
                 
                 poses[c] = p
                 deviations[c] = dev
-                blinkers[c] = entry.blinker
-                emergency_breaks[c] = entry.emergency_break
 
             actual_time = float(msg.t)/(config.rate * config.slowdown)
         
-            self.risk_estimator.update_state(actual_time, poses, deviations, blinkers, emergency_breaks)
+            self.risk_estimator.update_state(actual_time, poses, deviations)
             
-
-            if self.is_good_behaving:
+            risk = max(self.risk_estimator.getRisk(0,1), self.risk_estimator.getRisk(1,0))
+            
+            if risk > config.risk_threshold and not self.has_triggered_eb:
                 
-                """
-                Es_go = self.risk_estimator.getExpectation(self.id, self.course.turn)
-                
-                
-                if Es_go > config.Es_threshold or self.course.hasReachedPointOfNoReturn(self.x, self.y, self.theta):
-                    self.Is = "go"
-                else:
-                    self.Is = "stop"
-                """
-                
-                #maximum risk out of all the other cars
-                rl = [self.risk_estimator.getRisk(self.id, i) for i in range(self.nr_cars) if i != self.id]
-                
-                risk = max(rl)
-                
-                if risk > config.risk_threshold:
-                    self.emergency_break = True
+                if self.use_eb:
+                    self.has_triggered_eb = True
                     print "Emergency break activated on car ", self.id
                 else:
-                    self.emergency_break = False
-                
-                
+                    if self.test_var == 0:
+                        if self.eb_time == -1:
+                            self.eb_time = msg.t
+                            print "shouldve triggered eb here", msg.t, self.id
 
+            
 
     def update(self):
 
@@ -233,23 +253,35 @@ class CarSim:
         self.x += v * cos(self.theta)
         self.y += v * sin(self.theta)
         self.theta += v * tan(steering_angle) / config.carlength
-        
-        if not self.has_initiated_trymaneuever:
-            self.Is = "stop"
 
-        if self.maneuver_negotiator.granted or not self.is_good_behaving:
+        if not self.use_mn:
             self.Is = "go"
+        else:
+        
+            if not self.has_initiated_trymaneuever:
+                self.Is = "stop"
 
-        if self.risk_estimator.grant_list != []:
-            self.Is = "stop"
+            if self.maneuver_negotiator.granted:
+                self.Is = "go"
+
+            if self.risk_estimator.grant_list != []:
+                self.Is = "stop"
 
         # follow speed profile
         targetspeed = self.course.getSpeed(self.x, self.y, self.Is)
         #if self.Is == "go":
-        targetspeed += self.speed_deviation
+        
+        if self.speed_dev == 1:
+            if self.course.getDistance(self.x, self.y) > self.course.distance_at_crossing - 20:
+                if self.Is == "go":
+                    targetspeed += 15/3.6
 
-        #if self.id == 0 and self.course.getDistance(self.x, self.y) > self.course.distance_at_crossing+2 and self.t < 200:
-        #    targetspeed = 0
+        if self.speed_dev == 2:
+            if self.course.getDistance(self.x, self.y) > self.course.distance_at_crossing - 20:
+                if self.Is == "go":
+                    targetspeed -= 10/3.6
+                    targetspeed = max(15/2.6, targetspeed)
+
 
         #adapt speed to vehicle in front
         recommended_speed = self.risk_estimator.recommendSpeedIfVehicleInFront(self.id)
@@ -257,9 +289,16 @@ class CarSim:
         if recommended_speed != -1: 
             targetspeed = min(targetspeed, recommended_speed)
             
-        if self.emergency_break:
-            targetspeed = 0
+        if self.has_triggered_eb:
+            if self.speed < 0.05:
+                self.has_stopped = True
+                self.stop_time = self.t
+            
+            if not self.has_stopped:
+                targetspeed = 0
+                
 
+        
         if targetspeed < self.speed:
             targetacceleration = self.course.match_profile_deacceleration
             if self.emergency_break:
@@ -271,25 +310,30 @@ class CarSim:
             self.speed += dt*targetacceleration / config.slowdown
             self.speed = min(self.speed, targetspeed)
         
-        if self.speed < 0.1:
-            self.laser_raptors = True
-        
         #start trymaneuever
-        if not self.has_initiated_trymaneuever and self.course.hasPassedRequestLine(self.x, self.y) and self.is_good_behaving:
-            print "initiating trymaneuver ", self.id
-            self.has_initiated_trymaneuever = True
-            self.maneuver_negotiator.tryManeuver()
-            #thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=())
-            #thread1.start()
+        if self.use_mn:
+            if not self.has_initiated_trymaneuever and self.course.hasPassedRequestLine(self.x, self.y):
+                print "initiating trymaneuver ", self.id
+                self.has_initiated_trymaneuever = True
+                self.maneuver_negotiator.tryManeuver()
+                #thread1 = Thread(target=self.maneuver_negotiator.tryManeuver,args=())
+                #thread1.start()
 
 
 
         #----Fake filtering----
         #noisy measurement
-        x_noise = np.random.normal(self.x, config.x_deviation)
-        y_noise = np.random.normal(self.y, config.y_deviation)
-        t_noise = np.random.normal(self.theta, config.theta_deviation)
-        s_noise = np.random.normal(self.speed, config.speed_deviation)
+
+
+        if self.noisy:
+            dev = config.deviations_high
+        else:
+            dev = config.deviations_low
+
+        x_noise = np.random.normal(self.x, dev[0])
+        y_noise = np.random.normal(self.y, dev[1])
+        t_noise = np.random.normal(self.theta, dev[2])
+        s_noise = np.random.normal(self.speed, dev[3])
 
         # "filtering"
         x_filtered = self.x + (x_noise - self.x) / 5.0
@@ -303,17 +347,28 @@ class CarSim:
         s_dev_filtered = abs(s_noise - self.speed)
 
 
-        blinker = self.course.turn if self.is_good_behaving else ""
-        eb_msg = self.emergency_break
         carstate_msg = msg.CarState(
             x_filtered, y_filtered, t_filtered, s_filtered, 
             x_dev_filtered, y_dev_filtered, t_dev_filtered, s_dev_filtered, 
-            blinker, eb_msg, self.id, self.t)
+            self.id, self.t)
         
         
         #publish noisy and true state
         self.state_publisher.publish(carstate_msg)
         self.true_pose_publisher.publish(msg.TruePose(self.x, self.y, self.theta, self.speed, self.id))
+
+        self.f.write(str((self.x, self.y, self.theta, self.t)) + "\n")
+
+
+        if self.course.hasPassedRequestLine(self.x, self.y) and sqrt(self.x**2 + self.y**2) > 60:
+            self.end = True
+
+            self.f.write(str((self.eb_time, self.stop_time)))
+
+            self.f.close()
+
+
+        
         
 
     def spin(self):
@@ -330,12 +385,11 @@ class CarSim:
 
         rate = rospy.Rate(config.rate)
         first = True
-        while not rospy.is_shutdown():
+        while not (rospy.is_shutdown() or self.end):
             rate.sleep()
             self.update()
             if self.id == 0 and first:
                 rospy.delete_param("sync_time")
-                rospy.delete_param("random")
                 first = False
         
 

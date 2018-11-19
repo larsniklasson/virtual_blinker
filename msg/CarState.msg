@@ -6,7 +6,5 @@ float32 x_deviation
 float32 y_deviation
 float32 theta_deviation
 float32 speed_deviation
-string blinker
-bool emergency_break
 int32 id
 int32 t

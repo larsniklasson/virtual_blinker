@@ -37,8 +37,6 @@ class RiskEstimator:
 
         self.latest_poses = initial_poses
         self.latest_deviations = {c: (1,1,1,1) for c in self.car_ids}
-        self.latest_blinkers = {c: "" for c in self.car_ids}
-        self.latest_emergency_breaks = {c: False for c in self.car_ids}
 
 
         for c in self.car_ids:
@@ -77,7 +75,7 @@ class RiskEstimator:
         return return_list
 
     
-    def update_state(self, t, poses, deviations, blinkers, emergency_breaks):
+    def update_state(self, t, poses, deviations):
         with self.lock:
             for k in poses.keys():
 
@@ -88,8 +86,6 @@ class RiskEstimator:
 
                 self.latest_poses[k] = poses[k]
                 self.latest_deviations[k] = deviations[k]
-                self.latest_blinkers[k] = blinkers[k]
-                self.latest_emergency_breaks[k] = emergency_breaks[k]
 
             
 
@@ -105,9 +101,8 @@ class RiskEstimator:
                         ee = e if Is == "go" else 1-e
                         LE = 1 + 3 * ee
                         
-                        LB = 5 if self.latest_blinkers[car] == Ic else 1
 
-                        L = LPose * LE * LB
+                        L = LPose * LE
 
                         D[Ic,Is] = L
                 
@@ -266,20 +261,6 @@ class RiskEstimator:
                     if self.intersection.doesCoursesIntersect(td_ego, ego_turn, td_risk, risk_turn):
                         
                         
-
-                        if self.latest_emergency_breaks[risk_car]:
-                            #if risk car is emergency breaking and both vehicles are close to intersection
-                            #point, then add some risk. This can, for example, happen if the risk car triggers the EB (for some
-                            # other car) in the middle of the intersection 
-                            risk_extradist_indice, ego_extradist_indice = \
-                                self.intersection.getExtras(td_risk, risk_turn, td_ego, ego_turn)
-
-                            _, tti_risk, _ = self.forward_projection_dict[risk_car, risk_turn, risk_extradist_indice]
-                            _, tti_ego, _ = self.forward_projection_dict[ego_car, ego_turn, ego_extradist_indice]
-                            
-                            #TODO don't ignore deviations here. although this happens so rarely
-                            if tti_risk > -1 and tti_risk < 1 and tti_ego < 2 and tti_ego > -1:
-                                sum += self.intentionCarTurn(risk_car, risk_turn) * self.intentionCarTurn(ego_car, ego_turn)
 
                         egoInGL = ego_car in self.grant_list
                         riskInGL = risk_car in self.grant_list

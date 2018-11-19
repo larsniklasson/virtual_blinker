@@ -1,32 +1,23 @@
 <launch>
-<!--
-<arg name="vis" default="1"/>
-<group if="$(arg vis)">
-    <node name= "visualization" pkg= "virtual_blinker" type="visualization.py" output="screen" cwd="node"/>
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find virtual_blinker)/config.rviz" />
-</group> -->
 
-<arg name="nr_cars" default="4"/>
-<param name="nr_cars" type="int" value="$(arg nr_cars)"/>
 
-<arg name="random" default="0"/>
-<param name="random" type="int" value="$(arg random)"/>
+<arg name="test_var"/>
+<param name="test_var" type="int" value="$(arg test_var)"/>
 
-<arg name="save" default="0"/>
-<param name="save" type="bool" value="$(arg save)"/>
+<arg name="variation"/>
+<param name="variation" type="int" value="$(arg variation)"/>
 
-<node if="$(eval nr_cars >= 1)" name="car0" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
-<node if="$(eval nr_cars >= 2)" name="car1" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
-<node if="$(eval nr_cars >= 3)" name="car2" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
-<node if="$(eval nr_cars >= 4)" name="car3" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
+<arg name="starting_dist" />
+<param name="starting_dist" type="int" value="$(arg starting_dist)"/>
 
-<node if="$(eval nr_cars >= 5)" name="car4" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
+<arg name="deviation"/>
+<param name="deviation" type="int" value="$(arg deviation)"/>
 
-<node if="$(eval nr_cars >= 6)" name="car5" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
-<node if="$(eval nr_cars >= 7)" name="car6" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
-<node if="$(eval nr_cars >= 8)" name="car7" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
-<node if="$(eval nr_cars >= 9)" name="car8" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
+<arg name="seed" />
+<param name="seed" type="int" value="$(arg seed)"/>
 
-<node if="$(eval nr_cars >= 10)" name="car9" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
+<node name="car0" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
+<node name="car1" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
+
 
 </launch>

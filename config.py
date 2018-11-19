@@ -6,7 +6,7 @@ import numpy as np
 
 class Car:
     def __init__(self, travelling_direction, turn, 
-                 starting_distance, is_good_behaving, speed_deviation):
+                 starting_distance, use_eb, use_mn, lose_com, speed_dev, noisy):
         
         #the (original) direction the vehicle is (was) travelling
         self.travelling_direction = travelling_direction
@@ -14,70 +14,143 @@ class Car:
         self.turn = turn
         self.starting_distance = starting_distance
 
-        # follows expectation, uses emergency break and sends blinker
-        self.is_good_behaving = is_good_behaving
+        self.use_eb = use_eb
+        self.use_mn = use_mn
+
+        self.lose_com = lose_com
+        self.speed_dev = speed_dev
+
+        self.noisy = noisy
+
+
+
+def getCarDict(test_var, variation, starting_distance, deviation):
+    td1 = "north"
+    turn1 = "straight"
+
+    if variation == 0:
+        td2 = "south"
+        turn2 = "left"
         
-        # constant deviation from speed profile.
-        self.speed_deviation = speed_deviation
+    if variation == 1:
+        td2 = "west"
+        turn2 = "straight"
+    if variation == 2:
+        td2 = "west"
+        turn2 = "right"
 
 
-#Non-random
-CAR_DICT = {
-    0 : Car("north", "left", 60, True, 10),
-    1 : Car("north", "right", 50, False, 10),
-    2 : Car("north", "straight", 30, True, 10),
-    3 : Car("north", "straight", 10, True, 0),
-    4 : Car("north", "straight", 20, True, 0),
-    5 : Car("east", "right", 50, True, 0),
-    6 : Car("north", "straight", 50, True, 0),
-    7 : Car("south", "right", 50, True, 0),
-    8 : Car("west", "left", 30, True, 0),
-    9 : Car("east", "straight", 30, True, 0)
-}
+    nr_dist = 70.0
 
-#generate a semi-random car dict using the seed given in launch file
-#travelling direction and starting distance fixed
-def generateRandom():
+    if variation == 0:
 
-    CARS_DICT_RANDOM = {
-        0 : Car("west", None, 70, None, None),
-        1 : Car("east", None, 70, True, None),
-        2 : Car("north", None, 70, True, None),
-        3 : Car("south", None, 70, True, None),
-        4 : Car("west", None, 50, True, None),
-        5 : Car("east", None, 50, True, None),
-        6 : Car("north", None, 50, True, None),
-        7 : Car("south", None, 50, True, None),
-        8 : Car("west", None, 30, True, None),
-        9 : Car("east", None, 30, True, None)
-    }
+        if deviation == 3:
+            sd1 = 40
+            sd2 = 15+70 * starting_distance/nr_dist
 
-    turns = np.random.choice(["left", "right", "straight"], size=10, p = [0.4, 0.4, 0.2])
-    speed_deviations = (np.random.random(10) -0.5) * 6
-    is_good_behaving_bools = np.random.random(10) <= 0.5
-
-    for id, car in CARS_DICT_RANDOM.iteritems():
-
-        car.turn = turns[id]
-        car.is_good_behaving = is_good_behaving_bools[id]
-        car.speed_deviation = speed_deviations[id]
-
-    #each car will use the same seed so this dict will be the same for every car
-    return CARS_DICT_RANDOM
-
-def getCarDict(is_random):
-    if is_random:
-        return generateRandom()
-    else:
-        return CAR_DICT
+        elif deviation == 4:
+            sd1 = 10
+            sd2 = 20+70 * starting_distance/nr_dist
+            
+        else:
+            sd1 = 20
+            sd2 = 15 + 70 * starting_distance/nr_dist
     
+
+    if variation == 1:
+        if deviation == 3:
+            sd1 = 55
+            sd2 = 10 + 60 * starting_distance / nr_dist
+        elif deviation == 4:
+            sd1 = 35
+            sd2 = 15+62 * starting_distance / nr_dist
+        else:
+            sd1 = 30
+            sd2 = 5+55 * starting_distance/nr_dist
+
+    if variation == 2:
+
+        if deviation == 3:
+            sd1 = 55
+            sd2 = 15+60* starting_distance/nr_dist
+        elif deviation == 4:
+            sd1 = 35
+            sd2 = 30+60 *starting_distance/nr_dist
+        else:
+            sd1 = 30
+            sd2 = 15 + 62 * starting_distance/nr_dist
+
+
+    #normal
+    if deviation == 0:
+
+        c1 = Car(td1, turn1, sd1, True, True, False, 0, 0)
+        c2 = Car(td2, turn2, sd2, True, True, False, 0, 0)
+    
+    #malicious
+    if deviation == 1:
+        
+        c1 = Car(td1, turn1, sd1, True, True, False, 0, 0)
+        c2 = Car(td2, turn2, sd2, False, False, False, 0, 0)
+
+    #both fast
+    if deviation == 2:
+        
+        c1 = Car(td1, turn1, sd1, True, True, False, 1, 0)
+        c2 = Car(td2, turn2, sd2, True, True, False, 1, 0)
+
+    #green fast, blue slow
+    if deviation == 3:
+        
+        c1 = Car(td1, turn1, sd1, True, True, False, 2, 0)
+        c2 = Car(td2, turn2, sd2, True, True, False, 1, 0)
+
+    #green slow, blue fast
+    if deviation == 4:
+        
+        c1 = Car(td1, turn1, sd1, True, True, False, 1, 0)
+        c2 = Car(td2, turn2, sd2, True, True, False, 2, 0)
+
+    #lose com
+    if deviation == 5:
+        
+        c1 = Car(td1, turn1, sd1, True, True, True, 0, 0)
+        c2 = Car(td2, turn2, sd2, True, True, True, 0, 0)
+
+    #noisy
+    if deviation == 6:
+        
+        c1 = Car(td1, turn1, sd1, True, True, False, 0, 1)
+        c2 = Car(td2, turn2, sd2, True, True, False, 0, 1)
+
+
+    #test risk assessment
+    if test_var == 0:
+        c1.use_eb = False
+        c1.use_mn = False
+        c2.use_eb = False
+        c2.use_mn = False
+
+    if test_var == 1:
+        c1.use_mn = False
+        c2.use_mn = False
+
+    if test_var == 2:
+        c1.use_eb = False
+        c2.use_eb = False
+
+
+    return {0:c1, 1:c2}
+
+
+
 
 intersection = Intersection()
 
-x_deviation = 0.2
-y_deviation = 0.2
-theta_deviation = 0.04
-speed_deviation = 0.1
+deviations_high = (1, 1, 0.2, 0.5)
+deviations_low = (0.2, 0.2, 0.04, 0.1)
+
+
 
 slowdown = 1.0
 rate = 30 #iterations per second for simulation => rate = msgs sent per second
@@ -87,11 +160,8 @@ pid = 0.4, 0.0, 0.01
 lookahead = 5
 carlength = 2.8
 
-Es_threshold = 0.8   #determines if well behaved vehicles go or stop
 risk_threshold = 0.3 #Break if higher
 grant_threshold = 0.9 #grant if P(Es=go) is greater than threshold
-
-save_id = 1 #for debugging
 
 gap_lower_limit = -1.5
 gap_upper_limit = 3

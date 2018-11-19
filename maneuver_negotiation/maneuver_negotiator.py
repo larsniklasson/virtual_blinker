@@ -9,7 +9,7 @@ import random
 import time
 
 class ManueverNegotiator:
-    def __init__(self, risk_estimator, id, turn, nr_cars):
+    def __init__(self, risk_estimator, id, turn, nr_cars, sim):
         self.risk_estimator = risk_estimator
         self.granted = False
         self.id = id
@@ -18,6 +18,7 @@ class ManueverNegotiator:
 
         self.currentAsk = []
         self.tag = 0
+        self.sim = sim
 
 
     def tryManeuver(self):
@@ -44,6 +45,8 @@ class ManueverNegotiator:
         publisher.publish(msg)
 
     def messageCallback(self, message):
+        if self.sim.lose_com and self.sim.course.hasPassedRequestLine(self.sim.x, self.sim.y) and self.sim.t < 10*config.rate:
+            return
         now = time.time()
         if now - message.time < config.max_transmission_delay:
             if message.type == "GET":
