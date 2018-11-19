@@ -85,6 +85,7 @@ class CarSim:
 
         self.course = Course(travelling_direction, turn)
         self.x, self.y, self.theta = self.course.getPose(starting_distance)
+        self.x += 5
 
         self.risk_estimator = RiskEstimator(self.id, self.course.turn, initial_poses, initial_tds)
         self.maneuver_negotiator = ManueverNegotiator(self.risk_estimator, self.id, self.course.turn, self.nr_cars)
@@ -244,8 +245,8 @@ class CarSim:
 
         # follow speed profile
         targetspeed = self.course.getSpeed(self.x, self.y, self.Is)
-        if self.Is == "go":
-            targetspeed += self.speed_deviation
+        #if self.Is == "go":
+        targetspeed += self.speed_deviation
 
         #if self.id == 0 and self.course.getDistance(self.x, self.y) > self.course.distance_at_crossing+2 and self.t < 200:
         #    targetspeed = 0

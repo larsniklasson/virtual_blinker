@@ -105,9 +105,9 @@ class Visualizer:
 
         m = self.markers[msg.id]
         
-        #x,y is front of car. find centre of car
-        xc = x- (m.length/2) *(math.cos(theta))
-        yc = y - (m.length/2) * (math.sin(theta))
+        #x,y is front wheelaxis. find centre of car
+        xc = x + 1 * math.cos(theta) - (m.length/2) * math.cos(theta)
+        yc = y + 1 * math.sin(theta) - (m.length/2) * math.sin(theta)
 
         m.setMarkerPosition(xc,yc)
         m.setMarkerDirection(theta)
@@ -127,8 +127,8 @@ class CarMarker:
     def __init__(self, (r,g,b)):
         
         #car is 4x1.8 meters, meters / pixel = 4
-        self.length = 4*4
-        self.width  = 1.8*4
+        self.length = 4.7*4
+        self.width  = 2.0*4
         
         self.marker = Marker()
         self.marker.header.frame_id = HEADER_FRAME

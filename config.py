@@ -23,9 +23,9 @@ class Car:
 
 #Non-random
 CAR_DICT = {
-    0 : Car("north", "straight", 60, True, 0),
-    1 : Car("east", "left", 50, False, 0),
-    2 : Car("north", "straight", 30, True, 0),
+    0 : Car("north", "left", 60, True, 10),
+    1 : Car("north", "right", 50, False, 10),
+    2 : Car("north", "straight", 30, True, 10),
     3 : Car("north", "straight", 10, True, 0),
     4 : Car("north", "straight", 20, True, 0),
     5 : Car("east", "right", 50, True, 0),
@@ -80,12 +80,12 @@ theta_deviation = 0.04
 speed_deviation = 0.1
 
 slowdown = 1.0
-rate = 15 #iterations per second for simulation => rate = msgs sent per second
+rate = 30 #iterations per second for simulation => rate = msgs sent per second
 discard_measurement_time = 0.15
 
-pid = 0.4, 0.0, 0.05
+pid = 0.4, 0.0, 0.01
 lookahead = 5
-carlength = 4
+carlength = 2.8
 
 Es_threshold = 0.8   #determines if well behaved vehicles go or stop
 risk_threshold = 0.3 #Break if higher
