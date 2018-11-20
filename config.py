@@ -40,7 +40,7 @@ def getCarDict(test_var, variation, starting_distance, deviation):
         turn2 = "right"
 
 
-    nr_dist = 70.0
+    nr_dist = 79.0
 
     if variation == 0:
 
@@ -55,7 +55,7 @@ def getCarDict(test_var, variation, starting_distance, deviation):
         else:
             sd1 = 20
             sd2 = 15 + 70 * starting_distance/nr_dist
-    
+        
 
     if variation == 1:
         if deviation == 3:
@@ -151,10 +151,10 @@ deviations_high = (1, 1, 0.2, 0.5)
 deviations_low = (0.2, 0.2, 0.04, 0.1)
 
 
+speedup = 10.0 / 4
 
-slowdown = 1.0
-rate = 30 #iterations per second for simulation => rate = msgs sent per second
-discard_measurement_time = 0.15
+slowdown = 1 / speedup
+rate = 60.0 * speedup #iterations per second for simulation => rate = msgs sent per second
 
 pid = 0.4, 0.0, 0.01
 lookahead = 5
@@ -164,10 +164,12 @@ risk_threshold = 0.3 #Break if higher
 grant_threshold = 0.9 #grant if P(Es=go) is greater than threshold
 
 gap_lower_limit = -1.5
-gap_upper_limit = 3
+gap_upper_limit = 2.5
 
-risk_gap_lower_limit = -1#-0.5
-risk_gap_upper_limit = 2
+risk_gap_lower_limit = -1.0#-0.5
+risk_gap_upper_limit = 1.5
 
 
-max_transmission_delay = 0.2
+max_transmission_delay = 0.2 / speedup
+
+error_weights = [125, 125, 125, 1]

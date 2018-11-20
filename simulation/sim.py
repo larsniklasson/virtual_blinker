@@ -37,7 +37,7 @@ class CarSim:
         #sync and wipe map stuff
         if self.id == 0:
             #car with id=0 sets the sync time and also wipes the map
-            rospy.set_param("sync_time", int(time.time()) + 4)
+            rospy.set_param("sync_time", int(time.time()) + 1.3)
             self.wipe_publisher = rospy.Publisher("wipe_map", String, queue_size=10)
         
         while 1:
@@ -59,8 +59,8 @@ class CarSim:
 
         now = datetime.datetime.now()
         
-        self.testdir = "../testing/" + str(self.test_var) + "_" + str(variation) + "_" + str(starting_dist) \
-         + "_" + str(deviation) + "_" + str(random_seed) + "_" + str(now.hour) + ":" + str(now.minute)
+        self.testdir = "../testing/" + str(self.test_var) + "_" + str(variation) + "_" + str(starting_dist)\
+         + "_" + str(deviation) + "_" + str(random_seed)
 
         if self.id == 0:
             if not os.path.exists(self.testdir): 
@@ -140,9 +140,9 @@ class CarSim:
 
         self.t = 0
 
-        rospy.sleep(0.1) #let publishers register
+        rospy.sleep(0.02) #let publishers register
         if self.id == 0: self.wipe_publisher.publish(String("")) # for cleaning up paths/cars on the map
-        rospy.sleep(1) #make sure map is wiped before publishing new paths
+        rospy.sleep(0.02) #make sure map is wiped before publishing new paths
         self.path_publisher.publish(msg.Path([msg.Position(x,y) for x,y in path], self.id))
 
         #has vehicle entered try maneuever state or not
@@ -156,16 +156,21 @@ class CarSim:
 
         self.eb_time = -1
 
-
+        if self.id == 1:
+            rospy.sleep(0.02)
         self.f = open(self.testdir + "/" + str(self.id) + ".txt", "w")
 
         self.stop_time = -1
 
 
     def stateCallback(self, msg):
+        #print msg.t
 
-        if self.lose_com and self.course.hasPassedRequestLine(self.x, self.y) and msg.id != self.id and self.t < 10*config.rate:
-            return
+        if self.lose_com and self.course.hasPassedRequestLine(self.x, self.y) and msg.id != self.id and self.t < 6*config.rate:
+            if (msg.id == 0 and msg.y > 30):
+                pass
+            else:
+                return
 
         #after t > 10 car nr 0 gets no msgs other than its own
         #if self.t > 10 and self.id == 0 and msg.id != 0:
@@ -180,13 +185,16 @@ class CarSim:
 
         #self.latest_msg[msg.id] = time.time()
         
+        #if self.id == 1 and msg.id == 0:
+        #    print msg.y
+
 
         d = self.car_state_dictionaries[msg.id]
         d[msg.t] = msg
 
         if msg.t - 50 in d: del d[msg.t - 50]
 
-        if self.lose_com and self.course.hasPassedRequestLine(self.x, self.y) and self.t < 10*config.rate:
+        if self.lose_com and self.course.hasPassedRequestLine(self.x, self.y) and self.t < 6*config.rate and not(msg.id == 0 and msg.y > 30):
             listenToThese = [self.id]
         else:
             listenToThese = [0,1]
@@ -217,12 +225,16 @@ class CarSim:
         
             self.risk_estimator.update_state(actual_time, poses, deviations)
             
+            
             risk = max(self.risk_estimator.getRisk(0,1), self.risk_estimator.getRisk(1,0))
             
+            
             if risk > config.risk_threshold and not self.has_triggered_eb:
-                
+
+
                 if self.use_eb:
                     self.has_triggered_eb = True
+                    self.eb_time = msg.t
                     print "Emergency break activated on car ", self.id
                 else:
                     if self.test_var == 0:
@@ -280,7 +292,7 @@ class CarSim:
             if self.course.getDistance(self.x, self.y) > self.course.distance_at_crossing - 20:
                 if self.Is == "go":
                     targetspeed -= 10/3.6
-                    targetspeed = max(15/2.6, targetspeed)
+                    targetspeed = max(15/3.6, targetspeed)
 
 
         #adapt speed to vehicle in front
@@ -360,7 +372,7 @@ class CarSim:
         self.f.write(str((self.x, self.y, self.theta, self.t)) + "\n")
 
 
-        if self.course.hasPassedRequestLine(self.x, self.y) and sqrt(self.x**2 + self.y**2) > 60:
+        if self.course.hasPassedRequestLine(self.x, self.y) and sqrt(self.x**2 + self.y**2) > 40:
             self.end = True
 
             self.f.write(str((self.eb_time, self.stop_time)))

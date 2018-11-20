@@ -1,0 +1,10 @@
+{0: {'collisions': [], 'nr_eb': 9}, 1: {'collisions': [6.0, 7.0], 'nr_eb': 9}, 2: {'collisions': [5.0, 6.0, 4.0], '
+nr_eb': 8}, 3: {'collisions': [6.0, 8.0, 5.0, 7.0], 'nr_eb': 9}, 4: {'collisions': [], 'nr_eb': 10}, 5: {'collisions': [], 'nr_eb': 14}, 6: {'collisions': [], 'nr_eb': 9}}
+[]
+9
+
+
+{0: {'collisions': [], 'nr_eb': 0}, 1: {'collisions': [10.0, 7.0, 9.0, 6.0, 8.0], 'nr_eb': 0}, 2: {'collisions': [], 'nr_eb': 0}, 3: {'collisions': [], 'nr_eb': 0}, 4: {'collisions': [], 'nr_eb': 0}, 5: {'collisions': [], 'nr_eb': 0}, 6: {'collisions': [], 'nr_eb': 0}}
+[]
+0
+

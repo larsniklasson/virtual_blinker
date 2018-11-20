@@ -45,7 +45,8 @@ class ManueverNegotiator:
         publisher.publish(msg)
 
     def messageCallback(self, message):
-        if self.sim.lose_com and self.sim.course.hasPassedRequestLine(self.sim.x, self.sim.y) and self.sim.t < 10*config.rate:
+        print self.sim.t
+        if self.sim.lose_com and self.sim.course.hasPassedRequestLine(self.sim.x, self.sim.y) and self.sim.t < 6*config.rate:
             return
         now = time.time()
         if now - message.time < config.max_transmission_delay:

@@ -94,15 +94,19 @@ class RiskEstimator:
                 D = {}
                 for Ic in self.turns:
                     for Is in ["go", "stop"]:
+
+                        
                         LPose = 1.0/self.expected_error(self.latest_poses[car], self.latest_deviations[car], 
                                                         self.travelling_directions[car], Ic, Is)
                         
+
                         e = self.expectation_densities[car,Ic]
                         ee = e if Is == "go" else 1-e
                         LE = 1 + 3 * ee
                         
 
                         L = LPose * LE
+                        
 
                         D[Ic,Is] = L
                 
@@ -241,13 +245,16 @@ class RiskEstimator:
 
         opt = getOptimalPose(c, x, y, i)
 
-        d= abs(opt[-1] - mu_arr[-1])
-        d1 = abs(opt[0] - mu_arr[0])
-        d2 = abs(opt[1] - mu_arr[1])
-        d3 = abs(opt[2] - mu_arr[2])
+        if mu_arr[3] > opt[3] + 3 and i == "stop":
+            return 9999999999999.0
 
-        return 2.0**d + 2**dev_arr[-1] + 4.0**d1 + 4.0**dev_arr[0] + 4.0**d2 + 4.0**dev_arr[1] + (2**16)**d3 + (2**16)**dev_arr[2]
+        mu_arr = np.array(mu_arr)
+        dev_arr = np.array(dev_arr)
+        opt = np.array(opt)
+        weights = np.array(config.error_weights)
 
+        exp_err_array = expected_error_one_variable(mu_arr, dev_arr, opt, weights)
+        return np.sum(exp_err_array)
     
     def getRisk(self, ego_car, risk_car):
         with self.lock:
