@@ -37,7 +37,7 @@ class CarSim:
         #sync and wipe map stuff
         if self.id == 0:
             #car with id=0 sets the sync time and also wipes the map
-            rospy.set_param("sync_time", int(time.time()) + 1.3)
+            rospy.set_param("sync_time", int(time.time()) + 1.5)
             self.wipe_publisher = rospy.Publisher("wipe_map", String, queue_size=10)
         
         while 1:

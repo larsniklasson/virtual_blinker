@@ -30,7 +30,6 @@ class RiskEstimator:
         self.expectation_densities = {}
         self.turns = self.intersection.turns
 
-        self.forward_projection_dict = {}
 
         self.default_I_dens = 1.0/(len(self.turns)*2)
         self.default_E_dens = 0.5
@@ -38,6 +37,7 @@ class RiskEstimator:
         self.latest_poses = initial_poses
         self.latest_deviations = {c: (1,1,1,1) for c in self.car_ids}
 
+        self.forward_projection_dict = {}
 
         for c in self.car_ids:
             II = {}
@@ -46,6 +46,10 @@ class RiskEstimator:
                     II[Ic,Is] = self.default_I_dens
                 self.expectation_densities[c, Ic] = self.default_E_dens
                 
+                for x in range(10):
+                    self.forward_projection_dict[c, Ic, x] = \
+                       config.intersection.courses[self.travelling_directions[c], Ic].getTimeToCrossing(initial_poses[c][0], initial_poses[c][0], 50/3.6, "go", 0)
+
             self.intention_densities[c] = II
 
 
