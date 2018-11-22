@@ -162,42 +162,43 @@ class CarSim:
 
         self.stop_time = -1
 
+        self.onehaspassed = False
+        self.zerohaspassed = False
+        self.onehaspassed2 = False
+
+        self.course1 = config.intersection.courses[CAR_DICT[1].travelling_direction, CAR_DICT[1].turn]
+
+
+
 
     def stateCallback(self, msg):
-        #print msg.t
 
-        if self.lose_com and self.course.hasPassedRequestLine(self.x, self.y) and msg.id != self.id and self.t < 6*config.rate:
-            if (msg.id == 0 and msg.y > 30):
-                pass
-            else:
-                return
+        if self.lose_com:
+            if msg.id == 1 and self.course1.hasPassedRequestLine(msg.x, msg.y, 900):
+                self.onehaspassed = True
 
-        #after t > 10 car nr 0 gets no msgs other than its own
-        #if self.t > 10 and self.id == 0 and msg.id != 0:
-        #    return
+            if msg.id == 1 and self.onehaspassed and self.course1.getDistance(msg.x, msg.y) > self.course1.distance_at_crossing and sqrt(msg.x**2+msg.y**2) > 30:
+                self.onehaspassed2 = True
 
-        #drop 50% of msgs (except for own msg)
-        #if msg.id != self.id and random.random() > 0.5:
-        #    return
+            if msg.id == 0 and msg.y > 30:
+                self.zerohaspassed = True
 
-        #if self.t - msg.t > 1/config.rate * config.discard_measurement_time: # old af message, flush queue. 
-        #    return 
-
-        #self.latest_msg[msg.id] = time.time()
         
-        #if self.id == 1 and msg.id == 0:
-        #    print msg.y
+        listenToThese = [0,1]
+
+        if self.onehaspassed and not (self.zerohaspassed or self.onehaspassed2):
+            if msg.id != self.id:
+                return
+            else:
+                listenToThese = [self.id]
+
+
 
 
         d = self.car_state_dictionaries[msg.id]
         d[msg.t] = msg
 
         if msg.t - 50 in d: del d[msg.t - 50]
-
-        if self.lose_com and self.course.hasPassedRequestLine(self.x, self.y) and self.t < 6*config.rate and not(msg.id == 0 and msg.y > 30):
-            listenToThese = [self.id]
-        else:
-            listenToThese = [0,1]
 
         have_all = True
         for c in listenToThese:
@@ -371,6 +372,12 @@ class CarSim:
 
         self.f.write(str((self.x, self.y, self.theta, self.t)) + "\n")
 
+
+
+        if self.t > 25*config.rate:
+            self.f.write("fail")
+            self.end = True
+            self.f.close()
 
         if self.course.hasPassedRequestLine(self.x, self.y) and sqrt(self.x**2 + self.y**2) > 40:
             self.end = True

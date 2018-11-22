@@ -195,9 +195,9 @@ class Course:
         #sometimes vehicles go slightly over the line when they stop
         return d > self.distance_at_crossing + 1 
     
-    def hasPassedRequestLine(self, x, y):
+    def hasPassedRequestLine(self, x, y, extra=0):
         _, y, _ = self.rotate(x,y,0)
-        return y > self.request_line
+        return y > self.request_line + extra
 
     def hasLeftIntersection(self, x, y):
         d = self.getDistance(x, y)

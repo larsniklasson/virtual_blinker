@@ -54,7 +54,7 @@ def getCarDict(test_var, variation, starting_distance, deviation):
             
         else:
             sd1 = 20
-            sd2 = 15 + 70 * starting_distance/nr_dist
+            sd2 = 15 + 70 * starting_distance/nr_dist 
         
 
     if variation == 1:
@@ -79,6 +79,7 @@ def getCarDict(test_var, variation, starting_distance, deviation):
         else:
             sd1 = 30
             sd2 = 15 + 62 * starting_distance/nr_dist
+            print sd1,sd2
 
 
     #normal

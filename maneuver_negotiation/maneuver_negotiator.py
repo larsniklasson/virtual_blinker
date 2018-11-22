@@ -38,15 +38,19 @@ class ManueverNegotiator:
             #Timer(random.random() * config.max_transmission_delay*1.5, self.publish, [self.publishers[car], message]).start()
             self.publishers[car].publish(message)
 
-        self.timer = Timer(2 * config.max_transmission_delay, self.tryManeuver)
-        self.timer.start()
+
+        if self.sim.t > 25*config.rate:
+            pass
+        else:
+            self.timer = Timer(2 * config.max_transmission_delay, self.tryManeuver)
+            self.timer.start()
 
     def publish(self, publisher, msg):
         publisher.publish(msg)
 
     def messageCallback(self, message):
-        print self.sim.t
-        if self.sim.lose_com and self.sim.course.hasPassedRequestLine(self.sim.x, self.sim.y) and self.sim.t < 6*config.rate:
+        if self.sim.onehaspassed and not (self.sim.zerohaspassed or self.sim.onehaspassed2):
+            print self.id, "ignoring man msg"
             return
         now = time.time()
         if now - message.time < config.max_transmission_delay:

@@ -47,8 +47,9 @@ class RiskEstimator:
                 self.expectation_densities[c, Ic] = self.default_E_dens
                 
                 for x in range(10):
-                    self.forward_projection_dict[c, Ic, x] = \
-                       config.intersection.courses[self.travelling_directions[c], Ic].getTimeToCrossing(initial_poses[c][0], initial_poses[c][0], 50/3.6, "go", 0)
+                    self.forward_projection_dict[c, Ic, x] = 0,\
+                       config.intersection.courses[self.travelling_directions[c], \
+                       Ic].getTimeToCrossing(initial_poses[c][0], initial_poses[c][0], 50/3.6, "go", 0), 0.25
 
             self.intention_densities[c] = II
 
