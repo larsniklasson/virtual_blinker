@@ -39,11 +39,9 @@ class ManueverNegotiator:
             self.publishers[car].publish(message)
 
 
-        if self.sim.t > 25*config.rate:
-            pass
-        else:
-            self.timer = Timer(2 * config.max_transmission_delay, self.tryManeuver)
-            self.timer.start()
+        
+        self.timer = Timer(2 * config.max_transmission_delay, self.tryManeuver)
+        self.timer.start()
 
     def publish(self, publisher, msg):
         publisher.publish(msg)

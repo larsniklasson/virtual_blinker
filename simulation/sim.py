@@ -37,10 +37,16 @@ class CarSim:
         #sync and wipe map stuff
         if self.id == 0:
             #car with id=0 sets the sync time and also wipes the map
-            rospy.set_param("sync_time", time.time() + 0.06)
+            rospy.set_param("sync_time", time.time() + 0.07)
             self.wipe_publisher = rospy.Publisher("wipe_map", String, queue_size=10)
         
+        c = rospy.get_time()
         while 1:
+            now = rospy.get_time()
+            if now - c > 10.0:
+                print "whhhhhat"
+                self.end = True
+                break
             if rospy.has_param("sync_time"):
                 self.sync_time = rospy.get_param("sync_time")
                 break
@@ -141,7 +147,7 @@ class CarSim:
 
         self.t = 0
 
-        #rospy.sleep(0.02) #let publishers register
+        rospy.sleep(0.01) #let publishers register
         if self.id == 0: self.wipe_publisher.publish(String("")) # for cleaning up paths/cars on the map
         #rospy.sleep(0.02) #make sure map is wiped before publishing new paths
         self.path_publisher.publish(msg.Path([msg.Position(x,y) for x,y in path], self.id))
@@ -285,12 +291,15 @@ class CarSim:
         else:
         
             if not self.has_initiated_trymaneuever:
+                
                 self.Is = "stop"
 
             if self.maneuver_negotiator.granted:
+                
                 self.Is = "go"
 
             if self.risk_estimator.grant_list != []:
+                
                 self.Is = "stop"
 
         # follow speed profile
@@ -385,7 +394,7 @@ class CarSim:
 
         self.f.write(str((self.x, self.y, self.theta, self.t)) + "\n")
 
-
+        
 
         if self.t > 25*config.rate:
             self.f.write("fail")

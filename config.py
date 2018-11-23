@@ -44,104 +44,243 @@ def getCarDict(test_var, variation, starting_distance, deviation, danger):
 
     #danger = collision, semi-dangerous, non-dangerous. (0,1,2)
 
-    sd1 = 0
+    sd1 = -20
+    #sd2 = starting_distance-20
 
+    
     if variation == 0:
 
         if deviation == 2:
 
             if danger == 0:
+                a = 10
+                b = 19
 
             if danger == 1:
+                a = -10
+                b = 3
+                a2 = 30
+                b2 = 45
 
             if danger == 2:
+                a = -20
+                b = -11
+                a2 = 46
+                b2 = 65
+
 
         if deviation == 3:
 
             if danger == 0:
+                a = -12
+                b = 7
 
             if danger == 1:
+                a = -25
+                b = -18
+                a2 = 17
+                b2 = 30
 
             if danger == 2:
+                a = -35
+                b = -26
+                a2 = 31
+                b2 = 50
 
         elif deviation == 4:
             if danger == 0:
+                a = 57
+                b = 67
 
             if danger == 1:
+                a = 37
+                b = 47
+                a2 = 77
+                b2 = 92
 
             if danger == 2:
+                a = 27
+                b = 36
+                a2 = 93
+                b2 = 110
             
         else:
             if danger == 0:
+                a = 17
+                b = 33
 
             if danger == 1:
+                a = 0
+                b = 10
+                a2 = 45
+                b2 = 57
 
             if danger == 2:
+                a = -10
+                b = -1
+                a2 = 58
+                b2 = 74
         
 
     if variation == 1:
         if deviation == 2:
 
             if danger == 0:
+                a = -8
+                b = -2
 
             if danger == 1:
+                a = -30
+                b = -20
+                a2 = 8
+                b2 = 22
 
             if danger == 2:
+                a = -40
+                b = -31
+                a2 = 23
+                b2 = 36
 
         if deviation == 3:
 
             if danger == 0:
+                a = -25
+                b = -19
 
             if danger == 1:
+                a = -46
+                b = -37
+                a2 = -10
+                b2 = 2
 
             if danger == 2:
+                a = -55
+                b = -47
+                a2 = 3
+                b2 = 17
 
         elif deviation == 4:
             if danger == 0:
+                a = 7
+                b = 17
 
             if danger == 1:
+                a = -13
+                b = -3
+                a2 = 25
+                b2 = 36
 
             if danger == 2:
+                a = -25
+                b = -14
+                a2 = 37
+                b2 = 49
             
         else:
             if danger == 0:
+                a = -12
+                b = 0
 
             if danger == 1:
+                a = -18
+                b = 27
+                a2 = 10
+                b2 = 20
 
             if danger == 2:
+                a = -38
+                b = -28
+                a2 = 21
+                b2 = 35
 
     if variation == 2:
 
         if deviation == 2:
 
             if danger == 0:
+                a = -4
+                b = 4
 
             if danger == 1:
+                a = -23
+                b = -13
+                a2 = 14
+                b2 = 26
 
             if danger == 2:
+                a = -34
+                b = -24
+                a2 = 27
+                b2 = 41
 
         if deviation == 3:
 
             if danger == 0:
+                a = -25
+                b = -14
+                
 
             if danger == 1:
+                a = -46
+                b = -34
+                a2 = -2
+                b2 = 8
 
             if danger == 2:
+                a = -57
+                b = -47
+                a2 = 9
+                b2 = 22
 
         elif deviation == 4:
             if danger == 0:
+                a = 29
+                b = 40
 
             if danger == 1:
+                a = 13
+                b = 22
+                a2 = 58
+                b2 = 67
 
             if danger == 2:
+                a = 2
+                b = 12
+                a2 = 68
+                b2 = 79
             
         else:
             if danger == 0:
+                a = 1
+                b = 10
 
             if danger == 1:
+                a = -20
+                b = -10
+                a2 = 20
+                b2 = 34
 
             if danger == 2:
+                a = -30
+                b = -21
+                a2 = 35
+                b2 = 50
+    
+    if danger == 0:
+        sd2 = a + starting_distance * (b-a)/9.0
+    else:
+        if starting_distance >= 5:
+            starting_distance -= 5
+            sd2 = a2 + starting_distance * (b2-a2)/4.0
+        else:
+            sd2 = a + starting_distance * (b-a)/4.0
 
+    
+    sd2 -= 20
+
+    
+
+    
 
     #normal
     if deviation == 0:
@@ -225,7 +364,7 @@ deviations_high = (0.2*7, 0.2*7, 0.04*7, 0.1*7)
 deviations_low = (0.2, 0.2, 0.04, 0.1)
 
 
-speedup = 12.0
+speedup = 10.0
 
 slowdown = 1 / speedup
 rate = 60.0 * speedup #iterations per second for simulation => rate = msgs sent per second
@@ -244,6 +383,6 @@ risk_gap_lower_limit = -1.0#-0.5
 risk_gap_upper_limit = 1.5
 
 
-max_transmission_delay = 9999999#0.2 / speedup
+max_transmission_delay = 0.2 / speedup
 
 error_weights = [125, 125, 125, 1]
