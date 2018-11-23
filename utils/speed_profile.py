@@ -40,10 +40,10 @@ class SpeedProfile:
         #since, if vehicle is standing still because it has waited for some other car,
         # when we project him forward to course intersection point, we don't want to 
         # use a large negative diff, because then the time would be very high
-        dist_to_crossing = abs(distance - self.distance_at_crossing) 
-        c = dist_to_crossing/float(self.distance_at_crossing)
-        f = min(-10*0.2, -10*c)
-        diff = max(f/3.6, diff)
+        #dist_to_crossing = abs(distance - self.distance_at_crossing) 
+        #c = dist_to_crossing/float(self.distance_at_crossing)
+        #f = min(-10*0.2, -10*c)
+        #diff = max(f/3.6, diff)
 
         if distance <= projection_limit:
             fl = [(d, f.addDiff(diff)) for d, f in self.getFilteredFunctionList(distance)]

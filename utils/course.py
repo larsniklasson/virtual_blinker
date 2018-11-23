@@ -34,7 +34,7 @@ class Course:
         self.travelling_direction = travelling_direction
         self.turn = turn
 
-        self.request_line = -30 #y
+        self.request_line = -30-7.5 #y
         self.starting_point = (3.25, -125)
 
         #s1 in diagram

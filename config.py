@@ -24,7 +24,8 @@ class Car:
 
 
 
-def getCarDict(test_var, variation, starting_distance, deviation):
+
+def getCarDict(test_var, variation, starting_distance, deviation, danger):
     td1 = "north"
     turn1 = "straight"
 
@@ -40,45 +41,106 @@ def getCarDict(test_var, variation, starting_distance, deviation):
         turn2 = "right"
 
 
-    nr_dist = 79.0
+
+    #danger = collision, semi-dangerous, non-dangerous. (0,1,2)
+
+    sd1 = 0
 
     if variation == 0:
 
+        if deviation == 2:
+
+            if danger == 0:
+
+            if danger == 1:
+
+            if danger == 2:
+
         if deviation == 3:
-            sd1 = 10
-            sd2 = starting_distance
+
+            if danger == 0:
+
+            if danger == 1:
+
+            if danger == 2:
 
         elif deviation == 4:
-            sd1 = 10
-            sd2 = starting_distance
+            if danger == 0:
+
+            if danger == 1:
+
+            if danger == 2:
             
         else:
-            sd1 = 10
-            sd2 = starting_distance
+            if danger == 0:
+
+            if danger == 1:
+
+            if danger == 2:
         
 
     if variation == 1:
+        if deviation == 2:
+
+            if danger == 0:
+
+            if danger == 1:
+
+            if danger == 2:
+
         if deviation == 3:
-            sd1 = 10
-            sd2 = starting_distance
+
+            if danger == 0:
+
+            if danger == 1:
+
+            if danger == 2:
+
         elif deviation == 4:
-            sd1 = 10
-            sd2 = starting_distance
+            if danger == 0:
+
+            if danger == 1:
+
+            if danger == 2:
+            
         else:
-            sd1 = 10
-            sd2 = starting_distance
+            if danger == 0:
+
+            if danger == 1:
+
+            if danger == 2:
 
     if variation == 2:
 
+        if deviation == 2:
+
+            if danger == 0:
+
+            if danger == 1:
+
+            if danger == 2:
+
         if deviation == 3:
-            sd1 = 10
-            sd2 = starting_distance
+
+            if danger == 0:
+
+            if danger == 1:
+
+            if danger == 2:
+
         elif deviation == 4:
-            sd1 = 10
-            sd2 = starting_distance
+            if danger == 0:
+
+            if danger == 1:
+
+            if danger == 2:
+            
         else:
-            sd1 = 10
-            sd2 = starting_distance
+            if danger == 0:
+
+            if danger == 1:
+
+            if danger == 2:
 
 
     #normal
@@ -111,14 +173,26 @@ def getCarDict(test_var, variation, starting_distance, deviation):
         c1 = Car(td1, turn1, sd1, True, True, False, 1, 0)
         c2 = Car(td2, turn2, sd2, True, True, False, 2, 0)
 
-    #lose com
+    #lose com 1
     if deviation == 5:
         
-        c1 = Car(td1, turn1, sd1, True, True, True, 0, 0)
-        c2 = Car(td2, turn2, sd2, True, True, True, 0, 0)
+        c1 = Car(td1, turn1, sd1, True, True, 1, 0, 0)
+        c2 = Car(td2, turn2, sd2, True, True, 1, 0, 0)
+    
+    #lose com 2
+    if deviation == 6:
+        
+        c1 = Car(td1, turn1, sd1, True, True, 2, 0, 0)
+        c2 = Car(td2, turn2, sd2, True, True, 2, 0, 0)
+
+    #lose com 3
+    if deviation == 7:
+        
+        c1 = Car(td1, turn1, sd1, True, True, 3, 0, 0)
+        c2 = Car(td2, turn2, sd2, True, True, 3, 0, 0)
 
     #noisy
-    if deviation == 6:
+    if deviation == 8:
         
         c1 = Car(td1, turn1, sd1, True, True, False, 0, 1)
         c2 = Car(td2, turn2, sd2, True, True, False, 0, 1)

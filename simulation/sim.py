@@ -52,6 +52,7 @@ class CarSim:
         self.nr_cars = 2
         variation = rospy.get_param('variation')
         starting_dist = rospy.get_param('starting_dist')
+        danger = rospy.get_param('danger')
         deviation = rospy.get_param('deviation')
         self.test_var = rospy.get_param('test_var')
         
@@ -59,8 +60,8 @@ class CarSim:
 
         now = datetime.datetime.now()
         
-        self.testdir = "../testing/" + str(self.test_var) + "_" + str(variation) + "_" + str(starting_dist)\
-         + "_" + str(deviation) + "_" + str(random_seed)
+        self.testdir = "../testing/tests/" + str(self.test_var) + "_" + str(variation) + "_" + str(starting_dist)\
+         + "_" + str(deviation) + "_" + str(random_seed) + "_" + str(danger)
 
         if self.id == 0:
             if not os.path.exists(self.testdir): 
@@ -75,7 +76,7 @@ class CarSim:
         # older entries are removed to avoid too large dicts
         self.car_state_dictionaries = [{} for _ in range(self.nr_cars)]
         
-        CAR_DICT = config.getCarDict(self.test_var, variation, starting_dist, deviation)
+        CAR_DICT = config.getCarDict(self.test_var, variation, starting_dist, deviation, danger)
 
         initial_tds = []
         initial_poses = []
@@ -176,7 +177,17 @@ class CarSim:
         #print msg.t
 
         if self.lose_com:
-            if msg.id == 1 and self.course1.hasPassedRequestLine(msg.x, msg.y, 900):
+
+            if self.lose_com == 1:
+                d = -10
+            
+            if self.lose_com == 2:
+                d = 15
+
+            if self.lose_com == 3:
+                d = 35
+
+            if msg.id == 1 and self.course1.hasPassedRequestLine(msg.x, msg.y, d):
                 self.onehaspassed = True
 
             if msg.id == 1 and self.onehaspassed and self.course1.getDistance(msg.x, msg.y) > self.course1.distance_at_crossing and sqrt(msg.x**2+msg.y**2) > 30:

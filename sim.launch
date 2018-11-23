@@ -1,21 +1,23 @@
 <launch>
 
 
+<arg name="seed" />
+<param name="seed" type="int" value="$(arg seed)"/>
+
 <arg name="test_var"/>
 <param name="test_var" type="int" value="$(arg test_var)"/>
 
 <arg name="variation"/>
 <param name="variation" type="int" value="$(arg variation)"/>
 
-<arg name="starting_dist" />
-<param name="starting_dist" type="int" value="$(arg starting_dist)"/>
-
-
 <arg name="deviation"/>
 <param name="deviation" type="int" value="$(arg deviation)"/>
 
-<arg name="seed" />
-<param name="seed" type="int" value="$(arg seed)"/>
+<arg name="danger" />
+<param name="danger" type="int" value="$(arg danger)"/>
+
+<arg name="starting_dist" />
+<param name="starting_dist" type="int" value="$(arg starting_dist)"/>
 
 <node name="car0" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>
 <node name="car1" pkg="virtual_blinker" type="sim.py" output="screen" cwd="node"/>

@@ -148,6 +148,7 @@ class RiskEstimator:
                         # the left side of the normal distrubition towards 0 to get largest span. Thus increase speed
                         # other cases are similar.
                         # +- 0.5 logic: if deviation is 0, we still want some gap in projection
+
                         if c.getDistance(fwd_x,fwd_y) > c.distance_at_crossing + extra:
                             fwd_s = speed - s_dev*0.8 - 0.5
                         else:
