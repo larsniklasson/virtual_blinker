@@ -45,41 +45,40 @@ def getCarDict(test_var, variation, starting_distance, deviation):
     if variation == 0:
 
         if deviation == 3:
-            sd1 = 40
-            sd2 = 15+70 * starting_distance/nr_dist
+            sd1 = 10
+            sd2 = starting_distance
 
         elif deviation == 4:
             sd1 = 10
-            sd2 = 20+70 * starting_distance/nr_dist
+            sd2 = starting_distance
             
         else:
-            sd1 = 20
-            sd2 = 15 + 70 * starting_distance/nr_dist 
+            sd1 = 10
+            sd2 = starting_distance
         
 
     if variation == 1:
         if deviation == 3:
-            sd1 = 55
-            sd2 = 10 + 60 * starting_distance / nr_dist
+            sd1 = 10
+            sd2 = starting_distance
         elif deviation == 4:
-            sd1 = 35
-            sd2 = 15+62 * starting_distance / nr_dist
+            sd1 = 10
+            sd2 = starting_distance
         else:
-            sd1 = 30
-            sd2 = 5+55 * starting_distance/nr_dist
+            sd1 = 10
+            sd2 = starting_distance
 
     if variation == 2:
 
         if deviation == 3:
-            sd1 = 55
-            sd2 = 15+60* starting_distance/nr_dist
+            sd1 = 10
+            sd2 = starting_distance
         elif deviation == 4:
-            sd1 = 35
-            sd2 = 30+60 *starting_distance/nr_dist
+            sd1 = 10
+            sd2 = starting_distance
         else:
-            sd1 = 30
-            sd2 = 15 + 62 * starting_distance/nr_dist
-            print sd1,sd2
+            sd1 = 10
+            sd2 = starting_distance
 
 
     #normal
@@ -148,11 +147,11 @@ def getCarDict(test_var, variation, starting_distance, deviation):
 
 intersection = Intersection()
 
-deviations_high = (1, 1, 0.2, 0.5)
+deviations_high = (0.2*7, 0.2*7, 0.04*7, 0.1*7)
 deviations_low = (0.2, 0.2, 0.04, 0.1)
 
 
-speedup = 10.0 / 4
+speedup = 12.0
 
 slowdown = 1 / speedup
 rate = 60.0 * speedup #iterations per second for simulation => rate = msgs sent per second
@@ -171,6 +170,6 @@ risk_gap_lower_limit = -1.0#-0.5
 risk_gap_upper_limit = 1.5
 
 
-max_transmission_delay = 0.2 / speedup
+max_transmission_delay = 9999999#0.2 / speedup
 
 error_weights = [125, 125, 125, 1]

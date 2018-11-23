@@ -37,7 +37,7 @@ class CarSim:
         #sync and wipe map stuff
         if self.id == 0:
             #car with id=0 sets the sync time and also wipes the map
-            rospy.set_param("sync_time", int(time.time()) + 1.5)
+            rospy.set_param("sync_time", time.time() + 0.06)
             self.wipe_publisher = rospy.Publisher("wipe_map", String, queue_size=10)
         
         while 1:
@@ -140,9 +140,9 @@ class CarSim:
 
         self.t = 0
 
-        rospy.sleep(0.02) #let publishers register
+        #rospy.sleep(0.02) #let publishers register
         if self.id == 0: self.wipe_publisher.publish(String("")) # for cleaning up paths/cars on the map
-        rospy.sleep(0.02) #make sure map is wiped before publishing new paths
+        #rospy.sleep(0.02) #make sure map is wiped before publishing new paths
         self.path_publisher.publish(msg.Path([msg.Position(x,y) for x,y in path], self.id))
 
         #has vehicle entered try maneuever state or not
@@ -157,7 +157,7 @@ class CarSim:
         self.eb_time = -1
 
         if self.id == 1:
-            rospy.sleep(0.02)
+            rospy.sleep(0.005)
         self.f = open(self.testdir + "/" + str(self.id) + ".txt", "w")
 
         self.stop_time = -1
@@ -172,6 +172,8 @@ class CarSim:
 
 
     def stateCallback(self, msg):
+
+        #print msg.t
 
         if self.lose_com:
             if msg.id == 1 and self.course1.hasPassedRequestLine(msg.x, msg.y, 900):
@@ -285,15 +287,15 @@ class CarSim:
         #if self.Is == "go":
         
         if self.speed_dev == 1:
-            if self.course.getDistance(self.x, self.y) > self.course.distance_at_crossing - 20:
+            if self.course.getDistance(self.x, self.y) > self.course.distance_at_crossing - 30.0:
                 if self.Is == "go":
                     targetspeed += 15/3.6
 
         if self.speed_dev == 2:
-            if self.course.getDistance(self.x, self.y) > self.course.distance_at_crossing - 20:
+            if self.course.getDistance(self.x, self.y) > self.course.distance_at_crossing - 30.0:
                 if self.Is == "go":
                     targetspeed -= 10/3.6
-                    targetspeed = max(15/3.6, targetspeed)
+                    targetspeed = max(12/3.6, targetspeed)
 
 
         #adapt speed to vehicle in front
@@ -343,21 +345,21 @@ class CarSim:
         else:
             dev = config.deviations_low
 
-        x_noise = np.random.normal(self.x, dev[0])
-        y_noise = np.random.normal(self.y, dev[1])
-        t_noise = np.random.normal(self.theta, dev[2])
-        s_noise = np.random.normal(self.speed, dev[3])
+        x_noise = np.random.normal(0, dev[0])
+        y_noise = np.random.normal(0, dev[1])
+        t_noise = np.random.normal(0, dev[2])
+        s_noise = np.random.normal(0, dev[3])
 
         # "filtering"
-        x_filtered = self.x + (x_noise - self.x) / 5.0
-        y_filtered = self.y + (y_noise - self.y) / 5.0
-        t_filtered = self.theta + (t_noise - self.theta) / 5.0
-        s_filtered = self.speed + (s_noise - self.speed) / 5.0
+        x_filtered = self.x + (x_noise) / 3.0
+        y_filtered = self.y + (y_noise) / 3.0
+        t_filtered = self.theta + (t_noise) / 3.0
+        s_filtered = self.speed + (s_noise) / 3.0
 
-        x_dev_filtered = abs(x_noise - self.x)
-        y_dev_filtered = abs(y_noise - self.y)
-        t_dev_filtered = abs(t_noise - self.theta)
-        s_dev_filtered = abs(s_noise - self.speed)
+        x_dev_filtered = abs(x_noise/2.0)
+        y_dev_filtered = abs(y_noise/2.0)
+        t_dev_filtered = abs(t_noise/2.0)
+        s_dev_filtered = abs(s_noise/2.0)
 
 
         carstate_msg = msg.CarState(
