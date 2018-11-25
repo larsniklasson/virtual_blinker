@@ -202,14 +202,15 @@ class RootFunction:
     
     #integrate 1/x
     def solveInverseIntegral(self, low, upp):
+        try:
+            l = 2*(sqrt(self.a*low+self.b) - \
+                        self.c*log(sqrt(self.a*low+self.b)+self.c))/self.a
 
-        l = 2*(sqrt(self.a*low+self.b) - \
-                      self.c*log(sqrt(self.a*low+self.b)+self.c))/self.a
-
-        u = 2*(sqrt(self.a*upp+self.b) - \
-                      self.c*log(sqrt(self.a*upp+self.b)+self.c))/self.a
-        return u-l
-        
+            u = 2*(sqrt(self.a*upp+self.b) - \
+                        self.c*log(sqrt(self.a*upp+self.b)+self.c))/self.a
+            return u-l
+        except:
+            return 0
     #used for predict, not used atm
     def getUpperLimit(self, t, a):
         pass

@@ -69,7 +69,7 @@ def getCarDict(test_var, variation, starting_distance, deviation, danger):
                 b2 = 65
 
 
-        if deviation == 3:
+        elif deviation == 3:
 
             if danger == 0:
                 a = -12
@@ -141,7 +141,7 @@ def getCarDict(test_var, variation, starting_distance, deviation, danger):
                 a2 = 23
                 b2 = 36
 
-        if deviation == 3:
+        elif deviation == 3:
 
             if danger == 0:
                 a = -25
@@ -213,7 +213,7 @@ def getCarDict(test_var, variation, starting_distance, deviation, danger):
                 a2 = 27
                 b2 = 41
 
-        if deviation == 3:
+        elif deviation == 3:
 
             if danger == 0:
                 a = -25
@@ -364,7 +364,7 @@ deviations_high = (0.2*7, 0.2*7, 0.04*7, 0.1*7)
 deviations_low = (0.2, 0.2, 0.04, 0.1)
 
 
-speedup = 10.0
+speedup = 4.0
 
 slowdown = 1 / speedup
 rate = 60.0 * speedup #iterations per second for simulation => rate = msgs sent per second
@@ -379,7 +379,7 @@ grant_threshold = 0.9 #grant if P(Es=go) is greater than threshold
 gap_lower_limit = -1.5
 gap_upper_limit = 2.5
 
-risk_gap_lower_limit = -1.0#-0.5
+risk_gap_lower_limit = -0.5#-1.0#-0.5
 risk_gap_upper_limit = 1.5
 
 

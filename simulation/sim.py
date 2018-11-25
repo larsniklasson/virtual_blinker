@@ -37,13 +37,13 @@ class CarSim:
         #sync and wipe map stuff
         if self.id == 0:
             #car with id=0 sets the sync time and also wipes the map
-            rospy.set_param("sync_time", time.time() + 0.07)
+            rospy.set_param("sync_time", time.time() + 0.5)
             self.wipe_publisher = rospy.Publisher("wipe_map", String, queue_size=10)
         
         c = rospy.get_time()
         while 1:
             now = rospy.get_time()
-            if now - c > 10.0:
+            if now - c > 5.0:
                 print "whhhhhat"
                 self.end = True
                 break
@@ -164,7 +164,7 @@ class CarSim:
         self.eb_time = -1
 
         if self.id == 1:
-            rospy.sleep(0.005)
+            rospy.sleep(0.05)
         self.f = open(self.testdir + "/" + str(self.id) + ".txt", "w")
 
         self.stop_time = -1
@@ -179,8 +179,9 @@ class CarSim:
 
 
     def stateCallback(self, msg):
+        if self.end:return
 
-        #print msg.t
+        print msg.t
 
         if self.lose_com:
 
@@ -242,9 +243,8 @@ class CarSim:
                 deviations[c] = dev
 
             actual_time = float(msg.t)/(config.rate * config.slowdown)
-        
-            self.risk_estimator.update_state(actual_time, poses, deviations)
             
+            self.risk_estimator.update_state(actual_time, poses, deviations)
             
             risk = max(self.risk_estimator.getRisk(0,1), self.risk_estimator.getRisk(1,0))
             
@@ -256,6 +256,7 @@ class CarSim:
                     self.has_triggered_eb = True
                     self.eb_time = msg.t
                     print "Emergency break activated on car ", self.id
+                    
                 else:
                     if self.test_var == 0:
                         if self.eb_time == -1:
@@ -332,8 +333,6 @@ class CarSim:
             if not self.has_stopped:
                 targetspeed = 0
                 
-
-        
         if targetspeed < self.speed:
             targetacceleration = self.course.match_profile_deacceleration
             if self.emergency_break:
@@ -398,8 +397,8 @@ class CarSim:
 
         if self.t > 25*config.rate:
             self.f.write("fail")
-            self.end = True
             self.f.close()
+            sys.exit(1)
 
         if self.course.hasPassedRequestLine(self.x, self.y) and sqrt(self.x**2 + self.y**2) > 40:
             self.end = True
