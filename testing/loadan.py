@@ -9,6 +9,5 @@ D = load_obj("D")
 
 for i in range(9):
 
-    print i, D[3,2,i]
+    print i, D[0,0,i]
     print
-

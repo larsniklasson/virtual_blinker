@@ -209,10 +209,13 @@ for f,_ in folders2:
                 D[test_var, variation, deviation]["nr_collisions_fa"] += 1
 
         
+        opttime = 1
+        """
         if deviation in [0,2,3,4]:
             opttime = times[var, deviation]
         else:
             opttime = times[var,0]
+        """
 
         
         prio_lost = time0 - opttime

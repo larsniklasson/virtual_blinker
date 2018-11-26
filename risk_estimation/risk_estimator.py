@@ -108,17 +108,21 @@ class RiskEstimator:
                         e = self.expectation_densities[car,Ic]
                         ee = e if Is == "go" else 1-e
                         LE = 1 + 3 * ee
-                        
 
-                        L = LPose * LE
-                        
+                        LR = 1
+                        if self.travelling_directions[car] == "north":
+                            if Ic == "straight":
+                                LR = 9
+
+                        #L = LPose * LE * LR
+                        L = LPose * LR
 
                         D[Ic,Is] = L
                 
                 sigma = sum(D.values())
                 for key,value in D.iteritems():
                     D[key] = value/sigma
-            
+        
                 self.intention_densities[car] = D
             
 
@@ -252,7 +256,7 @@ class RiskEstimator:
         opt = getOptimalPose(c, x, y, i)
 
         if mu_arr[3] > opt[3] + 3 and i == "stop":
-            return 9999999999999.0
+            return 99999.0
 
         mu_arr = np.array(mu_arr)
         dev_arr = np.array(dev_arr)

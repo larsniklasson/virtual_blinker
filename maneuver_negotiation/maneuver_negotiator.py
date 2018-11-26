@@ -24,9 +24,9 @@ class ManueverNegotiator:
     def tryManeuver(self):
         if self.tag == 0: self.tag = time.time() + self.id / 100000.0
         if rospy.is_shutdown():return
-        print self.id, ": entering tryman"
+        #print self.id, ": entering tryman"
         self.currentAsk = self.risk_estimator.getVehiclesToAsk() # re already knows the turn
-        print self.id, ": currentAsk = ", self.currentAsk
+        #print self.id, ": currentAsk = ", self.currentAsk
         if self.currentAsk == []:
             self.granted = True
             return
@@ -34,7 +34,7 @@ class ManueverNegotiator:
         self.grants = []
         message = msg.ManNeg("GET", self.id, self.turn, time.time(), self.tag)   #float(str(time.time())[7:])
         for car in self.currentAsk:
-            print self.id, ": sending get to ", car
+            #print self.id, ": sending get to ", car
             #Timer(random.random() * config.max_transmission_delay*1.5, self.publish, [self.publishers[car], message]).start()
             self.publishers[car].publish(message)
 
@@ -48,7 +48,7 @@ class ManueverNegotiator:
 
     def messageCallback(self, message):
         if self.sim.onehaspassed and not (self.sim.zerohaspassed or self.sim.onehaspassed2):
-            print self.id, "ignoring man msg"
+            #print self.id, "ignoring man msg"
             return
         now = time.time()
         if now - message.time < config.max_transmission_delay:
@@ -62,15 +62,16 @@ class ManueverNegotiator:
 
                     self.risk_estimator.removeVehicleFromGrantList(message.id)
                     nc = self.risk_estimator.no_conflict(message.id, message.info)
-                print self.id, "nc: ", nc
+                #print self.id, "nc: ", nc
                 if nc:
                     if not nc[1]:
                         self.risk_estimator.addVehicleToGrantList(message.id)
                     grant_msg = msg.ManNeg("GRANT", self.id, "", time.time(), 0)
-                    print self.id, ": sending grant to ", message.id
+                    #print self.id, ": sending grant to ", message.id
                     self.publishers[message.id].publish(grant_msg)
                 else:
-                    print self.id, ":", message.id, "NOT granted"
+                    pass
+                    #print self.id, ":", message.id, "NOT granted"
             
             if message.type == "RELEASE":
                 self.risk_estimator.removeVehicleFromGrantList(message.id)
@@ -80,8 +81,9 @@ class ManueverNegotiator:
                 if sorted(self.currentAsk) == sorted(self.grants):
                     self.timer.cancel()
                     self.granted = True
-                    print self.id, ": granted!!!"
+                    #print self.id, ": granted!!!"
                     self.currentAsk = []
         else:
-            print self.id, "msg too old, ignoring it"
+            pass
+            #print self.id, "msg too old, ignoring it"
               

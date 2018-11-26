@@ -37,7 +37,7 @@ class CarSim:
         #sync and wipe map stuff
         if self.id == 0:
             #car with id=0 sets the sync time and also wipes the map
-            rospy.set_param("sync_time", time.time() + 0.5)
+            rospy.set_param("sync_time", time.time() + 0.9)
             self.wipe_publisher = rospy.Publisher("wipe_map", String, queue_size=10)
         
         c = rospy.get_time()
@@ -56,7 +56,7 @@ class CarSim:
         
         #get ros-params
         self.nr_cars = 2
-        variation = rospy.get_param('variation')
+        self.variation = rospy.get_param('variation')
         starting_dist = rospy.get_param('starting_dist')
         danger = rospy.get_param('danger')
         deviation = rospy.get_param('deviation')
@@ -66,7 +66,7 @@ class CarSim:
 
         now = datetime.datetime.now()
         
-        self.testdir = "../testing/tests/" + str(self.test_var) + "_" + str(variation) + "_" + str(starting_dist)\
+        self.testdir = "../testing/tests/" + str(self.test_var) + "_" + str(self.variation) + "_" + str(starting_dist)\
          + "_" + str(deviation) + "_" + str(random_seed) + "_" + str(danger)
 
         if self.id == 0:
@@ -82,7 +82,7 @@ class CarSim:
         # older entries are removed to avoid too large dicts
         self.car_state_dictionaries = [{} for _ in range(self.nr_cars)]
         
-        CAR_DICT = config.getCarDict(self.test_var, variation, starting_dist, deviation, danger)
+        CAR_DICT = config.getCarDict(self.test_var, self.variation, starting_dist, deviation, danger)
 
         initial_tds = []
         initial_poses = []
@@ -181,7 +181,7 @@ class CarSim:
     def stateCallback(self, msg):
         if self.end:return
 
-        print msg.t
+        #print msg.t
 
         if self.lose_com:
 
@@ -247,15 +247,18 @@ class CarSim:
             self.risk_estimator.update_state(actual_time, poses, deviations)
             
             risk = max(self.risk_estimator.getRisk(0,1), self.risk_estimator.getRisk(1,0))
+            if self.id == 1:
+                #print risk
+                pass
             
-            
-            if risk > config.risk_threshold and not self.has_triggered_eb:
+            if risk > config.risk_thresholds[self.variation] and not self.has_triggered_eb:
 
 
                 if self.use_eb:
                     self.has_triggered_eb = True
                     self.eb_time = msg.t
                     print "Emergency break activated on car ", self.id
+                    print "risk=", risk
                     
                 else:
                     if self.test_var == 0:
@@ -370,7 +373,7 @@ class CarSim:
         s_noise = np.random.normal(0, dev[3])
 
         # "filtering"
-        x_filtered = self.x + (x_noise) / 3.0
+        x_filtered = self.x + (x_noise) / 3.0#3.0
         y_filtered = self.y + (y_noise) / 3.0
         t_filtered = self.theta + (t_noise) / 3.0
         s_filtered = self.speed + (s_noise) / 3.0

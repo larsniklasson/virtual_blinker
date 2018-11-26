@@ -58,7 +58,7 @@ def getCarDict(test_var, variation, starting_distance, deviation, danger):
 
             if danger == 1:
                 a = -10
-                b = 3
+                b = 0
                 a2 = 30
                 b2 = 45
 
@@ -72,7 +72,7 @@ def getCarDict(test_var, variation, starting_distance, deviation, danger):
         elif deviation == 3:
 
             if danger == 0:
-                a = -12
+                a = -9
                 b = 7
 
             if danger == 1:
@@ -94,7 +94,7 @@ def getCarDict(test_var, variation, starting_distance, deviation, danger):
 
             if danger == 1:
                 a = 37
-                b = 47
+                b = 44
                 a2 = 77
                 b2 = 92
 
@@ -240,7 +240,7 @@ def getCarDict(test_var, variation, starting_distance, deviation, danger):
             if danger == 1:
                 a = 13
                 b = 22
-                a2 = 58
+                a2 = 61
                 b2 = 67
 
             if danger == 2:
@@ -356,13 +356,10 @@ def getCarDict(test_var, variation, starting_distance, deviation, danger):
     return {0:c1, 1:c2}
 
 
-
-
 intersection = Intersection()
 
-deviations_high = (0.2*7, 0.2*7, 0.04*7, 0.1*7)
+deviations_high = (0.2*5, 0.2*5, 0.04*5, 0.1*5)
 deviations_low = (0.2, 0.2, 0.04, 0.1)
-
 
 speedup = 4.0
 
@@ -373,13 +370,14 @@ pid = 0.4, 0.0, 0.01
 lookahead = 5
 carlength = 2.8
 
-risk_threshold = 0.3 #Break if higher
-grant_threshold = 0.9 #grant if P(Es=go) is greater than threshold
+risk_thresholds = [0.3, 0.55, 0.55]
+#risk_threshold = 0.4 #Break if higher
+grant_threshold = 0.8 #grant if P(Es=go) is greater than threshold
 
 gap_lower_limit = -1.5
 gap_upper_limit = 2.5
 
-risk_gap_lower_limit = -0.5#-1.0#-0.5
+risk_gap_lower_limit = -1.0#-0.5
 risk_gap_upper_limit = 1.5
 
 
