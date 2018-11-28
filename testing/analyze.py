@@ -96,6 +96,7 @@ for f,_ in folders2:
     if hs0 == -1 and hs1 == -1:
         hs = 99999999999999    
     else:
+        
         hs = max(hs0, hs1)
 
 
@@ -105,7 +106,7 @@ for f,_ in folders2:
         x0,y0,theta0,t00 = eval(a)
         x1,y1,theta1,t11 = eval(b)
 
-        addLength = 2
+        addLength = 1.0
         yo = 1 + addLength/2
 
         length = 4.7 + addLength
@@ -201,21 +202,21 @@ for f,_ in folders2:
     else:
         if danger == 0:
             if collision:
-                "collision. test =", f
+                print "collision. test =", f
                 D[test_var, variation, deviation]["nr_collisions"] += 1
         else:
             if collision:
-                "collision. test =", f
+                print "collision. test =", f
                 D[test_var, variation, deviation]["nr_collisions_fa"] += 1
 
         
         opttime = 1
-        """
+        
         if deviation in [0,2,3,4]:
             opttime = times[var, deviation]
         else:
             opttime = times[var,0]
-        """
+        
 
         
         prio_lost = time0 - opttime

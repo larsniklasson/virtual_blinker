@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-for ((seed=0;seed<1;seed++));
+for ((seed=0;seed<10;seed++));
 do
     for ((test_var=0;test_var<4;test_var++)); 
     do
@@ -17,6 +17,7 @@ do
                     done
                 done
             done
+
         done
     done
 done
