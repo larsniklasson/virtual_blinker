@@ -182,8 +182,8 @@ def getCarDict(test_var, variation, starting_distance, deviation, danger):
                 b = 0
 
             if danger == 1:
-                a = -18
-                b = 27
+                a = -27
+                b = -22
                 a2 = 10
                 b2 = 20
 
@@ -267,6 +267,8 @@ def getCarDict(test_var, variation, starting_distance, deviation, danger):
                 b2 = 50
     
     if danger == 0:
+        a += 1
+        b -=1
         sd2 = a + starting_distance * (b-a)/9.0
     else:
         if starting_distance >= 5:
@@ -370,7 +372,7 @@ pid = 0.4, 0.0, 0.01
 lookahead = 5
 carlength = 2.8
 
-risk_thresholds = [0.3, 0.55, 0.55]
+risk_thresholds = [0.35, 0.55, 0.55]
 #risk_threshold = 0.4 #Break if higher
 grant_threshold = 0.8 #grant if P(Es=go) is greater than threshold
 

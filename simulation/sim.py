@@ -176,6 +176,8 @@ class CarSim:
         self.course1 = config.intersection.courses[CAR_DICT[1].travelling_direction, CAR_DICT[1].turn]
 
 
+        self.was_granted = False
+
 
 
     def stateCallback(self, msg):
@@ -329,12 +331,15 @@ class CarSim:
             targetspeed = min(targetspeed, recommended_speed)
             
         if self.has_triggered_eb:
-            if self.speed < 0.05:
+            if self.speed < 0.05 and not self.has_stopped:
                 self.has_stopped = True
                 self.stop_time = self.t
             
             if not self.has_stopped:
                 targetspeed = 0
+            else:
+                if (self.t - self.stop_time)/config.rate < 1.3:
+                    targetspeed = 0
                 
         if targetspeed < self.speed:
             targetacceleration = self.course.match_profile_deacceleration
@@ -406,7 +411,7 @@ class CarSim:
         if self.course.hasPassedRequestLine(self.x, self.y) and sqrt(self.x**2 + self.y**2) > 40:
             self.end = True
 
-            self.f.write(str((self.eb_time, self.stop_time)))
+            self.f.write(str((self.eb_time, self.stop_time, self.was_granted)))
 
             self.f.close()
 

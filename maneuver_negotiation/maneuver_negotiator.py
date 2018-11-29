@@ -82,6 +82,7 @@ class ManueverNegotiator:
                     self.timer.cancel()
                     self.granted = True
                     #print self.id, ": granted!!!"
+                    self.sim.was_granted = True
                     self.currentAsk = []
         else:
             pass
